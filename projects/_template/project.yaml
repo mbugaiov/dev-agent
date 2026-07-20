@@ -1,0 +1,64 @@
+# Per-app dev factory. Created by scripts/new_project.sh — do not commit secrets here.
+
+name: "<Project Name>"
+slug: "<slug>"
+
+dev_factory:
+  enabled: true
+  epic_key: "<EPIC-KEY>"
+  pickup_label: impl-dev
+  excluded_labels:
+    - impl-qa
+    - human-required
+    - factory-pause
+    - needs-human
+  excluded_issue_keys: []          # e.g. on-hold infra tickets
+  statuses:
+    - "To Do"
+    - "In Progress"
+  handoff_status: Validate/Testing
+  forbidden_target_statuses:
+    - Done
+  order_by: created ASC
+
+git:
+  provider: bitbucket                # bitbucket | github
+  workspace: "<workspace>"
+  repo: "<repo>"
+  default_branch: main
+  branch_prefixes:
+    - feat
+    - fix
+    - chore
+  ticket_key_pattern: "PROJ-\\d+"
+
+stg:
+  base_url: https://staging.example.com
+  # Scripts: scripts/check_stg_build.sh <slug>
+
+app:
+  # Absolute or relative path from dev-agent root to application checkout
+  repo_path: ../my-app
+  gate_command: npm test
+  mr_push_command: npm run push-mr
+  openspec_enabled: true
+  openspec_specs_dir: openspec/specs
+  # Optional — defaults to scripts/wait_*.sh under app repo
+  wait_pr_pipeline_script: scripts/wait_pr_pipeline.sh
+  wait_main_deploy_script: scripts/wait_main_deploy.sh
+
+loop:
+  purpose: "<slug>dev"               # AGENT_LOOP_TICK_<purpose> fallback
+  interval_sec_default: 300
+
+jira:
+  enabled: true
+  default_labels:
+    - dev-agent
+    - "<slug>"
+  transitions:
+    validate_testing: "51"         # project-specific; discover via Jira API if needed
+  # Connection in .secrets/jira.env — run scripts/jira_discover.py <slug> if needed
+
+report:
+  app_name: "<App>"

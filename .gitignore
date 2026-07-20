@@ -1,0 +1,19 @@
+# Secrets — never commit
+**/.secrets/**
+!**/.secrets/**/
+!**/.secrets/**/*.example
+**/*.env
+!**/*.env.example
+!**/jira.env.example
+!**/bitbucket.env.example
+
+projects/*
+!projects/_template/
+
+projects/*/factory/runs/*.jsonl
+review.md
+
+**/node_modules/
+__pycache__/
+*.pyc
+.DS_Store

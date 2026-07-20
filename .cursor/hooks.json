@@ -1,0 +1,14 @@
+{
+  "hooks": {
+    "sessionStart": [
+      {
+        "command": ".cursor/hooks/dev-factory-session-start.sh"
+      }
+    ],
+    "stop": [
+      {
+        "command": ".cursor/hooks/dev-factory-drain-stop.sh"
+      }
+    ]
+  }
+}

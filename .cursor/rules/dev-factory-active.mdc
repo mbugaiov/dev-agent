@@ -1,0 +1,28 @@
+---
+description: MUST — user "run/execute/arm loop" phrases mean active dev factory (arm + drain backlog), never listen-only.
+alwaysApply: false
+---
+
+# Active dev factory (not listen-only)
+
+## Trigger phrases
+
+When the user message matches **any** phrase in `FACTORY_RUN_INTENT_PHRASES`
+(`lib/devFactoryExecution.ts`) — e.g. **run loop**, **execute loop**, **arm loop**,
+**drain backlog**, **active factory** — treat as **ACTIVE FACTORY MODE** for **this turn**.
+
+## MUST (same turn)
+
+1. **Arm** `bash scripts/arm_dev_loop.sh <slug>` with `notify_on_output` on patterns from
+   `lib/devFactoryLoopWiring.ts`.
+2. **Tick now** — `bash scripts/dev_factory_tick.sh <slug>`.
+3. **If backlog non-empty:** start oldest ticket immediately in app repo.
+4. **If open MR:** `wait_pr_pipeline.sh` first.
+5. **Re-arm** before ending turn.
+
+## FORBIDDEN
+
+- Ending turn with only LOOP_ARMED / next-tick schedule / status-only reply.
+- Asking "want me to start?" after user used a trigger phrase.
+
+Skill: `.cursor/skills/dev-factory-loop/SKILL.md`.

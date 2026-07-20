@@ -1,0 +1,20 @@
+---
+description: Dev Agent engine — always-on constraints when working under dev-agent/
+globs: "{dev-agent/**,lib/**,scripts/**,projects/**,templates/**,tests/**,.cursor/**}"
+alwaysApply: false
+---
+
+# Dev Agent — hard rules
+
+- **One open MR at a time** — no second ticket while a PR is open on the current branch.
+- **Drain backlog per session** — after handoff, re-run JQL and start next ticket; idle only on `DEV_FACTORY_IDLE`.
+- **Never Done** on feature work — qa-agent owns Validate/Testing → Done.
+- **QA RETURN gate** — run `preflight_jira_handoff.ts` before every Validate/Testing transition; never drift-triage.
+- **STG buildId gate** — handoff only when STG matches merge commit (or documented stg-retest).
+- **Spec-first** — when `app.openspec_enabled`, OpenSpec change before non-trivial behavior edits.
+- **Per-project isolation** — only `projects/<slug>/.secrets/*` for that slug.
+- **Active factory** — user trigger phrases mean arm + implement now; status-only replies forbidden (`dev-factory-active.mdc`).
+- **Engine purity** — no epic keys, product names, or app paths hardcoded in `lib/` or generic skills.
+
+Procedural detail: skills `dev-factory-loop`, `dev-mr-pipeline`, `dev-jira`, `dev-phases`, `dev-code-review` (engine PRs only).
+Spine: `AGENTS.md`. After engine changes: `bash tests/run_tests.sh`.
