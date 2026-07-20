@@ -133,6 +133,8 @@ Pair with **qa-agent** using the **same `<slug>`** under `projects/<slug>/` in b
 | **Project** | `projects/<slug>/` config, docs, memory — no secrets | Never commit `.secrets/` |
 | **App** | Product code, OpenSpec, app CI only | No duplicated engine `lib/` |
 
+**Phase 4 (optional):** a separate `dev-agent-project-<slug>` git repo is only needed for team sharing or submodule pinning. Solo dev can use local gitignored `projects/<slug>/` indefinitely.
+
 ---
 
 ## Related docs
