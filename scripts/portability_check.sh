@@ -32,8 +32,8 @@ FAIL=0
 
 scan_file() {
   local f="$1"
-  [[ -z "$f" ]] && continue
-  [[ "$f" == "scripts/portability_check.sh" ]] && continue
+  [[ -z "$f" ]] && return 0
+  [[ "$f" == "scripts/portability_check.sh" ]] && return 0
   while IFS= read -r line; do
     echo "$line" | grep -qE 'e\.g\. `<slug>`|e\.g\. <slug>|<EPIC-KEY>|<workspace>|<repo>' && continue
     echo "portability leak: $line"
