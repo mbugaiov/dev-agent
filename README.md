@@ -74,4 +74,4 @@ runs on each PR using `CURSOR_API_KEY` — same pattern as qa-agent. Blocking fi
 ## Status
 
 **Engine published** — loop, handoff, STG, portability gate, engine CR. **52 unit tests** green.
-LRM project runs locally via gitignored `projects/lrm/` (see `EXTRACTION-MAP.md` Phase 6).
+Per-app project data lives in gitignored `projects/<slug>/` (see `EXTRACTION-MAP.md`).
