@@ -154,6 +154,7 @@ export function buildBacklogWakeExecution(
     branchPrefix: ticketBranchPrefix(oldest, branchPrefixes),
     forbidden: [...STATUS_ONLY_PHRASES],
     firstSteps: [
+      `bash scripts/pickup_jira_ticket.sh <slug> ${oldest} --scope "<plan>" --points <n>`,
       `Transition ${oldest} → In Progress (if To Do)`,
       `git checkout -B <prefix>/${oldest}-<slug> origin/<default-branch>`,
       "OpenSpec change → implement → run app gate command → MR push",

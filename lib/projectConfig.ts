@@ -51,6 +51,14 @@ export type JiraTransitions = {
   validate_testing?: string;
 };
 
+export type JiraPickupConfig = {
+  assignee_account_id?: string;
+  story_point_fields?: string[];
+  default_story_points?: number;
+  estimate_scale?: Record<number, string>;
+  transition_from_statuses?: string[];
+};
+
 export type ProjectConfig = {
   name: string;
   slug: string;
@@ -63,6 +71,7 @@ export type ProjectConfig = {
     enabled?: boolean;
     default_labels?: string[];
     transitions?: JiraTransitions;
+    pickup?: JiraPickupConfig;
   };
 };
 

@@ -25,6 +25,7 @@ describe("devFactoryExecution", () => {
     expect(execution.executeNow).toBe(true);
     expect(execution.oldest).toBe("TST-105");
     expect(execution.branchPrefix).toBe("feat/TST-105|fix/TST-105|chore/TST-105");
+    expect(execution.firstSteps[0]).toContain("pickup_jira_ticket.sh");
   });
 
   it("EX-02 formatBacklogWakeExecuteLine emits sentinel JSON", () => {

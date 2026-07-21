@@ -57,7 +57,20 @@ jira:
     - dev-agent
     - "<slug>"
   transitions:
+    in_progress: "21"               # To Do → In Progress; discover via Jira API if needed
     validate_testing: "51"         # project-specific; discover via Jira API if needed
+  pickup:
+    assignee_account_id: "<account-id>"
+    story_point_fields:            # both board columns — discover via jira_discover.py
+      - customfield_10016
+      - customfield_10033
+    default_story_points: 2
+    estimate_scale:                # story points → original estimate (optional; engine has defaults)
+      1: "1h"
+      2: "2h"
+      3: "4h"
+      5: "8h"
+      8: "16h"
   # Connection in .secrets/jira.env — run scripts/jira_discover.py <slug> if needed
 
 report:

@@ -359,6 +359,7 @@ Watch patterns (regex): `buildCombinedWatchPattern(loop.purpose)` — includes `
 | Wait CI | `bash scripts/wait_pr_pipeline.sh <SLUG> <PR_ID>` |
 | Wait deploy | `bash scripts/wait_main_deploy.sh <SLUG>` |
 | STG check | `bash scripts/check_stg_build.sh <SLUG> <commit>` |
+| Pickup | `bash scripts/pickup_jira_ticket.sh <SLUG> <KEY> --scope "…" --points <n>` |
 | Preflight | `npx tsx scripts/preflight_jira_handoff.ts <SLUG> <KEY>` |
 | Handoff | `npx tsx scripts/post_jira_handoff.ts <SLUG> <KEY> ... --transition` |
 
