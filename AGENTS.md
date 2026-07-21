@@ -42,7 +42,7 @@ factory; one tick = one backlog drain attempt.
 1. Arm        → bash scripts/arm_dev_loop.sh <slug> (notify_on_output on watch patterns)
 2. Tick       → dev_factory_tick → BACKLOG_WAKE_EXECUTE or DEV_FACTORY_IDLE
 3. Pick       → oldest impl-dev ticket (respect QA follow-on routing)
-4. Implement  → cd app.repo_path; branch; OpenSpec; code; app gate command
+4. Pickup     → pickup_jira_ticket.sh (assign, estimate, scope) → branch; OpenSpec; code; app gate command
 5. Ship       → mr:push → wait_pr_pipeline → merge
 6. STG        → wait_main_deploy + check_stg_build (buildId gate)
 7. Handoff    → preflight_jira_handoff (block on QA RETURN) → post_jira_handoff → Validate/Testing

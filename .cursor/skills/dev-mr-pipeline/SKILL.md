@@ -9,7 +9,7 @@ Generic flow; **app repo** holds product code and CI. Read `projects/<slug>/proj
 
 ## Steps
 
-0. **Jira:** transition To Do → In Progress; assign; story points; scope comment
+0. **Jira pickup:** `bash scripts/pickup_jira_ticket.sh <slug> <KEY> --scope "<plan>" --points <n>` — transition, assign, estimate (empty fields only), scope comment. Config: `project.yaml` → `jira.pickup`.
 1. **Branch:** `git checkout -B <prefix>/<KEY>-<slug> origin/<default_branch>` in app repo
 2. **OpenSpec:** when `app.openspec_enabled` — propose/apply/archive per app repo skills
 3. **Preflight + gate:** run `app.gate_command` from app repo root

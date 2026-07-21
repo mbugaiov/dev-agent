@@ -15,6 +15,7 @@ alwaysApply: false
 - **Per-project isolation** — only `projects/<slug>/.secrets/*` for that slug.
 - **Active factory** — user trigger phrases mean arm + implement now; status-only replies forbidden (`dev-factory-active.mdc`).
 - **Engine purity** — no epic keys, product names, or app paths hardcoded in `lib/` or generic skills.
+- **Dual-repo delivery** — when a change touches **both** dev-agent (engine) and the app repo (pointer, rules, or app scripts the engine calls), ship **both PRs in the same session** through merge: engine PR on GitHub + app MR on Bitbucket. Do not stop after one repo. Local `projects/<slug>/project.yaml` edits (gitignored) are part of rollout — note them in the engine PR body.
 
 Procedural detail: skills `dev-factory-loop`, `dev-mr-pipeline`, `dev-jira`, `dev-phases`, `dev-code-review` (engine PRs only).
 Spine: `AGENTS.md`. After engine changes: `bash tests/run_tests.sh`.

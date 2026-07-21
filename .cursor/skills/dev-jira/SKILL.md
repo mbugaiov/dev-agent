@@ -8,6 +8,25 @@ description: Jira transitions, handoff comments, QA RETURN gates, and Validate/T
 All commands run from **dev-agent root** with project slug `<slug>`.
 Load config from `projects/<slug>/project.yaml`; secrets from `.secrets/jira.env`.
 
+## Ticket pickup (not handoff)
+
+Run **before branching** on every backlog wake:
+
+```bash
+bash scripts/pickup_jira_ticket.sh <slug> <KEY> \
+  --scope "Scope: … OpenSpec: … Gate: …" \
+  --points 2
+```
+
+| Step | Script behavior |
+|------|-------------------|
+| Transition | To Do → In Progress when `jira.transitions.in_progress` set |
+| Assign | When unassigned and `jira.pickup.assignee_account_id` set |
+| Estimate | Fills **empty** story-point fields + original estimate only |
+| Scope | Posts `--scope` comment |
+
+Requires `jira.pickup` in `project.yaml` (field ids, assignee). Creds: `.secrets/jira.env`.
+
 ## Before every Validate/Testing handoff
 
 ```bash
@@ -70,17 +89,7 @@ Pure logic: `lib/jiraCommentGate.ts`
 - `mayTransitionAfterHandoffPost()` — latest comment must be dev handoff, not QA RETURN
 - `qaNeedsStgRetestHandoff()` — comment text signals STG retest needed
 
-## Ticket pickup (not handoff)
-
-Dev factory tick builds JQL from config — **do not** hardcode epic in skills:
-
-```bash
-bash scripts/dev_factory_tick.sh <slug>
-```
-
-Follow-on routing: QA comments with `Dev ticket: <KEY>` — see `planBacklogWithFollowOns()`.
-
-## Forbidden
+## Factory JQL
 
 - Move feature tickets to **Done** (qa-agent owns closure)
 - Transition to Validate/Testing while QA RETURN is latest unresolved gate
