@@ -64,6 +64,7 @@ immediately.
 - **STG buildId gate** — no Validate/Testing handoff until STG matches merge commit.
 - **Per-project isolation** — only `projects/<slug>/.secrets/*` for that slug.
 - **Engine purity** — no epic keys, product names, or app paths in engine files; config in `project.yaml`. Review: **`ENGINE-REVIEW.md`** + `scripts/portability_check.sh`.
+- **Dual-repo delivery** — engine + app pointer/rule changes merge **both** repos same session (GitHub + Bitbucket); see `dev-engine.mdc`.
 
 ## Output layout
 
