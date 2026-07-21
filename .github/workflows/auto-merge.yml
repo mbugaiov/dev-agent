@@ -88,6 +88,7 @@ jobs:
                 repo,
                 pull_number: pr.number,
                 merge_method: 'squash',
+                sha: run.head_sha,
               });
               core.info(`Auto-merged PR #${pr.number} (squash) at ${run.head_sha}`);
             } catch (err) {
