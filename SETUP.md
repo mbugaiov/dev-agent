@@ -1,9 +1,11 @@
-# Dev Agent — setup (AI agent runbook)
+# Hephaestus — setup (AI agent runbook)
 
-**Audience:** Cursor Agent (or equivalent). Execute this document **top to bottom**.
-Humans only intervene for **secret values** (API tokens) when files under `.secrets/` are missing or empty.
+**Hephaestus** (`dev-agent`) — AI agent runbook. **Audience:** Cursor Agent (or equivalent).
+Execute this document **top to bottom**. Humans only intervene for **secret values** (API tokens)
+when files under `.secrets/` are missing or empty.
 
-> **Spine after setup:** `AGENTS.md` (runtime loop) · skills under `.cursor/skills/` · per-ticket flow in `dev-mr-pipeline`.
+> **Spine after setup:** `AGENTS.md` (runtime loop) · skills under `.cursor/skills/` · per-ticket
+> flow in `dev-mr-pipeline`. Presentation name: *Hephaestus · Dev*; repo folder stays `dev-agent/`.
 
 ---
 
