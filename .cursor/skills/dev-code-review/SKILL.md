@@ -35,7 +35,9 @@ Runs:
 
 ### On GitHub PRs
 
-Workflow `.github/workflows/code-review.yml` runs when `CURSOR_API_KEY` is configured:
+Workflow `.github/workflows/code-review.yml` runs when `CURSOR_API_KEY` is configured.
+When **CI** (`test`) and **Code Review** (`review`) both succeed, `.github/workflows/auto-merge.yml`
+squash-merges the PR (same policy as LRM Bitbucket auto-merge).
 
 1. Runs `cursor-agent` with `.cursor/rules/code-review.mdc`
 2. Writes `review.md` and posts PR comment

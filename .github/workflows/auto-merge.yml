@@ -1,0 +1,79 @@
+name: Auto-merge when green
+
+# Squash-merge open PRs when CI + Code Review both succeed (mirrors LRM Bitbucket auto-merge).
+on:
+  workflow_run:
+    workflows: [CI, "Code Review"]
+    types: [completed]
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  auto-merge:
+    if: >
+      github.event.workflow_run.conclusion == 'success' &&
+      github.event.workflow_run.event == 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Merge PR when required checks are green
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const run = context.payload.workflow_run;
+            const owner = context.repo.owner;
+            const repo = context.repo.repo;
+
+            const prs = await github.rest.pulls.list({
+              owner,
+              repo,
+              state: 'open',
+              head: `${owner}:${run.head_branch}`,
+              per_page: 1,
+            });
+            if (prs.data.length === 0) {
+              core.info('No open PR for branch — skip');
+              return;
+            }
+            const pr = prs.data[0];
+            if (pr.draft) {
+              core.info('Draft PR — skip auto-merge');
+              return;
+            }
+
+            const required = ['test', 'review'];
+            const { data: checks } = await github.rest.checks.listForRef({
+              owner,
+              repo,
+              ref: run.head_sha,
+              per_page: 100,
+            });
+
+            const byName = new Map(
+              checks.check_runs.map((c) => [c.name, c.conclusion]),
+            );
+            for (const name of required) {
+              if (byName.get(name) !== 'success') {
+                core.info(
+                  `Required check "${name}" not success yet (${byName.get(name) ?? 'missing'}) — skip`,
+                );
+                return;
+              }
+            }
+
+            try {
+              await github.rest.pulls.merge({
+                owner,
+                repo,
+                pull_number: pr.number,
+                merge_method: 'squash',
+              });
+              core.info(`Auto-merged PR #${pr.number} (squash)`);
+            } catch (err) {
+              if (err.status === 405 || err.status === 409) {
+                core.info(`PR #${pr.number} already merged or not mergeable`);
+                return;
+              }
+              throw err;
+            }
