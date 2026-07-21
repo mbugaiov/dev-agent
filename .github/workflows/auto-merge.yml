@@ -1,6 +1,6 @@
 name: Auto-merge when green
 
-# Squash-merge open PRs when CI + Code Review both succeed (mirrors LRM Bitbucket auto-merge).
+# Squash-merge open PRs when CI + Code Review both succeed (mirrors app Bitbucket auto-merge).
 on:
   workflow_run:
     workflows: [CI, "Code Review"]
@@ -36,9 +36,23 @@ jobs:
               core.info('No open PR for branch — skip');
               return;
             }
-            const pr = prs.data[0];
+
+            // Re-fetch PR so head SHA is current; only merge the SHA this run tested.
+            const pr = (
+              await github.rest.pulls.get({
+                owner,
+                repo,
+                pull_number: prs.data[0].number,
+              })
+            ).data;
             if (pr.draft) {
               core.info('Draft PR — skip auto-merge');
+              return;
+            }
+            if (pr.head.sha !== run.head_sha) {
+              core.info(
+                `PR head ${pr.head.sha} !== run head ${run.head_sha} — skip (newer push pending)`,
+              );
               return;
             }
 
@@ -50,13 +64,18 @@ jobs:
               per_page: 100,
             });
 
-            const byName = new Map(
-              checks.check_runs.map((c) => [c.name, c.conclusion]),
-            );
+            const byName = new Map();
+            for (const c of checks.check_runs) {
+              const prev = byName.get(c.name);
+              if (!prev || (c.completed_at ?? '') > (prev.completed_at ?? '')) {
+                byName.set(c.name, c);
+              }
+            }
             for (const name of required) {
-              if (byName.get(name) !== 'success') {
+              const check = byName.get(name);
+              if (!check || check.conclusion !== 'success') {
                 core.info(
-                  `Required check "${name}" not success yet (${byName.get(name) ?? 'missing'}) — skip`,
+                  `Required check "${name}" not success yet (${check?.conclusion ?? 'missing'}) — skip`,
                 );
                 return;
               }
@@ -69,7 +88,7 @@ jobs:
                 pull_number: pr.number,
                 merge_method: 'squash',
               });
-              core.info(`Auto-merged PR #${pr.number} (squash)`);
+              core.info(`Auto-merged PR #${pr.number} (squash) at ${run.head_sha}`);
             } catch (err) {
               if (err.status === 405 || err.status === 409) {
                 core.info(`PR #${pr.number} already merged or not mergeable`);
