@@ -68,8 +68,13 @@ For **linking a live project**, see **`ENGINE-REVIEW.md`** — project data does
 | `projects/_template/` | New project skeleton (only project path tracked in engine git) |
 | `tests/run_tests.sh` | Offline engine self-tests |
 
+## Engine PR code review
+
+Engine changes merge via GitHub PRs. The **Code Review** workflow (`.github/workflows/code-review.yml`)
+runs on each PR using `CURSOR_API_KEY` — same pattern as qa-agent. Blocking findings in
+`## Blocking issues` fail `scripts/pre_merge_check.sh`.
+
 ## Status
 
-**Phase 1 + 1b complete** — core loop, handoff/MR/STG scripts extracted. **43 unit tests** green.
-
-**Phase 2:** `git init`, portability gate on tracked files, GitHub publish.
+**Engine published** — loop, handoff, STG, portability gate, engine CR. **52 unit tests** green.
+Per-app project data lives in gitignored `projects/<slug>/` (see `EXTRACTION-MAP.md`).
