@@ -1,8 +1,13 @@
-# Dev Agent — spec-driven delivery factory
+# Hephaestus — Dev engine (`dev-agent`)
 
-The agent runs **Jira-backed dev factory loops**: pick `impl-dev` tickets, implement spec-first
-in the **app repo**, ship via MR, verify STG buildId, hand off to **Validate/Testing** for the
-QA agent. One project = one app factory; one tick = one backlog drain attempt.
+**Hephaestus** is the product name for this repository and engine. The agent runs **Jira-backed
+dev factory loops**: pick `impl-dev` tickets, implement spec-first in the **app repo**, ship via
+MR, verify STG buildId, hand off to **Validate/Testing** for the QA agent. One project = one app
+factory; one tick = one backlog drain attempt.
+
+> **Naming map:** Hephaestus (brand) ≡ `dev-agent` repo ≡ factory `agent=dev`. Pantheon siblings
+> live elsewhere: Argus (QA) in `qa-agent`, Themis (review) in the app repo — not renamed here.
+> Internal paths, skills, and scripts keep the `dev-*` prefix. Presentation: *Hephaestus · Dev*.
 
 > Operating role: follow `.cursor/rules/dev-engine.mdc` and `.cursor/rules/dev-factory-active.mdc`.
 > **First-time project setup:** **`SETUP.md`** (agent runbook — execute top to bottom).

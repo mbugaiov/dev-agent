@@ -1,11 +1,14 @@
-# Dev Agent
+# Hephaestus
 
-An agent-driven **dev factory** workspace: Jira `impl-dev` backlog → OpenSpec spec-first implementation
-in your app repo → MR → merge → STG buildId verify → **Validate/Testing** handoff for the QA agent.
+**Hephaestus** is the dev engine — this repository (`dev-agent`). An agent-driven **dev factory**
+workspace: Jira `impl-dev` backlog → OpenSpec spec-first implementation in your app repo → MR →
+merge → STG buildId verify → **Validate/Testing** handoff for the QA agent.
 
-Mirrors the **qa-agent** portability model: shared **engine** + per-app **`projects/<slug>/`** data.
+> **Naming:** Hephaestus is the high-level product name (presentation: *Hephaestus · Dev*). Low-level
+> identifiers stay unchanged: folder `dev-agent/`, skills `dev-*`, factory ledger `agent=dev`.
 
-**Paired with qa-agent** — dev stops at Validate/Testing; QA closes tickets.
+Mirrors the **Argus** (`qa-agent`) portability model: shared **engine** + per-app **`projects/<slug>/`**
+data. **Paired with Argus** — dev stops at Validate/Testing; QA closes tickets.
 
 ## One project = one folder · engine stays generic
 
