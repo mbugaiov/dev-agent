@@ -71,8 +71,9 @@ For **linking a live project**, see **`ENGINE-REVIEW.md`** — project data does
 ## Engine PR code review
 
 Engine changes merge via GitHub PRs. The **Code Review** workflow (`.github/workflows/code-review.yml`)
-runs on each PR using `CURSOR_API_KEY` — same pattern as qa-agent. Blocking findings in
-`## Blocking issues` fail `scripts/pre_merge_check.sh`.
+runs on each PR using `CURSOR_API_KEY`. Blocking findings in `## Blocking issues` fail
+`scripts/check_review_gate.sh` in that workflow. When **CI** and **Code Review** are green,
+**Auto-merge when green** (`.github/workflows/auto-merge.yml`) squash-merges the PR.
 
 ## Status
 
