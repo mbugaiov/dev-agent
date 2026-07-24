@@ -91,7 +91,7 @@ Do **not** ship live `projects/<slug>/` inside the engine GitHub repo.
 | Item | Why |
 |------|-----|
 | Product source, components, APIs | Application domain |
-| `openspec/**` + OpenSpec skills | Product behavior specs |
+| `openspec/**` + OpenSpec skills + `@fission-ai/openspec` | Product behavior specs — **mandatory** when `openspec_enabled` (verified by `verify_app_openspec.sh`) |
 | CI gate, MR push, pipeline wait scripts | Invoked via `project.yaml` delegation |
 | e2e / integration tests | Product quality |
 | Ticket grooming examples (optional) | Product-specific backlog content |
@@ -117,6 +117,7 @@ Setup: `../dev-agent/SETUP.md` · Arm: `bash ../dev-agent/scripts/arm_dev_loop.s
 | 3 | Edit `project.yaml`: `app.repo_path`, git, STG, gate commands | `resolve_app_root.ts <slug>` → existing directory |
 | 4 | Copy + fill `.secrets/jira.env`, `.secrets/bitbucket.env` | `setup_verify.sh <slug>` → `SETUP_OK` |
 | 5 | Migrate DoD docs from app → `projects/<slug>/docs/` | Files exist |
+| 5b | Install OpenSpec in app (`@fission-ai/openspec`, dirs, skills) | `verify_app_openspec.sh <slug>` → `OPENSPEC_OK` |
 | 6 | Open Cursor on `dev-agent/` or parent workspace | Engine rules visible |
 | 7 | Remove embedded factory files from app; thin pointer in app `AGENTS.md` | App MR = product only |
 | 8 | `bash scripts/dev_factory_tick.sh <slug>` then arm loop | Tick sentinel + handoff path works |

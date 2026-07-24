@@ -121,6 +121,22 @@ if [[ -n "$APP" && -d "$APP" ]]; then
       check_ok "app.gate_command"
     fi
   fi
+
+  if [[ -f "$YAML" ]] && grep -qE 'openspec_enabled:[[:space:]]*true' "$YAML" 2>/dev/null; then
+    if openspec_out="$(bash scripts/verify_app_openspec.sh "$SLUG" 2>&1)"; then
+      if echo "$openspec_out" | grep -q '^OPENSPEC_OK'; then
+        check_ok "app.openspec"
+      else
+        check_fail "app.openspec" "unexpected output: ${openspec_out:0:200}"
+      fi
+    else
+      check_fail "app.openspec" "$(echo "$openspec_out" | grep OPENSPEC_CHECK_FAIL | head -1 | sed 's/OPENSPEC_CHECK_FAIL //')"
+    fi
+  elif [[ -f "$YAML" ]] && grep -qE 'openspec_enabled:[[:space:]]*false' "$YAML" 2>/dev/null; then
+    check_ok "app.openspec.skipped"
+  else
+    check_fail "app.openspec_enabled" "set openspec_enabled: true in project.yaml (mandatory for dev factory)"
+  fi
 fi
 
 JIRA_ENV="$PROJECT/.secrets/jira.env"

@@ -11,7 +11,7 @@ alwaysApply: false
 - **Never Done** on feature work — qa-agent owns Validate/Testing → Done.
 - **QA RETURN gate** — run `preflight_jira_handoff.ts` before every Validate/Testing transition; never drift-triage.
 - **STG buildId gate** — handoff only when STG matches merge commit (or documented stg-retest).
-- **Spec-first** — when `app.openspec_enabled`, OpenSpec change before non-trivial behavior edits.
+- **Spec-first** — when `app.openspec_enabled` (default), OpenSpec change before non-trivial edits; app MUST pass `bash scripts/verify_app_openspec.sh <slug>` (`SETUP.md` §6).
 - **Per-project isolation** — only `projects/<slug>/.secrets/*` for that slug.
 - **Active factory** — user trigger phrases mean arm + implement now; status-only replies forbidden (`dev-factory-active.mdc`).
 - **Engine purity** — no epic keys, product names, or app paths hardcoded in `lib/` or generic skills.

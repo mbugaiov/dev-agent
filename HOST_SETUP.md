@@ -35,9 +35,24 @@ Open **`dev-agent/`** as the workspace root (recommended), or a parent folder th
 
 Engine rules apply when paths match `.cursor/rules/dev-engine.mdc` globs.
 
+## Application repo (OpenSpec)
+
+When `app.openspec_enabled: true` (default for dev-agent projects), the **app checkout**
+must install OpenSpec before factory work:
+
+| Item | Purpose |
+|------|---------|
+| `@fission-ai/openspec` | Spec CLI (`npm install --save-dev`) |
+| `"spec": "openspec"` | npm script in app `package.json` |
+| `openspec/specs/` + `openspec/changes/` | Spec-first workflow dirs |
+| `.cursor/skills/openspec-*` | Agent skills (propose, apply, archive) |
+
+Verify: `bash scripts/verify_app_openspec.sh <slug>` (also run inside `setup_verify.sh`).
+
+OpenSpec skills live in the **app repo**, not the engine. See **`SETUP.md` §6**.
+
 ## Global skills (optional)
 
-OpenSpec skills live in the **app repo** (`.cursor/skills/openspec-*`), not the engine.
 No global install required for dev-agent itself.
 
 ## Next step

@@ -11,7 +11,7 @@ Generic flow; **app repo** holds product code and CI. Read `projects/<slug>/proj
 
 0. **Jira pickup:** `bash scripts/pickup_jira_ticket.sh <slug> <KEY> --scope "<plan>" --points <n>` — transition, assign, estimate (empty fields only), scope comment. Config: `project.yaml` → `jira.pickup`.
 1. **Branch:** `git checkout -B <prefix>/<KEY>-<slug> origin/<default_branch>` in app repo
-2. **OpenSpec:** when `app.openspec_enabled` — propose/apply/archive per app repo skills
+2. **OpenSpec:** when `app.openspec_enabled` (default) — propose/apply/archive per app repo skills. App must pass `verify_app_openspec.sh` at setup (`SETUP.md` §6).
 3. **Preflight + gate:** run `app.gate_command` from app repo root
 4. **Push MR:** `app.mr_push_command`; arm `wait_pr_pipeline.sh` with notify_on_output
 5. **Fix loop** until pipeline green + **app repo** code review clear (CR runs in app CI — not dev-agent)

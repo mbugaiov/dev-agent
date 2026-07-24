@@ -233,12 +233,51 @@ done
 | `wait_main_deploy.sh` | Same |
 | `gate_command` fails | Fix app deps; do not skip gate in factory |
 
-**OpenSpec** (when `app.openspec_enabled: true`):
+### OpenSpec (mandatory when `app.openspec_enabled: true`)
+
+Dev factory work is **spec-first**. The app repo MUST have OpenSpec installed before
+`setup_verify.sh` can pass. Default in `projects/_template/project.yaml` is `true`.
+
+**Agent MUST run** (from `APP_ROOT`):
 
 ```bash
-test -d "$APP_ROOT/.cursor/skills/openspec-propose" && echo "OPENSPEC_SKILLS_OK" || \
-  echo "WARN openspec skills missing in app repo — spec-first phases degraded"
+APP_ROOT="$(npx tsx "$ENGINE_ROOT/scripts/resolve_app_root.ts" <SLUG>)"
+cd "$APP_ROOT"
+
+# 1. CLI package
+npm install --save-dev @fission-ai/openspec
+
+# 2. npm script (add to package.json if missing)
+#    "spec": "openspec"
+
+# 3. Directory layout
+mkdir -p openspec/specs openspec/changes
+
+# 4. Cursor skills (copy from a reference app or regenerate via openspec)
+#    .cursor/skills/openspec-propose/
+#    .cursor/skills/openspec-apply-change/
+#    .cursor/skills/openspec-archive-change/
 ```
+
+**Verify** (engine gate — required for `SETUP_OK`):
+
+```bash
+bash "$ENGINE_ROOT/scripts/verify_app_openspec.sh" <SLUG>
+# expect: OPENSPEC_OK {"slug":"...","app":"..."}
+
+# Optional strict CLI validation (after npm install in app):
+bash "$ENGINE_ROOT/scripts/verify_app_openspec.sh" <SLUG> --strict
+```
+
+| Check | Requirement |
+|-------|-------------|
+| `openspec/specs/` | Canonical specs (`app.openspec_specs_dir`) |
+| `openspec/changes/` | Active change folders |
+| `@fission-ai/openspec` | In app `package.json` devDependencies |
+| `npm run spec` | Script invoking `openspec` CLI |
+| OpenSpec skills | `openspec-propose`, `openspec-apply-change`, `openspec-archive-change` in app `.cursor/skills/` |
+
+Per-ticket flow: skill **`dev-phases`** → propose → apply → gate → archive after merge.
 
 Optional project override: `projects/<SLUG>/.cursor/rules/mr-pipeline-workflow.mdc`
 
@@ -455,6 +494,8 @@ All commands exit 0 / expected sentinels → **setup complete**. Proceed to **`A
 | `stg.base_url` | STG host for buildId check |
 | `app.repo_path` | App checkout |
 | `app.gate_command` / `app.mr_push_command` | Local CI |
+| `app.openspec_enabled` | Must be `true` for dev factory (default in template) |
+| `app.openspec_specs_dir` | Usually `openspec/specs` |
 | `app.wait_*_script` | Override app delegation paths |
 | `loop.purpose` | Loop tick sentinel suffix |
 | `jira.transitions.validate_testing` | Post-handoff transition id |

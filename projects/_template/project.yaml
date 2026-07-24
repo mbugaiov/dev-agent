@@ -41,8 +41,8 @@ app:
   repo_path: ../my-app
   gate_command: npm test
   mr_push_command: npm run push-mr
-  openspec_enabled: true
-  openspec_specs_dir: openspec/specs
+  openspec_enabled: true              # mandatory for dev factory — SETUP.md §6
+  openspec_specs_dir: openspec/specs   # requires @fission-ai/openspec + openspec skills in app
   # Optional — defaults to scripts/wait_*.sh under app repo
   wait_pr_pipeline_script: scripts/wait_pr_pipeline.sh
   wait_main_deploy_script: scripts/wait_main_deploy.sh

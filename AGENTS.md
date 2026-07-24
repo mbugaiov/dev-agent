@@ -60,7 +60,7 @@ immediately.
 - **Drain backlog per session** — do not stop after one handoff while JQL returns tickets.
 - **Never Done** on feature work — QA agent owns Validate/Testing → Done.
 - **Respect QA RETURN** — `lib/jiraCommentGate.ts`; run `preflight_jira_handoff.ts` before every handoff.
-- **Spec-first** — OpenSpec change before non-trivial behavior edits (app repo convention).
+- **Spec-first** — OpenSpec change before non-trivial behavior edits. App MUST have OpenSpec installed (`@fission-ai/openspec`, `openspec/specs`, skills) — verified by `verify_app_openspec.sh` in `setup_verify.sh` (see **`SETUP.md` §6**).
 - **STG buildId gate** — no Validate/Testing handoff until STG matches merge commit.
 - **Per-project isolation** — only `projects/<slug>/.secrets/*` for that slug.
 - **Engine purity** — no epic keys, product names, or app paths in engine files; config in `project.yaml`. Review: **`ENGINE-REVIEW.md`** + `scripts/portability_check.sh`.

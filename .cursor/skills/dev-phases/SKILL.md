@@ -23,7 +23,9 @@ Read `projects/<slug>/project.yaml` and `projects/<slug>/docs/DEFINITION-OF-DONE
 | **8. Handoff** | dev-agent | skill **`dev-jira`** — preflight → post → Validate/Testing |
 | **9. Drain** | dev-agent | Re-run tick; next ticket same session if backlog > 0 |
 
-## OpenSpec (when `app.openspec_enabled: true`)
+## OpenSpec (mandatory when `app.openspec_enabled: true`)
+
+Default in `projects/_template/project.yaml`. Install in app repo before first factory run — **`SETUP.md` §6**.
 
 Skills live in **app repo** `.cursor/skills/` (not engine):
 
@@ -35,6 +37,8 @@ Skills live in **app repo** `.cursor/skills/` (not engine):
 | Archive after merge | `openspec-archive-change` |
 
 Specs directory: `app.openspec_specs_dir` (often `openspec/specs`).
+
+**Setup gate:** `bash scripts/verify_app_openspec.sh <slug>` → `OPENSPEC_OK` (also part of `setup_verify.sh`).
 
 **Rule:** non-trivial behavior changes need an OpenSpec change **before** code edits.
 
