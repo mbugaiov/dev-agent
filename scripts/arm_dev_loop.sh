@@ -10,7 +10,6 @@ if [[ -z "$SLUG" ]]; then
   exit 1
 fi
 
-INTERVAL="${DEV_LOOP_INTERVAL_SEC:-300}"
 PR_BACKUP="${DEV_PR_BACKUP_SEC:-300}"
 
 while read -r pid; do
@@ -21,6 +20,15 @@ cd "$ROOT"
 export DEV_AGENT_SLUG="$SLUG"
 # shellcheck disable=SC1091
 source "$ROOT/scripts/source_project_secrets.sh" "$SLUG" || true
+
+if [[ -n "${DEV_LOOP_INTERVAL_SEC:-}" ]]; then
+  INTERVAL="$DEV_LOOP_INTERVAL_SEC"
+else
+  INTERVAL="$(npx tsx -e "
+import { loadProjectConfig } from './lib/loadProject.ts';
+console.log(loadProjectConfig('$ROOT', '$SLUG').loop.interval_sec_default ?? 300);
+")"
+fi
 
 npx tsx scripts/print_loop_armed.ts "$SLUG" "$INTERVAL"
 printf 'LOOP_ARM_AGENT_INSTRUCTIONS Launch in background (block_until_ms=0) with notify_on_output on %s. On BACKLOG_WAKE_EXECUTE: start oldest ticket NOW — no status-only replies. On BACKLOG_WAKE: drain backlog — do NOT end turn after one handoff.\n' \
