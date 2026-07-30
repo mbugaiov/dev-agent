@@ -53,6 +53,7 @@ have "scripts/check_stg_build.ts"
 have "scripts/wait_pr_pipeline.sh"
 have "scripts/wait_main_deploy.sh"
 have "scripts/resolve_app_root.ts"
+have "scripts/resolve_loop_interval.ts"
 bash scripts/portability_check.sh >/dev/null 2>&1 && ok "portability_check" || echo "  (portability: fix leaks before git init — see ENGINE-REVIEW.md)"
 bash scripts/projects_isolation_check.sh >/dev/null 2>&1 && ok "projects_isolation" || no "projects_isolation"
 

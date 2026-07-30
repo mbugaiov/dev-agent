@@ -36,20 +36,20 @@ jobs:
           if [[ -z "${CURSOR_API_KEY:-}" ]]; then
             cat > review.md <<'EOF'
           ## Summary
-          Automated review skipped — `CURSOR_API_KEY` repository secret is not configured.
+          Automated review cannot run — `CURSOR_API_KEY` repository secret is not configured.
 
           ## Blocking issues
-          None.
+          - Configure `CURSOR_API_KEY` under Settings → Secrets and variables → Actions before merging.
 
           ## Suggestions
-          Configure `CURSOR_API_KEY` under Settings → Secrets and variables → Actions to enable PR code review.
+          Add the secret, then re-run the Code Review workflow on this PR.
           EOF
-            exit 0
+          else
+            git fetch origin "${BASE}" --quiet || true
+            PROMPT="You are the automated reviewer for GitHub PR #${{ github.event.pull_request.number }} on the dev-agent engine. Follow .cursor/rules/code-review.mdc (and AGENTS.md + rules it references). Review ONLY changes vs origin/${BASE} — begin with: git --no-pager diff origin/${BASE}...HEAD — produce exactly the output sections that guide specifies."
+            cursor-agent --force --api-key "$CURSOR_API_KEY" --output-format text -p "$PROMPT" > review.md || true
+            [[ -s review.md ]] || echo "Cursor review produced no output (see build log above)." > review.md
           fi
-          git fetch origin "${BASE}" --quiet || true
-          PROMPT="You are the automated reviewer for GitHub PR #${{ github.event.pull_request.number }} on the dev-agent engine. Follow .cursor/rules/code-review.mdc (and AGENTS.md + rules it references). Review ONLY changes vs origin/${BASE} — begin with: git --no-pager diff origin/${BASE}...HEAD — produce exactly the output sections that guide specifies."
-          cursor-agent --force --api-key "$CURSOR_API_KEY" --output-format text -p "$PROMPT" > review.md || true
-          [[ -s review.md ]] || echo "Cursor review produced no output (see build log above)." > review.md
           cat review.md
 
       - name: Blocking review gate

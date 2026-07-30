@@ -22,18 +22,20 @@ if ! command -v gh >/dev/null 2>&1; then
   exit 0
 fi
 
-rules="$(gh api "repos/$REPO/rules/branches/main" 2>/dev/null || true)"
-if [[ -z "$rules" || "$rules" == "[]" ]]; then
+status_rules="$(gh api "repos/$REPO/rules/branches/main" --jq '[.[] | select(.type=="required_status_checks")] | length' 2>/dev/null || echo 0)"
+pr_rules="$(gh api "repos/$REPO/rules/branches/main" --jq '[.[] | select(.type=="pull_request")] | length' 2>/dev/null || echo 0)"
+
+if [[ "$status_rules" -eq 0 && "$pr_rules" -eq 0 ]]; then
   echo "BRANCH_RULES_FAIL no active rules on main for $REPO" >&2
   exit 1
 fi
 
-if ! echo "$rules" | grep -q 'required_status_checks'; then
+if [[ "$status_rules" -eq 0 ]]; then
   echo "BRANCH_RULES_FAIL main missing required_status_checks rule" >&2
   exit 1
 fi
 
-if ! echo "$rules" | grep -q 'pull_request'; then
+if [[ "$pr_rules" -eq 0 ]]; then
   echo "BRANCH_RULES_FAIL main missing pull_request rule" >&2
   exit 1
 fi
