@@ -11,6 +11,7 @@
 
 ## Pre-merge checklist
 
+- [ ] Changes on a **feature branch** — not pushed directly to `main`
 - [ ] `bash scripts/pre_merge_check.sh` passes locally
 - [ ] No live project data — only `projects/_template/` if touching `projects/`
 - [ ] No project-specific leaks (product slugs, private paths, real Jira keys)

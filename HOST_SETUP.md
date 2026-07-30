@@ -51,9 +51,16 @@ Verify: `bash scripts/verify_app_openspec.sh <slug>` (also run inside `setup_ver
 
 OpenSpec skills live in the **app repo**, not the engine. See **`SETUP.md` §6**.
 
-## Global skills (optional)
+## Engine repo — git hooks (mandatory for contributors)
 
-No global install required for dev-agent itself.
+Block accidental direct push to `main` (GitHub ruleset is the server-side gate):
+
+```bash
+cd /path/to/dev-agent
+git config core.hooksPath .githooks
+```
+
+Verify GitHub rules: `bash scripts/verify_branch_rules.sh` → `BRANCH_RULES_OK`.
 
 ## Next step
 
