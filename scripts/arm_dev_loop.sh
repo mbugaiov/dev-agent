@@ -24,10 +24,7 @@ source "$ROOT/scripts/source_project_secrets.sh" "$SLUG" || true
 if [[ -n "${DEV_LOOP_INTERVAL_SEC:-}" ]]; then
   INTERVAL="$DEV_LOOP_INTERVAL_SEC"
 else
-  INTERVAL="$(npx tsx -e "
-import { loadProjectConfig } from './lib/loadProject.ts';
-console.log(loadProjectConfig('$ROOT', '$SLUG').loop.interval_sec_default ?? 300);
-")"
+  INTERVAL="$(npx tsx scripts/resolve_loop_interval.ts "$SLUG")"
 fi
 
 npx tsx scripts/print_loop_armed.ts "$SLUG" "$INTERVAL"

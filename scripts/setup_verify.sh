@@ -130,7 +130,8 @@ if [[ -n "$APP" && -d "$APP" ]]; then
         check_fail "app.openspec" "unexpected output: ${openspec_out:0:200}"
       fi
     else
-      check_fail "app.openspec" "$(echo "$openspec_out" | grep OPENSPEC_CHECK_FAIL | head -1 | sed 's/OPENSPEC_CHECK_FAIL //')"
+      reason="$(echo "$openspec_out" | grep OPENSPEC_CHECK_FAIL | head -1 | sed 's/OPENSPEC_CHECK_FAIL //')"
+      check_fail "app.openspec" "${reason:-verify_app_openspec failed — see output above}"
     fi
   elif [[ -f "$YAML" ]] && grep -qE 'openspec_enabled:[[:space:]]*false' "$YAML" 2>/dev/null; then
     check_ok "app.openspec.skipped"
