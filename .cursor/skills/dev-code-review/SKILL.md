@@ -16,6 +16,20 @@ description: Review dev-agent engine PRs before merge — pre_merge_check, curso
 - **Product / app MRs** — use the **app repo** CR pipeline (`code-review.mdc`, `check_review_gate.sh` there)
 - **`review-bugbot` / `review-security`** — Cursor subagents on local diffs (optional locally)
 
+## Step 0 — Branch (mandatory)
+
+**Never push to `main`.** GitHub ruleset blocks direct pushes; local hook: `git config core.hooksPath .githooks`.
+
+```bash
+git fetch origin
+git switch -c fix/<topic> origin/main
+# … changes …
+git push -u origin HEAD
+gh pr create --base main --title "…" --body "…"
+```
+
+Wait for **`test`** + **`review`** green → auto-merge (or merge manually if auto-merge skipped).
+
 ## Step 1 — Automated gates (blocking)
 
 From engine root:

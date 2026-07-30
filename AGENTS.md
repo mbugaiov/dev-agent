@@ -65,6 +65,18 @@ immediately.
 - **Per-project isolation** — only `projects/<slug>/.secrets/*` for that slug.
 - **Engine purity** — no epic keys, product names, or app paths in engine files; config in `project.yaml`. Review: **`ENGINE-REVIEW.md`** + `scripts/portability_check.sh`.
 - **Dual-repo delivery** — engine + app pointer/rule changes merge **both** repos same session (GitHub + Bitbucket); see `dev-engine.mdc`.
+- **No direct push to `main`** — engine changes **only** via feature branch + PR (`test` + `review` green → auto-merge). GitHub ruleset enforces this; local hook: `git config core.hooksPath .githooks`.
+
+## Engine delivery (GitHub)
+
+```
+git fetch origin && git switch -c <type>/<slug> origin/main
+# … edit, bash tests/run_tests.sh, bash scripts/pre_merge_check.sh
+git push -u origin HEAD
+gh pr create …   # CI + Code Review → auto-merge when green
+```
+
+**Forbidden:** `git push origin main`, `git push --force`, merging locally then pushing main.
 
 ## Output layout
 
@@ -78,4 +90,5 @@ dev-agent/                    ← ENGINE (this repo)
 
 After changing engine `lib/`, `scripts/`, rules, or skills: `bash tests/run_tests.sh`.
 Before engine PR: `bash scripts/pre_merge_check.sh` (includes portability + CR fixtures).
+**Never push to `main`** — feature branch + PR only (GitHub ruleset + `.githooks/pre-push`).
 Product MR code review runs in the **app repo** — not in dev-agent.

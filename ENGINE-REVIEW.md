@@ -19,6 +19,9 @@ Automated gates mirror qa-agent: `portability_check.sh` + `projects_isolation_ch
 
 **Rule:** Run `bash scripts/portability_check.sh` — exit 0 required before merge.
 
+**Rule:** **No direct push to `main`.** GitHub ruleset requires PR + green `test` and `review`.
+Verify: `bash scripts/verify_branch_rules.sh`. Local hook: `git config core.hooksPath .githooks`.
+
 ---
 
 ## Automated gates (required)
