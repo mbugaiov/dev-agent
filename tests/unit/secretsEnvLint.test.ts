@@ -13,7 +13,7 @@ import {
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "../..");
 
-/** Reproduces the RQ-1951 root cause: `&` in an unquoted webhook URL. */
+/** Reproduces the silent-notify root cause: `&` in an unquoted webhook URL. */
 const WEBHOOK_UNQUOTED =
   "DEV_FACTORY_TEAMS_WEBHOOK_URL=https://prod-1.westus.logic.azure.com/workflows/abc/triggers/manual/paths/invoke?api-version=2016-06-01&sp=%2Ftriggers%2Fmanual%2Frun&sig=SECRETSIG";
 

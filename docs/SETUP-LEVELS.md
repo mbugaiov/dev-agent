@@ -44,7 +44,7 @@ bash scripts/verify_app_openspec.sh <slug>
 | Project scaffold + DoD templates | ✅ |
 | Resolve app path, OpenSpec readiness check | ✅ |
 | Agent skills (`dev-phases`, `dev-mr-pipeline`) as manual checklist | ✅ |
-| Local app gate (`npm run gate:mr` or your `gate_command`) | ✅ (in app repo) |
+| Local app gate (`project.yaml` → `app.gate_command`) | ✅ (in app repo) |
 
 ### What does **not** work
 
