@@ -72,6 +72,14 @@ Tick stdout (`BACKLOG_WAKE_EXECUTE` / `DEV_FACTORY_IDLE`) is unchanged by notifi
 Once a webhook **is** configured, a failure can never pass silently. Use
 `shouldReportTickNotifyOutcome()` to make that distinction.
 
+Verify delivery directly instead of waiting for a tick:
+
+```bash
+bash scripts/test_tick_notify.sh <slug>          # sends a wake card
+bash scripts/test_tick_notify.sh <slug> --idle   # sends an idle card
+# TICK_NOTIFY_SMOKE_OK {"slug":"…","status":202} on success
+```
+
 **Quote the webhook URL.** Power Automate URLs contain `&`. An unquoted value in
 `.secrets/jira.env` is split by the shell, so the variable arrives **empty** and
 notifications vanish with no error:
