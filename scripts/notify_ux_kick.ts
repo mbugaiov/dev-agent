@@ -7,14 +7,17 @@
  *     --ticket ABC-123 --branch feat/x --surfaces 'components/A.tsx' [--mode hephaestus-kick|charter]
  *
  * Resolves Athena root: UX_AGENT_ROOT → project.yaml ux_kick.ux_agent_path → ../ux-agent
- * Loads webhook from ux-agent projects/<slug>/.secrets/jira.env (or falls back to
- * Hephaestus projects/<slug>/.secrets via DEV_FACTORY / AGENT shared vars).
  */
-import { existsSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { spawnSync } from "node:child_process";
-import { dirname, isAbsolute, join, resolve } from "node:path";
+import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { loadProjectConfig } from "../lib/loadProject.ts";
+import {
+  injectWebhookEnvFromSecretsText,
+  normalizeUxPassMode,
+  resolveUxAgentRoot,
+} from "../lib/notifyUxKick.ts";
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..");
 
@@ -38,24 +41,6 @@ function parseArgs(argv: string[]) {
     else if (a === "--mode" && argv[i + 1]) mode = argv[++i];
   }
   return { slug, ticket, branch, surfaces, mode };
-}
-
-function resolveUxAgentRoot(
-  engineRoot: string,
-  config: ReturnType<typeof loadProjectConfig>,
-): string {
-  const fromEnv = process.env.UX_AGENT_ROOT?.trim();
-  if (fromEnv) return resolve(fromEnv);
-
-  const uxKick = (
-    config as { ux_kick?: { ux_agent_path?: string } }
-  ).ux_kick;
-  const fromYaml = uxKick?.ux_agent_path?.trim();
-  if (fromYaml) {
-    return isAbsolute(fromYaml) ? fromYaml : resolve(engineRoot, fromYaml);
-  }
-
-  return resolve(engineRoot, "../ux-agent");
 }
 
 const { slug, ticket, branch, surfaces, mode } = parseArgs(process.argv);
@@ -94,32 +79,17 @@ const args = [
   "--surfaces",
   surfaces,
   "--mode",
-  mode === "charter" ? "charter" : "hephaestus-kick",
+  normalizeUxPassMode(mode),
 ];
 
-// Prefer Athena project secrets; also inject Hephaestus secrets as fallbacks for shared webhook.
 const env = { ...process.env };
-const hephaestusSecrets = join(ROOT, "projects", slug, ".secrets", "jira.env");
-if (existsSync(hephaestusSecrets) && !env.DEV_FACTORY_TEAMS_WEBHOOK_URL) {
-  // Soft-load via python notify script's own load of Athena .secrets; for shared
-  // channel, copy DEV_FACTORY into env if present in Hephaestus secrets.
+for (const secretsPath of [
+  join(ROOT, "projects", slug, ".secrets", "jira.env"),
+  join(uxRoot, "projects", slug, ".secrets", "jira.env"),
+]) {
+  if (!existsSync(secretsPath)) continue;
   try {
-    const { readFileSync } = await import("node:fs");
-    const text = readFileSync(hephaestusSecrets, "utf8");
-    for (const line of text.split("\n")) {
-      const m = line.match(
-        /^(DEV_FACTORY_TEAMS_WEBHOOK_URL|AGENT_TEAMS_WEBHOOK_URL|UX_FACTORY_TEAMS_WEBHOOK_URL)=(.*)$/,
-      );
-      if (!m) continue;
-      let val = m[2].trim();
-      if (
-        (val.startsWith('"') && val.endsWith('"')) ||
-        (val.startsWith("'") && val.endsWith("'"))
-      ) {
-        val = val.slice(1, -1);
-      }
-      if (val && !env[m[1]]) env[m[1]] = val;
-    }
+    injectWebhookEnvFromSecretsText(env, readFileSync(secretsPath, "utf8"));
   } catch {
     /* optional */
   }
@@ -133,7 +103,15 @@ const result = spawnSync("python3", args, {
 
 if (result.stdout?.trim()) process.stdout.write(result.stdout);
 if (result.stderr?.trim()) process.stderr.write(result.stderr);
+if (result.error) {
+  console.error(
+    `UX_PASS_NOTIFY_FAILED ${JSON.stringify({
+      slug,
+      reason: "exception",
+      detail: String(result.error),
+    })}`,
+  );
+  process.exit(1);
+}
 
-const code = result.status ?? 1;
-// not_configured exits 0 from non-smoke path — treat as success for kick flow
-process.exit(code === null ? 1 : code);
+process.exit(result.status === null ? 1 : result.status);
