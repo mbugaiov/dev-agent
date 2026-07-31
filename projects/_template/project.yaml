@@ -75,3 +75,8 @@ jira:
 
 report:
   app_name: "<App>"
+
+# Optional — Athena UX kick (Hephaestus → same feature branch)
+# ux_kick:
+#   ui_path_globs: []                 # override default UI globs
+#   ux_agent_path: ../ux-agent        # Athena checkout; or set UX_AGENT_ROOT
