@@ -139,6 +139,53 @@ function fallbackTick() {
   console.log(formatJiraUnavailableTick(config));
 }
 
+function formatNextWakeFromEnv(): string | undefined {
+  const raw = process.env.DEV_FACTORY_NEXT_WAKE_EPOCH?.trim();
+  if (!raw) return undefined;
+  const epoch = Number(raw);
+  if (!Number.isFinite(epoch) || epoch <= 0) return undefined;
+  return new Date(epoch * 1000).toISOString().replace("T", " ").replace(/\.\d{3}Z$/, " UTC");
+}
+
+async function notifyTick(
+  input:
+    | {
+        kind: "wake";
+        payload: ReturnType<typeof buildBacklogWakePayload>;
+      }
+    | { kind: "idle" },
+) {
+  const { postDevFactoryTickNotify } = await import(
+    "../lib/devFactoryTickNotify.ts"
+  );
+  const nextWakeUtc = formatNextWakeFromEnv();
+  if (input.kind === "wake") {
+    const pick = input.payload.issues.find((i) => i.key === input.payload.oldest);
+    await postDevFactoryTickNotify({
+      slug: config.slug,
+      kind: "wake",
+      count: input.payload.count,
+      pickKey: input.payload.oldest,
+      pickSummary: pick?.summary ?? input.payload.oldest,
+      issues: input.payload.issues.map((i) => ({
+        key: i.key,
+        summary: i.summary,
+      })),
+      nextWakeUtc,
+    }).catch((err) => {
+      console.error("dev_factory_tick: Teams notify failed", err);
+    });
+    return;
+  }
+  await postDevFactoryTickNotify({
+    slug: config.slug,
+    kind: "idle",
+    nextWakeUtc,
+  }).catch((err) => {
+    console.error("dev_factory_tick: Teams notify failed", err);
+  });
+}
+
 async function main() {
   try {
     const issues = await fetchDevFactoryIssues();
@@ -163,10 +210,12 @@ async function main() {
       console.log(
         formatBacklogWakeExecuteLine(payload, config.git.branch_prefixes),
       );
+      await notifyTick({ kind: "wake", payload });
       process.exit(0);
     }
     await clearPendingExecute();
     console.log(formatDevFactoryIdleLine(config, 0));
+    await notifyTick({ kind: "idle" });
   } catch (err) {
     console.error("dev_factory_tick:", err);
     fallbackTick();
