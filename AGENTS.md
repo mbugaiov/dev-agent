@@ -21,6 +21,7 @@ factory; one tick = one backlog drain attempt.
 |---|---|
 | Backlog drain, loop arm, tick policy | `dev-factory-loop` |
 | Per-ticket flow (branch → OpenSpec → gate → MR → merge → handoff) | `dev-mr-pipeline` |
+| Wake Athena UX subagent on the feature branch | `dev-ux-subagent` |
 | Jira transitions, handoff comments, QA RETURN gates | `dev-jira` |
 | Phase checklist (spec-first, test gate, archive) | `dev-phases` |
 | **Engine PR code review** (before merge on dev-agent repo) | `dev-code-review` |
@@ -42,7 +43,8 @@ factory; one tick = one backlog drain attempt.
 1. Arm        → bash scripts/arm_dev_loop.sh <slug> (notify_on_output on watch patterns)
 2. Tick       → dev_factory_tick → **BACKLOG_WAKE_EXECUTE only** (execution-only) or DEV_FACTORY_IDLE
 3. Pick       → oldest impl-dev ticket (respect QA follow-on routing)
-4. Pickup     → pickup_jira_ticket.sh (assign, estimate, scope) → branch; OpenSpec; code; app gate command
+4. Pickup     → pickup_jira_ticket.sh → branch; OpenSpec; code;
+                **UX subagent if should_kick_ux** (same branch); app gate command
 5. Ship       → mr:push → wait_pr_pipeline → merge
 6. STG        → wait_main_deploy + check_stg_build (buildId gate)
 7. Handoff    → preflight_jira_handoff (block on QA RETURN) → post_jira_handoff → Validate/Testing

@@ -48,9 +48,10 @@ Follow skill **`dev-mr-pipeline`** (project overrides in `projects/<slug>/` if p
 0. In Progress + scope comment
 1. Branch off `app.git.default_branch` in **app repo** (`project.yaml` → `app.repo_path`)
 2. OpenSpec spec-first (when enabled)
-3. `app.gate_command` → `app.mr_push_command`
-4. Merge → STG buildId → `preflight_jira_handoff.ts` → `post_jira_handoff.ts` → Validate/Testing
-5. Re-run JQL → next ticket
+3. Implement → **UX subagent kick when required** (skill **`dev-ux-subagent`** / `should_kick_ux.ts`) on the **same branch**
+4. `app.gate_command` → `app.mr_push_command`
+5. Merge → STG buildId → `preflight_jira_handoff.ts` → `post_jira_handoff.ts` → Validate/Testing
+6. Re-run JQL → next ticket
 
 ## QA RETURN
 
@@ -66,3 +67,4 @@ See `lib/jiraCommentGate.ts`.
 ## Out of scope
 
 - QA retest, Done transitions, STG sign-off — **qa-agent** only
+- Standing Athena daily loop — UX is on-demand via Hephaestus kick or human charter
