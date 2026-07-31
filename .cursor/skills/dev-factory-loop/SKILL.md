@@ -26,6 +26,7 @@ Human exceptions: `projects/<slug>/docs/HUMAN-EXCEPTIONS.md`.
 3. **Watch patterns:** `lib/devFactoryLoopWiring.ts` — **`notify_on_output`** required on `^BACKLOG_WAKE_EXECUTE` only (no inform-only wake)
 4. **Stop hook:** `.cursor/hooks.json` — auto-followup if pending execute unconsumed
 5. **Policy guard:** `scripts/validate_execution_only_policy.ts` — CI blocks inform-only `BACKLOG_WAKE` regressions
+6. **Notify smoke:** `bash scripts/test_tick_notify.sh <slug>` — prove Teams delivery after editing `.secrets/jira.env`
 
 A plain background loop ticks **silently** without watchers.
 
