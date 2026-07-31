@@ -27,10 +27,37 @@ The engine never hardcodes epic keys, git hosts, or app paths.
 `.cursor/hooks.json` registers stop + sessionStart hooks that enforce the execute
 contract when `.cursor/dev-factory-pending-execute.json` is pending.
 
+## Shell watcher policy (no monitor mode)
+
+`notify_on_output` on loop patterns may surface agent turns titled **"Briefly inform the user…"**.
+**Always execute** `BACKLOG_WAKE_EXECUTE` in that turn — see `SHELL_WATCHER_AGENT_MUST_EXECUTE`
+in `lib/devFactoryExecution.ts`. Status-only summaries are forbidden.
+
 ## Tests
 
 ```bash
 bash tests/run_tests.sh
 bash scripts/portability_check.sh      # after git init
 bash scripts/projects_isolation_check.sh
+npm test
+```
+
+## Teams tick notifications (optional)
+
+When `DEV_FACTORY_TEAMS_WEBHOOK_URL` is set in `projects/<slug>/.secrets/jira.env`,
+each `dev_factory_tick.sh` run POSTs an Adaptive Card summary to Power Automate:
+
+- **Backlog wake** — pick ticket key + summary, backlog count, next loop wake (UTC)
+- **Idle** — explicit no-work message + next wake time
+
+Unset URL skips the POST; tick stdout (`BACKLOG_WAKE` / `DEV_FACTORY_IDLE`) is unchanged.
+
+The loop passes the next wake epoch via `DEV_FACTORY_NEXT_WAKE_EPOCH` before each tick
+(see `scripts/dev-loop.sh`). Standalone tick runs omit next-wake when env is unset.
+
+Example (LRM project secrets — never commit the real URL):
+
+```bash
+# projects/lrm/.secrets/jira.env
+DEV_FACTORY_TEAMS_WEBHOOK_URL=https://....powerplatform.com/.../invoke?api-version=1&sp=...&sig=...
 ```
