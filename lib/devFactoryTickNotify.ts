@@ -36,17 +36,17 @@ export function buildTickNotifySummary(input: TickNotifyInput): string {
     input.count > 1
       ? ` (+${input.count - 1} more in backlog)`
       : "";
-  return `[${input.slug}] Dev factory wake — pick ${input.pickKey}: ${input.pickSummary}${others}. Next tick: ${next}`;
+  return `[${input.slug}] Dev factory execute — pick ${input.pickKey}: ${input.pickSummary}${others}. Next tick: ${next}`;
 }
 
 export function buildTickNotifyWebhookBody(input: TickNotifyInput): object {
   const summary = buildTickNotifySummary(input);
   const title =
-    input.kind === "idle" ? "Dev factory idle" : "Dev factory backlog wake";
+    input.kind === "idle" ? "Dev factory idle" : "Dev factory execute";
 
   const facts: { title: string; value: string }[] = [
     { title: "Project", value: input.slug },
-    { title: "Tick", value: input.kind === "idle" ? "idle" : "backlog wake" },
+    { title: "Tick", value: input.kind === "idle" ? "idle" : "backlog execute" },
     { title: "Next tick (UTC)", value: formatNextWake(input.nextWakeUtc) },
   ];
 
@@ -99,19 +99,141 @@ export function getDevFactoryTeamsWebhookUrl(): string | undefined {
   return url || undefined;
 }
 
+export type WebhookUrlProblem =
+  | "missing"
+  | "not_absolute"
+  | "not_https"
+  | "missing_signature";
+
+export type WebhookUrlCheck =
+  | { ok: true; url: string }
+  | { ok: false; problem: WebhookUrlProblem; detail: string };
+
+/**
+ * Validate webhook URL shape. Catches both an unset variable and a value
+ * truncated by unquoted shell metacharacters (which drops the `sig` query param).
+ */
+export function checkWebhookUrl(raw: string | undefined): WebhookUrlCheck {
+  const url = raw?.trim();
+  if (!url) {
+    return {
+      ok: false,
+      problem: "missing",
+      detail:
+        "DEV_FACTORY_TEAMS_WEBHOOK_URL is unset or empty — check quoting in projects/<slug>/.secrets/jira.env",
+    };
+  }
+
+  let parsed: URL;
+  try {
+    parsed = new URL(url);
+  } catch {
+    return {
+      ok: false,
+      problem: "not_absolute",
+      detail: `not a valid absolute URL (length ${url.length}) — likely truncated`,
+    };
+  }
+
+  if (parsed.protocol !== "https:") {
+    return {
+      ok: false,
+      problem: "not_https",
+      detail: `expected https, got ${parsed.protocol}`,
+    };
+  }
+
+  // Power Automate / Logic Apps URLs are unusable without the signature param.
+  const needsSignature = /logic\.azure\.com$|azure\.com$/.test(parsed.hostname);
+  if (needsSignature && !parsed.searchParams.get("sig")) {
+    return {
+      ok: false,
+      problem: "missing_signature",
+      detail:
+        "missing sig query parameter — value was truncated (quote the URL in .secrets/jira.env)",
+    };
+  }
+
+  return { ok: true, url };
+}
+
+export type TickNotifyOutcome =
+  | { delivered: true; status: number }
+  | {
+      delivered: false;
+      reason: "invalid_webhook_url" | "http_error" | "exception";
+      detail: string;
+      status?: number;
+    };
+
+export const TICK_NOTIFY_FAILED_SENTINEL = "TICK_NOTIFY_FAILED" as const;
+
+/** Loud, structured failure line — notify problems must never be swallowed. */
+export function formatTickNotifyFailure(
+  slug: string,
+  kind: TickNotifyInput["kind"],
+  outcome: TickNotifyOutcome,
+): string {
+  if (outcome.delivered) {
+    throw new Error("formatTickNotifyFailure called on a delivered outcome");
+  }
+  return `${TICK_NOTIFY_FAILED_SENTINEL} ${JSON.stringify({
+    slug,
+    tick: kind,
+    reason: outcome.reason,
+    detail: outcome.detail,
+    ...(outcome.status !== undefined ? { status: outcome.status } : {}),
+    remediation:
+      "Teams tick notification was NOT delivered. Verify DEV_FACTORY_TEAMS_WEBHOOK_URL is quoted in projects/<slug>/.secrets/jira.env, then run npx tsx scripts/lint_secrets_env.ts <file>.",
+  })}`;
+}
+
 export async function postDevFactoryTickNotify(
   input: TickNotifyInput,
   opts: { fetchImpl?: typeof fetch; webhookUrl?: string } = {},
-): Promise<boolean> {
-  const url = opts.webhookUrl ?? getDevFactoryTeamsWebhookUrl();
-  if (!url) return false;
+): Promise<TickNotifyOutcome> {
+  const check = checkWebhookUrl(opts.webhookUrl ?? getDevFactoryTeamsWebhookUrl());
+  if (!check.ok) {
+    return {
+      delivered: false,
+      reason: "invalid_webhook_url",
+      detail: `${check.problem}: ${check.detail}`,
+    };
+  }
 
   const fetchImpl = opts.fetchImpl ?? fetch;
   const body = buildTickNotifyWebhookBody(input);
-  const res = await fetchImpl(url, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(body),
-  });
-  return res.ok;
+
+  let res: Response;
+  try {
+    res = await fetchImpl(check.url, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+    });
+  } catch (err) {
+    return {
+      delivered: false,
+      reason: "exception",
+      detail: err instanceof Error ? err.message : String(err),
+    };
+  }
+
+  if (!res.ok) {
+    let detail = `webhook responded ${res.status}`;
+    try {
+      const text = (await res.text()).trim();
+      if (text) detail += `: ${text.slice(0, 300)}`;
+    } catch {
+      /* body already consumed or unreadable */
+    }
+    return {
+      delivered: false,
+      reason: "http_error",
+      detail,
+      status: res.status,
+    };
+  }
+
+  return { delivered: true, status: res.status };
 }

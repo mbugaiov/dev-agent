@@ -1,11 +1,10 @@
 /**
- * Dev factory tick — query Jira and emit BACKLOG_WAKE or DEV_FACTORY_IDLE.
+ * Dev factory tick — query Jira and emit BACKLOG_WAKE_EXECUTE or DEV_FACTORY_IDLE.
  * Usage: npx tsx scripts/dev_factory_tick.ts <slug>
  */
 import {
   buildBacklogWakePayload,
   devFactoryShouldWake,
-  formatBacklogWakeLine,
   formatDevFactoryIdleLine,
   formatJiraUnavailableTick,
   type DevFactoryIssue,
@@ -20,6 +19,7 @@ import {
   formatBacklogWakeExecuteLine,
   PENDING_EXECUTE_PATH,
 } from "../lib/devFactoryExecution.ts";
+import { assertValidTickLine } from "../lib/devFactoryExecutionOnly.ts";
 import { devFactoryJql } from "../lib/devFactoryLoop.ts";
 import { loadProjectConfig } from "../lib/loadProject.ts";
 import { mkdir, readFile, writeFile, unlink } from "node:fs/promises";
@@ -135,8 +135,13 @@ async function fetchIssueComments(key: string): Promise<JiraCommentLike[]> {
   }));
 }
 
+function emitTickLine(line: string) {
+  assertValidTickLine(line);
+  console.log(line);
+}
+
 function fallbackTick() {
-  console.log(formatJiraUnavailableTick(config));
+  emitTickLine(formatJiraUnavailableTick(config));
 }
 
 function formatNextWakeFromEnv(): string | undefined {
@@ -155,35 +160,43 @@ async function notifyTick(
       }
     | { kind: "idle" },
 ) {
-  const { postDevFactoryTickNotify } = await import(
+  const { formatTickNotifyFailure, postDevFactoryTickNotify } = await import(
     "../lib/devFactoryTickNotify.ts"
   );
   const nextWakeUtc = formatNextWakeFromEnv();
-  if (input.kind === "wake") {
-    const pick = input.payload.issues.find((i) => i.key === input.payload.oldest);
-    await postDevFactoryTickNotify({
-      slug: config.slug,
-      kind: "wake",
-      count: input.payload.count,
-      pickKey: input.payload.oldest,
-      pickSummary: pick?.summary ?? input.payload.oldest,
-      issues: input.payload.issues.map((i) => ({
-        key: i.key,
-        summary: i.summary,
-      })),
-      nextWakeUtc,
-    }).catch((err) => {
-      console.error("dev_factory_tick: Teams notify failed", err);
-    });
-    return;
+
+  const notifyInput =
+    input.kind === "wake"
+      ? {
+          slug: config.slug,
+          kind: "wake" as const,
+          count: input.payload.count,
+          pickKey: input.payload.oldest,
+          pickSummary:
+            input.payload.issues.find((i) => i.key === input.payload.oldest)
+              ?.summary ?? input.payload.oldest,
+          issues: input.payload.issues.map((i) => ({
+            key: i.key,
+            summary: i.summary,
+          })),
+          nextWakeUtc,
+        }
+      : { slug: config.slug, kind: "idle" as const, nextWakeUtc };
+
+  let outcome: Awaited<ReturnType<typeof postDevFactoryTickNotify>>;
+  try {
+    outcome = await postDevFactoryTickNotify(notifyInput);
+  } catch (err) {
+    outcome = {
+      delivered: false,
+      reason: "exception",
+      detail: err instanceof Error ? err.message : String(err),
+    };
   }
-  await postDevFactoryTickNotify({
-    slug: config.slug,
-    kind: "idle",
-    nextWakeUtc,
-  }).catch((err) => {
-    console.error("dev_factory_tick: Teams notify failed", err);
-  });
+
+  if (!outcome.delivered) {
+    console.error(formatTickNotifyFailure(config.slug, notifyInput.kind, outcome));
+  }
 }
 
 async function main() {
@@ -206,15 +219,14 @@ async function main() {
         blockedByFollowOn: plan.blockedByFollowOn,
       });
       await writePendingExecute(payload);
-      console.log(formatBacklogWakeLine(payload));
-      console.log(
+      emitTickLine(
         formatBacklogWakeExecuteLine(payload, config.git.branch_prefixes),
       );
       await notifyTick({ kind: "wake", payload });
       process.exit(0);
     }
     await clearPendingExecute();
-    console.log(formatDevFactoryIdleLine(config, 0));
+    emitTickLine(formatDevFactoryIdleLine(config, 0));
     await notifyTick({ kind: "idle" });
   } catch (err) {
     console.error("dev_factory_tick:", err);

@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Query dev factory Jira backlog and emit BACKLOG_WAKE / DEV_FACTORY_IDLE.
+# Query dev factory Jira backlog and emit BACKLOG_WAKE_EXECUTE / DEV_FACTORY_IDLE.
 # Usage: bash scripts/dev_factory_tick.sh <slug>
 set -euo pipefail
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"

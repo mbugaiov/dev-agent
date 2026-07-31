@@ -4,6 +4,9 @@
 Execute this document **top to bottom**. Humans only intervene for **secret values** (API tokens)
 when files under `.secrets/` are missing or empty.
 
+> **Setup tiers:** For a short “minimal vs integrations vs full factory” guide with maturity levels
+> (L3 / L4 / L5′) and support gaps, see **`docs/SETUP-LEVELS.md`**.
+
 > **Spine after setup:** `AGENTS.md` (runtime loop) · skills under `.cursor/skills/` · per-ticket
 > flow in `dev-mr-pipeline`. Presentation name: *Hephaestus · Dev*; repo folder stays `dev-agent/`.
 
@@ -369,9 +372,10 @@ bash scripts/dev_factory_tick.sh <SLUG>
 
 | Output | Agent action |
 |--------|--------------|
-| `BACKLOG_WAKE_EXECUTE` | Start oldest ticket **now** — skill **`dev-phases`** + **`dev-mr-pipeline`** |
-| `BACKLOG_WAKE` | Drain — implement / handoff / next ticket same session |
+| `BACKLOG_WAKE_EXECUTE` | Start oldest ticket **now** — skill **`dev-phases`** + **`dev-mr-pipeline`**; drain queue same session |
 | `DEV_FACTORY_IDLE` | No actionable tickets — may arm loop and wait |
+
+Every backlog tick emits **`BACKLOG_WAKE_EXECUTE` only** — there is no separate inform-only `BACKLOG_WAKE` line.
 
 ### 10c. Arm continuous loop
 
@@ -387,7 +391,7 @@ bash scripts/dev_factory_tick.sh <SLUG>
 DEV_LOOP_INTERVAL_SEC=300 bash scripts/arm_dev_loop.sh <SLUG>
 ```
 
-Watch patterns (regex): `buildCombinedWatchPattern(loop.purpose)` — includes `BACKLOG_WAKE_EXECUTE`, `BACKLOG_WAKE`, `DEV_FACTORY_IDLE`, `LOOP_ARMED`, `MR_PR_BACKUP_`, `AGENT_LOOP_TICK_<purpose>`.
+Watch patterns (regex): `buildCombinedWatchPattern(loop.purpose)` — includes `BACKLOG_WAKE_EXECUTE`, `DEV_FACTORY_IDLE`, `LOOP_ARMED`, `MR_PR_BACKUP_`, `AGENT_LOOP_TICK_<purpose>` (execution-only — no `BACKLOG_WAKE`).
 
 ### 10d. Per-ticket command reference
 

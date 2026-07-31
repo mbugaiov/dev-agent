@@ -183,10 +183,22 @@ if [[ "$SKIP_STG" -eq 0 && -f "$YAML" ]]; then
 fi
 
 if [[ "$SKIP_JIRA" -eq 0 && -f "$JIRA_ENV" ]]; then
+  if npx tsx "$ROOT/scripts/lint_secrets_env.ts" "$JIRA_ENV" "$BB_ENV" >/dev/null 2>&1; then
+    check_ok "secrets_env_quoting"
+  else
+    check_fail "secrets_env_quoting" \
+      "unquoted value with shell metacharacter — run: npx tsx scripts/lint_secrets_env.ts $JIRA_ENV"
+  fi
+
   # shellcheck disable=SC1091
   source "$ROOT/scripts/source_project_secrets.sh" "$SLUG" 2>/dev/null || true
   if tick_out="$(bash scripts/dev_factory_tick.sh "$SLUG" 2>&1)"; then
-    if echo "$tick_out" | grep -qE '^(BACKLOG_WAKE|BACKLOG_WAKE_EXECUTE|DEV_FACTORY_IDLE|JIRA_TICK_)'; then
+    if echo "$tick_out" | grep -qE '^BACKLOG_WAKE '; then
+      check_fail "dev_factory_tick" "inform-only BACKLOG_WAKE forbidden (execution-only policy)"
+    elif echo "$tick_out" | grep -q 'TICK_NOTIFY_FAILED'; then
+      check_fail "dev_factory_tick_notify" \
+        "Teams tick notify NOT delivered: $(echo "$tick_out" | grep -o 'TICK_NOTIFY_FAILED.\{0,160\}')"
+    elif echo "$tick_out" | grep -qE '^(BACKLOG_WAKE_EXECUTE|DEV_FACTORY_IDLE|AGENT_LOOP_TICK_)'; then
       check_ok "dev_factory_tick"
     else
       check_fail "dev_factory_tick" "unexpected output: ${tick_out:0:200}"

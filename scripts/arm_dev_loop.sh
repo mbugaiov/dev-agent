@@ -28,8 +28,8 @@ else
 fi
 
 npx tsx scripts/print_loop_armed.ts "$SLUG" "$INTERVAL"
-printf 'LOOP_ARM_AGENT_INSTRUCTIONS Launch in background (block_until_ms=0) with notify_on_output on %s. On BACKLOG_WAKE_EXECUTE: start oldest ticket NOW — no status-only replies. On BACKLOG_WAKE: drain backlog — do NOT end turn after one handoff.\n' \
-  "^(BACKLOG_WAKE_EXECUTE|BACKLOG_WAKE|DEV_FACTORY_IDLE|LOOP_ARMED|MR_SESSION_MERGED_STALE_BRANCH|MR_PR_BACKUP_|AGENT_LOOP_TICK_)"
+printf 'LOOP_ARM_AGENT_INSTRUCTIONS Launch in background (block_until_ms=0) with notify_on_output on %s. On BACKLOG_WAKE_EXECUTE: start oldest ticket NOW — no status-only replies; drain backlog until DEV_FACTORY_IDLE.\n' \
+  "^(BACKLOG_WAKE_EXECUTE|DEV_FACTORY_IDLE|LOOP_ARMED|MR_SESSION_MERGED_STALE_BRANCH|MR_PR_BACKUP_|AGENT_LOOP_TICK_)"
 
 export DEV_LOOP_INTERVAL_SEC="$INTERVAL"
 export DEV_PR_BACKUP_SEC="$PR_BACKUP"

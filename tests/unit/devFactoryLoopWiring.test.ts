@@ -29,10 +29,15 @@ import { FIXTURE_CONFIG } from "../fixtures/projectFixture.ts";
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "../..");
 
 describe("devFactoryLoopWiring", () => {
-  it("LW-01 defines BACKLOG_WAKE watcher", () => {
+  it("LW-01 defines BACKLOG_WAKE_EXECUTE watcher only (no inform-only wake)", () => {
+    expect(
+      DEV_FACTORY_LOOP_WATCH_PATTERNS.find(
+        (w) => w.pattern === "^BACKLOG_WAKE_EXECUTE",
+      ),
+    ).toBeDefined();
     expect(
       DEV_FACTORY_LOOP_WATCH_PATTERNS.find((w) => w.pattern === "^BACKLOG_WAKE"),
-    ).toBeDefined();
+    ).toBeUndefined();
   });
 
   it("LW-05 session continues after handoff when backlog remains", () => {
@@ -40,7 +45,7 @@ describe("devFactoryLoopWiring", () => {
     expect(sessionMayIdleUntilNextTick(0)).toBe(true);
   });
 
-  it("LW-07 BACKLOG_WAKE with tickets means drain", () => {
+  it("LW-07 backlog with tickets means drain on execute wake", () => {
     expect(mustDrainQueueOnWake(5)).toBe(true);
     expect(mustDrainQueueOnWake(0)).toBe(false);
   });
@@ -122,13 +127,13 @@ describe("devFactoryLoopWiring", () => {
     expect(child.stdout).toContain(LOOP_UNARMED_SENTINEL);
   });
 
-  it("LW-26 combined watch pattern includes BACKLOG_WAKE_EXECUTE", () => {
-    expect(buildCombinedWatchPattern("selftestdev")).toContain(
-      "BACKLOG_WAKE_EXECUTE",
-    );
+  it("LW-29 combined watch pattern excludes inform-only BACKLOG_WAKE", () => {
+    const pattern = buildCombinedWatchPattern("selftestdev");
+    expect(pattern).toContain("BACKLOG_WAKE_EXECUTE");
+    expect(pattern).not.toMatch(/BACKLOG_WAKE\|/);
   });
 
-  it("LW-27 execute wake line pairs with backlog wake payload", () => {
+  it("LW-27 execute wake line carries full backlog payload", () => {
     const payload = buildBacklogWakePayload(FIXTURE_CONFIG, [
       { key: "TST-105", summary: "edit", status: "To Do" },
     ]);
@@ -138,6 +143,9 @@ describe("devFactoryLoopWiring", () => {
     );
     expect(line).toMatch(/^BACKLOG_WAKE_EXECUTE /);
     expect(line).toContain("TST-105");
+    const json = JSON.parse(line.slice("BACKLOG_WAKE_EXECUTE ".length));
+    expect(json.issues).toHaveLength(1);
+    expect(json.jql).toBeTruthy();
   });
 
   it("LW-28 hooks.json registers drain stop hook", () => {

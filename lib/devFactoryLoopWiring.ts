@@ -9,7 +9,6 @@ export type LoopWatchPattern = {
 
 export const DEV_FACTORY_LOOP_WATCH_PATTERNS: readonly LoopWatchPattern[] = [
   { pattern: "^BACKLOG_WAKE_EXECUTE", reason: "dev factory execute wake" },
-  { pattern: "^BACKLOG_WAKE", reason: "dev factory backlog wake" },
   { pattern: "^DEV_FACTORY_IDLE", reason: "dev factory idle" },
   {
     pattern: "^MR_SESSION_MERGED_STALE_BRANCH",
@@ -34,7 +33,7 @@ export const LOOP_UNARMED_SENTINEL = "LOOP_UNARMED_REFUSED" as const;
 /** Build combined watch regex; optional loop purpose adds AGENT_LOOP_TICK_<purpose>. */
 export function buildCombinedWatchPattern(loopPurpose?: string): string {
   const base =
-    "^(BACKLOG_WAKE_EXECUTE|BACKLOG_WAKE|DEV_FACTORY_IDLE|LOOP_ARMED|LOOP_UNARMED_REFUSED|MR_SESSION_MERGED_STALE_BRANCH|MR_PR_BACKUP_)";
+    "^(BACKLOG_WAKE_EXECUTE|DEV_FACTORY_IDLE|LOOP_ARMED|LOOP_UNARMED_REFUSED|MR_SESSION_MERGED_STALE_BRANCH|MR_PR_BACKUP_)";
   if (loopPurpose) {
     return `${base.slice(0, -1)}|AGENT_LOOP_TICK_${loopPurpose})`;
   }
@@ -152,8 +151,8 @@ export function loopWiringDocsValid(...corpora: string[]): boolean {
   const text = corpora.join("\n").toLowerCase();
   const required: string[] = [
     "notify_on_output",
-    "backlog_wake",
     "backlog_wake_execute",
+    "execution-only",
     "status-only",
     LOOP_ARM_SCRIPT.toLowerCase(),
     "silently",

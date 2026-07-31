@@ -13,6 +13,9 @@ projects/*
 projects/*/factory/runs/*.jsonl
 review.md
 
+# Per-session dev factory execute latch (runtime state)
+.cursor/dev-factory-pending-execute.json
+
 **/node_modules/
 __pycache__/
 *.pyc

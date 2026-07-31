@@ -35,6 +35,7 @@ have ".cursor/rules/dev-engine.mdc"
 
 echo "== 4. Portability scripts =="
 have "SETUP.md"
+have "docs/SETUP-LEVELS.md"
 have "HOST_SETUP.md"
 have "scripts/setup_verify.sh"
 have "scripts/verify_app_openspec.sh"
@@ -54,12 +55,22 @@ have "scripts/wait_pr_pipeline.sh"
 have "scripts/wait_main_deploy.sh"
 have "scripts/resolve_app_root.ts"
 have "scripts/resolve_loop_interval.ts"
+have "scripts/lint_secrets_env.ts"
+have "scripts/validate_execution_only_policy.ts"
+have "lib/secretsEnvLint.ts"
+have "lib/devFactoryExecutionOnly.ts"
 bash scripts/portability_check.sh >/dev/null 2>&1 && ok "portability_check" || echo "  (portability: fix leaks before git init — see ENGINE-REVIEW.md)"
 bash scripts/projects_isolation_check.sh >/dev/null 2>&1 && ok "projects_isolation" || no "projects_isolation"
 
 echo "== 5. Unit tests =="
 if command -v npx >/dev/null 2>&1 && [[ -f package.json ]]; then
   npm install --silent 2>/dev/null || true
+  npx tsx scripts/validate_execution_only_policy.ts >/dev/null 2>&1 && ok "execution_only_policy" || no "execution_only_policy"
+  for env_file in projects/*/.secrets/jira.env projects/*/.secrets/bitbucket.env; do
+    [[ -f "$env_file" ]] || continue
+    npx tsx scripts/lint_secrets_env.ts "$env_file" >/dev/null 2>&1 \
+      && ok "secrets_quoting: $env_file" || no "secrets_quoting: $env_file"
+  done
   npx vitest run && ok "vitest all" || no "vitest"
 else
   echo "  (skip vitest — install node)"
