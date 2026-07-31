@@ -100,7 +100,8 @@ export function getDevFactoryTeamsWebhookUrl(): string | undefined {
 }
 
 export type WebhookUrlProblem =
-  | "missing"
+  /** Feature not enabled — the variable is absent. Not an error. */
+  | "not_configured"
   | "not_absolute"
   | "not_https"
   | "missing_signature";
@@ -110,17 +111,20 @@ export type WebhookUrlCheck =
   | { ok: false; problem: WebhookUrlProblem; detail: string };
 
 /**
- * Validate webhook URL shape. Catches both an unset variable and a value
- * truncated by unquoted shell metacharacters (which drops the `sig` query param).
+ * Validate webhook URL shape.
+ *
+ * Teams notification is optional, so an absent variable reports `not_configured`
+ * and is handled quietly. A value that is present but malformed — e.g. truncated
+ * by unquoted shell metacharacters, which drops the `sig` param — is a real error.
  */
 export function checkWebhookUrl(raw: string | undefined): WebhookUrlCheck {
   const url = raw?.trim();
   if (!url) {
     return {
       ok: false,
-      problem: "missing",
+      problem: "not_configured",
       detail:
-        "DEV_FACTORY_TEAMS_WEBHOOK_URL is unset or empty — check quoting in projects/<slug>/.secrets/jira.env",
+        "DEV_FACTORY_TEAMS_WEBHOOK_URL is not set — Teams tick notification disabled",
     };
   }
 
@@ -157,32 +161,53 @@ export function checkWebhookUrl(raw: string | undefined): WebhookUrlCheck {
   return { ok: true, url };
 }
 
+export type TickNotifyFailureReason =
+  | "invalid_webhook_url"
+  | "http_error"
+  | "exception";
+
 export type TickNotifyOutcome =
   | { delivered: true; status: number }
+  /** Optional feature disabled — intentionally silent. */
+  | { delivered: false; reason: "not_configured"; detail: string }
   | {
       delivered: false;
-      reason: "invalid_webhook_url" | "http_error" | "exception";
+      reason: TickNotifyFailureReason;
       detail: string;
       status?: number;
     };
 
 export const TICK_NOTIFY_FAILED_SENTINEL = "TICK_NOTIFY_FAILED" as const;
 
-/** Loud, structured failure line — notify problems must never be swallowed. */
+/**
+ * True when an outcome represents a genuine delivery failure that must be
+ * reported. An unconfigured webhook is not a failure.
+ */
+export function shouldReportTickNotifyOutcome(
+  outcome: TickNotifyOutcome,
+): boolean {
+  return !outcome.delivered && outcome.reason !== "not_configured";
+}
+
+/** Loud, structured failure line — real notify problems must never be swallowed. */
 export function formatTickNotifyFailure(
   slug: string,
   kind: TickNotifyInput["kind"],
   outcome: TickNotifyOutcome,
 ): string {
-  if (outcome.delivered) {
-    throw new Error("formatTickNotifyFailure called on a delivered outcome");
+  if (!shouldReportTickNotifyOutcome(outcome)) {
+    throw new Error(
+      "formatTickNotifyFailure called on a delivered or unconfigured outcome",
+    );
   }
   return `${TICK_NOTIFY_FAILED_SENTINEL} ${JSON.stringify({
     slug,
     tick: kind,
     reason: outcome.reason,
     detail: outcome.detail,
-    ...(outcome.status !== undefined ? { status: outcome.status } : {}),
+    ...("status" in outcome && outcome.status !== undefined
+      ? { status: outcome.status }
+      : {}),
     remediation:
       "Teams tick notification was NOT delivered. Verify DEV_FACTORY_TEAMS_WEBHOOK_URL is quoted in projects/<slug>/.secrets/jira.env, then run npx tsx scripts/lint_secrets_env.ts <file>.",
   })}`;
@@ -194,11 +219,13 @@ export async function postDevFactoryTickNotify(
 ): Promise<TickNotifyOutcome> {
   const check = checkWebhookUrl(opts.webhookUrl ?? getDevFactoryTeamsWebhookUrl());
   if (!check.ok) {
-    return {
-      delivered: false,
-      reason: "invalid_webhook_url",
-      detail: `${check.problem}: ${check.detail}`,
-    };
+    return check.problem === "not_configured"
+      ? { delivered: false, reason: "not_configured", detail: check.detail }
+      : {
+          delivered: false,
+          reason: "invalid_webhook_url",
+          detail: `${check.problem}: ${check.detail}`,
+        };
   }
 
   const fetchImpl = opts.fetchImpl ?? fetch;

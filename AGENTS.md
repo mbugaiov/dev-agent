@@ -66,7 +66,7 @@ immediately.
 - **Engine purity** — no epic keys, product names, or app paths in engine files; config in `project.yaml`. Review: **`ENGINE-REVIEW.md`** + `scripts/portability_check.sh`.
 - **Dual-repo delivery** — engine + app pointer/rule changes merge **both** repos same session (GitHub + Bitbucket); see `dev-engine.mdc`.
 - **Execution-only ticks** — backlog ticks emit `BACKLOG_WAKE_EXECUTE` only; enforced by `lib/devFactoryExecutionOnly.ts` + `scripts/validate_execution_only_policy.ts` (runs in `tests/run_tests.sh`).
-- **No silent notify** — tick notification failures print `TICK_NOTIFY_FAILED` (reason + status). Secrets values must be quoted; `scripts/lint_secrets_env.ts` enforces it (unquoted `&` truncates a webhook URL to empty).
+- **No silent notify** — once a tick webhook is configured, failures print `TICK_NOTIFY_FAILED` (reason + status); an unset webhook stays quiet (optional feature). Secrets values must be quoted; `scripts/lint_secrets_env.ts` enforces it (unquoted `&` truncates a webhook URL to empty).
 
 ## Engine delivery (GitHub)
 

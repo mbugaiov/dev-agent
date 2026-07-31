@@ -57,12 +57,20 @@ each `dev_factory_tick.sh` run POSTs an Adaptive Card summary to Power Automate:
 
 Tick stdout (`BACKLOG_WAKE_EXECUTE` / `DEV_FACTORY_IDLE`) is unchanged by notification state.
 
-### Delivery is never silent
+### Configured delivery is never silent
 
-`postDevFactoryTickNotify()` returns a structured `TickNotifyOutcome`, and any
-non-delivery prints a loud `TICK_NOTIFY_FAILED` line on **stderr** with reason,
-HTTP status, and remediation. Reasons: `invalid_webhook_url`, `http_error`,
-`exception`.
+`postDevFactoryTickNotify()` returns a structured `TickNotifyOutcome`:
+
+| Outcome | Reported? |
+|---------|-----------|
+| `delivered` | — |
+| `not_configured` (variable unset — Teams is optional) | No, quiet by design |
+| `invalid_webhook_url` (set but malformed / truncated) | **`TICK_NOTIFY_FAILED`** |
+| `http_error` (non-2xx, includes status + body) | **`TICK_NOTIFY_FAILED`** |
+| `exception` (network/DNS) | **`TICK_NOTIFY_FAILED`** |
+
+Once a webhook **is** configured, a failure can never pass silently. Use
+`shouldReportTickNotifyOutcome()` to make that distinction.
 
 **Quote the webhook URL.** Power Automate URLs contain `&`. An unquoted value in
 `.secrets/jira.env` is split by the shell, so the variable arrives **empty** and
@@ -82,8 +90,8 @@ Guards against this class:
 |-------|----------|
 | `scripts/source_project_secrets.sh` | Parses values without shell eval, so `&` can't truncate; warns `SECRETS_ENV_UNSAFE` |
 | `scripts/lint_secrets_env.ts` | Exit 1 on unquoted metacharacter values |
-| `checkWebhookUrl()` | Rejects empty / relative / non-https / missing `sig` (truncation) |
-| `setup_verify.sh` | Fails on bad quoting **and** on `TICK_NOTIFY_FAILED` |
+| `checkWebhookUrl()` | Rejects relative / non-https / missing `sig` (truncation); unset → `not_configured` |
+| `setup_verify.sh` | Fails on bad quoting **and** on `TICK_NOTIFY_FAILED` (not on an unset webhook) |
 | `tests/run_tests.sh` | Lints every `projects/*/.secrets/*.env` |
 
 The loop passes the next wake epoch via `DEV_FACTORY_NEXT_WAKE_EPOCH` before each tick

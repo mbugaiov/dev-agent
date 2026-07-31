@@ -5,6 +5,7 @@ import {
   checkWebhookUrl,
   formatTickNotifyFailure,
   postDevFactoryTickNotify,
+  shouldReportTickNotifyOutcome,
 } from "../../lib/devFactoryTickNotify.ts";
 
 describe("devFactoryTickNotify", () => {
@@ -59,7 +60,7 @@ describe("devFactoryTickNotify", () => {
     expect(factSet?.facts?.some((f) => f.title === "Backlog")).toBe(true);
   });
 
-  it("reports missing webhook URL instead of failing silently", async () => {
+  it("treats unset webhook as not_configured and stays quiet", async () => {
     const fetchMock = vi.fn();
     const outcome = await postDevFactoryTickNotify(
       { slug: "selftest", kind: "idle" },
@@ -68,8 +69,23 @@ describe("devFactoryTickNotify", () => {
     expect(outcome.delivered).toBe(false);
     expect(fetchMock).not.toHaveBeenCalled();
     if (!outcome.delivered) {
+      expect(outcome.reason).toBe("not_configured");
+    }
+    // Optional feature — must NOT be reported as a failure.
+    expect(shouldReportTickNotifyOutcome(outcome)).toBe(false);
+    expect(() => formatTickNotifyFailure("selftest", "idle", outcome)).toThrow();
+  });
+
+  it("reports a configured-but-malformed webhook as a real failure", async () => {
+    const fetchMock = vi.fn();
+    const outcome = await postDevFactoryTickNotify(
+      { slug: "selftest", kind: "idle" },
+      { fetchImpl: fetchMock, webhookUrl: "http://insecure.test/hook" },
+    );
+    expect(fetchMock).not.toHaveBeenCalled();
+    expect(shouldReportTickNotifyOutcome(outcome)).toBe(true);
+    if (!outcome.delivered) {
       expect(outcome.reason).toBe("invalid_webhook_url");
-      expect(outcome.detail).toContain("missing");
     }
   });
 
@@ -129,11 +145,20 @@ describe("devFactoryTickNotify", () => {
     expect(checkWebhookUrl(full)).toEqual({ ok: true, url: full });
   });
 
-  it("checkWebhookUrl rejects empty, relative, and non-https URLs", () => {
-    expect(checkWebhookUrl(undefined).ok).toBe(false);
-    expect(checkWebhookUrl("   ").ok).toBe(false);
-    expect(checkWebhookUrl("/relative/path").ok).toBe(false);
-    expect(checkWebhookUrl("http://example.test/hook").ok).toBe(false);
+  it("checkWebhookUrl separates not_configured from malformed", () => {
+    for (const empty of [undefined, "", "   "]) {
+      const res = checkWebhookUrl(empty);
+      expect(res.ok).toBe(false);
+      if (!res.ok) expect(res.problem).toBe("not_configured");
+    }
+
+    const relative = checkWebhookUrl("/relative/path");
+    expect(relative.ok).toBe(false);
+    if (!relative.ok) expect(relative.problem).toBe("not_absolute");
+
+    const insecure = checkWebhookUrl("http://example.test/hook");
+    expect(insecure.ok).toBe(false);
+    if (!insecure.ok) expect(insecure.problem).toBe("not_https");
   });
 
   it("formatTickNotifyFailure emits loud sentinel without leaking the URL", () => {

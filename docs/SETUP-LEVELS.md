@@ -11,7 +11,7 @@
 |--------|-------------------|-----------------------------------|------------|
 | **1 — Minimal** | Clone dev-agent, scaffold project, point at app, no secrets | **L3** (agent-assisted dev; you drive merge/handoff) | ✅ Yes |
 | **2 — Jira + Bitbucket** | Option 1 + `jira.env` + `bitbucket.env`, factory tick/MR scripts | **L4** (factory picks tickets, ships MRs; human STG/QA/Done) | ✅ Yes (Bitbucket apps) |
-| **3 — Full factory** | Option 2 + STG URL + deploy/buildId gate + **qa-agent** (+ optional Teams) | **L5′** (L5 on STG — unattended dev handoff + QA auto-accept on STG) | ✅ Yes (LRM path) |
+| **3 — Full factory** | Option 2 + STG URL + deploy/buildId gate + **qa-agent** (+ optional Teams) | **L5′** (L5 on STG — unattended dev handoff + QA auto-accept on STG) | ✅ Yes (reference path) |
 
 **Headline rule:** Level is about **routine delivery on the target env**. Without STG + qa-agent you cannot claim L5′ even if the dev loop runs.
 
@@ -108,7 +108,7 @@ bash scripts/dev_factory_tick.sh <slug>          # BACKLOG_WAKE_EXECUTE / DEV_FA
 
 ## Option 3 — Full integrations → **L5′**
 
-**Goal:** Unattended **dev factory on STG** (LRM production setup).
+**Goal:** Unattended **dev factory on STG** (reference production setup).
 
 ### Extra steps (after Option 2)
 
@@ -128,7 +128,7 @@ bash scripts/arm_dev_loop.sh <slug>            # dev factory loop
 | Integration | Required for L5′? | Tested |
 |-------------|-------------------|------------|
 | Jira | Yes | ✅ |
-| Bitbucket (app MR/CI) | Yes (LRM) | ✅ |
+| Bitbucket (app MR/CI) | Yes | ✅ |
 | STG + buildId gate | Yes | ✅ |
 | qa-agent (Validate/Testing → Done) | Yes | ✅ separate repo |
 | Teams tick notify | No | ✅ optional |

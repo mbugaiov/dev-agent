@@ -160,9 +160,11 @@ async function notifyTick(
       }
     | { kind: "idle" },
 ) {
-  const { formatTickNotifyFailure, postDevFactoryTickNotify } = await import(
-    "../lib/devFactoryTickNotify.ts"
-  );
+  const {
+    formatTickNotifyFailure,
+    postDevFactoryTickNotify,
+    shouldReportTickNotifyOutcome,
+  } = await import("../lib/devFactoryTickNotify.ts");
   const nextWakeUtc = formatNextWakeFromEnv();
 
   const notifyInput =
@@ -194,7 +196,8 @@ async function notifyTick(
     };
   }
 
-  if (!outcome.delivered) {
+  // Unconfigured webhook stays quiet; real delivery failures are always reported.
+  if (shouldReportTickNotifyOutcome(outcome)) {
     console.error(formatTickNotifyFailure(config.slug, notifyInput.kind, outcome));
   }
 }
