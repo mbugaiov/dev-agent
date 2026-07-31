@@ -24,7 +24,7 @@ POLL="${DEV_LOOP_POLL_SEC:-30}"
 PR_BACKUP="${DEV_PR_BACKUP_SEC:-300}"
 
 emit_tick() {
-  export DEV_FACTORY_NEXT_WAKE_EPOCH="$NEXT"
+  export DEV_FACTORY_NEXT_WAKE_EPOCH="$(( $(date +%s) + INTERVAL ))"
   bash "$ROOT/scripts/dev_factory_tick.sh" "$SLUG"
 }
 

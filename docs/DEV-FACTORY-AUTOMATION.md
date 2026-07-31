@@ -55,9 +55,9 @@ Unset URL skips the POST; tick stdout (`BACKLOG_WAKE` / `DEV_FACTORY_IDLE`) is u
 The loop passes the next wake epoch via `DEV_FACTORY_NEXT_WAKE_EPOCH` before each tick
 (see `scripts/dev-loop.sh`). Standalone tick runs omit next-wake when env is unset.
 
-Example (LRM project secrets — never commit the real URL):
+Example (project secrets — never commit the real URL):
 
 ```bash
-# projects/lrm/.secrets/jira.env
+# projects/<slug>/.secrets/jira.env
 DEV_FACTORY_TEAMS_WEBHOOK_URL=https://....powerplatform.com/.../invoke?api-version=1&sp=...&sig=...
 ```

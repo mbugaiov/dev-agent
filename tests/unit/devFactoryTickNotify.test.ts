@@ -8,18 +8,18 @@ import {
 describe("devFactoryTickNotify", () => {
   it("backlog wake summary lists pick ticket and next wake", () => {
     const text = buildTickNotifySummary({
-      slug: "lrm",
+      slug: "selftest",
       kind: "wake",
       count: 2,
-      pickKey: "RQ-1946",
+      pickKey: "TST-109",
       pickSummary: "Teams tick notify",
       issues: [
-        { key: "RQ-1946", summary: "Teams tick notify" },
-        { key: "RQ-1947", summary: "Follow-on" },
+        { key: "TST-109", summary: "Teams tick notify" },
+        { key: "TST-110", summary: "Follow-on" },
       ],
       nextWakeUtc: "2026-07-31 03:22:29 UTC",
     });
-    expect(text).toContain("RQ-1946");
+    expect(text).toContain("TST-109");
     expect(text).toContain("Teams tick notify");
     expect(text).toContain("+1 more");
     expect(text).toContain("2026-07-31 03:22:29 UTC");
@@ -27,7 +27,7 @@ describe("devFactoryTickNotify", () => {
 
   it("idle summary states no work and next wake", () => {
     const text = buildTickNotifySummary({
-      slug: "lrm",
+      slug: "selftest",
       kind: "idle",
       nextWakeUtc: "2026-07-31 03:37:29 UTC",
     });
@@ -38,18 +38,18 @@ describe("devFactoryTickNotify", () => {
 
   it("webhook body includes pick and backlog facts for wake", () => {
     const body = buildTickNotifyWebhookBody({
-      slug: "lrm",
+      slug: "selftest",
       kind: "wake",
       count: 1,
-      pickKey: "RQ-1",
+      pickKey: "TST-105",
       pickSummary: "Example",
-      issues: [{ key: "RQ-1", summary: "Example" }],
+      issues: [{ key: "TST-105", summary: "Example" }],
       nextWakeUtc: "2026-07-31 04:00:00 UTC",
     }) as {
       summary: string;
       attachments: { content: { body: { facts?: { title: string }[] }[] } }[];
     };
-    expect(body.summary).toContain("RQ-1");
+    expect(body.summary).toContain("TST-105");
     const factSet = body.attachments[0]?.content.body.find(
       (b) => b.facts !== undefined,
     );
@@ -60,7 +60,7 @@ describe("devFactoryTickNotify", () => {
   it("postDevFactoryTickNotify skips when webhook URL unset", async () => {
     const fetchMock = vi.fn();
     const posted = await postDevFactoryTickNotify(
-      { slug: "lrm", kind: "idle" },
+      { slug: "selftest", kind: "idle" },
       { fetchImpl: fetchMock, webhookUrl: undefined },
     );
     expect(posted).toBe(false);
@@ -71,7 +71,7 @@ describe("devFactoryTickNotify", () => {
     const fetchMock = vi.fn(async () => new Response("", { status: 202 }));
     const posted = await postDevFactoryTickNotify(
       {
-        slug: "lrm",
+        slug: "selftest",
         kind: "idle",
         nextWakeUtc: "2026-07-31 04:00:00 UTC",
       },
