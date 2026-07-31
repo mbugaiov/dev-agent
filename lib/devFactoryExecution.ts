@@ -1,9 +1,13 @@
-// Dev factory execution contract — BACKLOG_WAKE must start work, not status-only replies.
+// Dev factory execution contract — every backlog tick emits BACKLOG_WAKE_EXECUTE only.
 
 import type { GitConfig } from "./projectConfig.ts";
 import type { BacklogWakePayload } from "./devFactoryLoop.ts";
 
 export const BACKLOG_WAKE_EXECUTE_SENTINEL = "BACKLOG_WAKE_EXECUTE" as const;
+
+/** Shell watcher policy: no inform-only backlog wake — execute in the tick turn. */
+export const SHELL_WATCHER_AGENT_MUST_EXECUTE =
+  "Every backlog tick emits BACKLOG_WAKE_EXECUTE only (no BACKLOG_WAKE). Start oldest ticket in that turn — status-only replies forbidden.";
 
 export const PENDING_EXECUTE_PATH = ".cursor/dev-factory-pending-execute.json";
 
@@ -194,6 +198,11 @@ export function formatBacklogWakeExecuteLine(
   const execution = buildBacklogWakeExecution(payload, branchPrefixes);
   return `${BACKLOG_WAKE_EXECUTE_SENTINEL} ${JSON.stringify({
     ...execution,
+    issues: payload.issues,
+    jql: payload.jql,
+    ...(payload.blockedByFollowOn
+      ? { blockedByFollowOn: payload.blockedByFollowOn }
+      : {}),
     prompt: formatExecutePrompt(execution),
     wakePrompt: payload.prompt,
   })}`;

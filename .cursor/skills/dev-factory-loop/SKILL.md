@@ -1,6 +1,6 @@
 ---
 name: dev-factory-loop
-description: Dev factory loop — picks impl-dev tickets from Jira, runs OpenSpec → MR → merge → STG → Validate/Testing in the app repo. Separate from qa-agent qa-loop. Use on BACKLOG_WAKE / DEV_FACTORY_IDLE or when user says run loop / execute loop / arm loop / drain backlog.
+description: Dev factory loop — picks impl-dev tickets from Jira, runs OpenSpec → MR → merge → STG → Validate/Testing in the app repo. Separate from qa-agent qa-loop. Use on BACKLOG_WAKE_EXECUTE / DEV_FACTORY_IDLE or when user says run loop / execute loop / arm loop / drain backlog.
 ---
 
 # Dev factory loop (impl-dev only)
@@ -22,20 +22,23 @@ Human exceptions: `projects/<slug>/docs/HUMAN-EXCEPTIONS.md`.
 → arm + tick + drain in **same turn**. See `.cursor/rules/dev-factory-active.mdc`.
 
 1. **Arm:** `bash scripts/arm_dev_loop.sh <slug>`
-2. **Tick:** `scripts/dev-loop.sh` → `dev_factory_tick.sh <slug>` → `BACKLOG_WAKE_EXECUTE` or `DEV_FACTORY_IDLE`
-3. **Watch patterns:** `lib/devFactoryLoopWiring.ts` — **`notify_on_output`** required
+2. **Tick:** `scripts/dev-loop.sh` → `dev_factory_tick.sh <slug>` → **`BACKLOG_WAKE_EXECUTE`** (execution-only) or `DEV_FACTORY_IDLE`
+3. **Watch patterns:** `lib/devFactoryLoopWiring.ts` — **`notify_on_output`** required on `^BACKLOG_WAKE_EXECUTE` only (no inform-only wake)
 4. **Stop hook:** `.cursor/hooks.json` — auto-followup if pending execute unconsumed
+5. **Policy guard:** `scripts/validate_execution_only_policy.ts` — CI blocks inform-only `BACKLOG_WAKE` regressions
 
 A plain background loop ticks **silently** without watchers.
 
-## Tick policy
+## Tick policy (execution-only)
 
 | Signal | Action |
 |--------|--------|
-| `BACKLOG_WAKE_EXECUTE` | Start oldest ticket **now** — branch + OpenSpec + implement |
-| `BACKLOG_WAKE` | **Drain** — merge → handoff → next ticket same session. Do not stop after one ticket and wait for the next tick. |
+| `BACKLOG_WAKE_EXECUTE` | Start oldest ticket **now** — branch + OpenSpec + implement; drain queue same session |
 | `DEV_FACTORY_IDLE` | Wait for next tick |
-| Open MR | One MR at a time — `wait_pr_pipeline.sh` first |
+
+There is **no** separate `BACKLOG_WAKE` inform line — every backlog tick is an execute contract.
+Status-only replies on execute wakes are forbidden. Do not stop after one ticket — drain until `DEV_FACTORY_IDLE`.
+Policy: one open MR at a time; many tickets per tick when backlog exists.
 
 ## Per-ticket flow
 

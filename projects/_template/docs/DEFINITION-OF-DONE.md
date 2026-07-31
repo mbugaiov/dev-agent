@@ -14,6 +14,8 @@ Machine Definition of Done for the **dev agent** before moving tickets to **Vali
 
 One open MR at a time; many tickets per tick when backlog exists. After handoff,
 Next: re-run dev factory JQL and start the next ticket immediately (same session).
+Backlog ticks emit **BACKLOG_WAKE_EXECUTE** only (execution-only — no inform-only wake).
+Status-only agent replies on execute wakes are forbidden.
 
 ## Dev agent MUST NOT
 

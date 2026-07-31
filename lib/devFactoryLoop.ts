@@ -31,7 +31,7 @@ function buildBasePrompt(config: ProjectConfig): string {
     `FIRST: if the current branch has an OPEN PR, run wait_pr_pipeline — do NOT start another ticket until green or merged. ` +
     `When backlog exists, drain the full queue in this session (ticket after ticket: merge → STG handoff → next ticket) — do NOT stop after one ticket. ` +
     `When DEV_FACTORY_IDLE (zero tickets), stop and wait for the next loop tick only. ` +
-    `On BACKLOG_WAKE or BACKLOG_WAKE_EXECUTE: BEGIN implementation immediately (branch → OpenSpec → code). ` +
+    `On BACKLOG_WAKE_EXECUTE: BEGIN implementation immediately (branch → OpenSpec → code). ` +
     `FORBIDDEN: status-only replies. Follow .cursor/skills/dev-factory-loop/SKILL.md and dev-mr-pipeline skill. ` +
     `Hand off to ${config.dev_factory.handoff_status} with PR link + buildId. Never move feature tickets to Done. QA loop owns closure — do not run QA work in this tick.`
   );
@@ -87,10 +87,6 @@ export function buildBacklogWakePayload(
   return { ...draft, prompt };
 }
 
-export function formatBacklogWakeLine(payload: BacklogWakePayload): string {
-  return `BACKLOG_WAKE ${JSON.stringify(payload)}`;
-}
-
 export function formatDevFactoryIdleLine(
   config: ProjectConfig,
   count: number,
@@ -110,9 +106,15 @@ export function formatJiraUnavailableTick(
 ): string {
   const purpose = config.loop.purpose;
   const prompt =
-    `Jira unavailable — re-check dev factory backlog (${devFactoryJql(config)}). ` +
+    `Jira unavailable — re-run bash scripts/dev_factory_tick.sh ${config.slug} immediately in this turn. ` +
+    `If output is BACKLOG_WAKE_EXECUTE: start oldest ticket NOW. ` +
     buildBasePrompt(config);
-  return `AGENT_LOOP_TICK_${purpose} ${JSON.stringify({ prompt, fallback: true })}`;
+  return `AGENT_LOOP_TICK_${purpose} ${JSON.stringify({
+    executeNow: true,
+    prompt,
+    fallback: true,
+    forbidden: ["status-only", "briefly inform", "monitor only"],
+  })}`;
 }
 
 export function devFactoryExcludesQaOnly(jql: string): boolean {

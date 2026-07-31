@@ -1,5 +1,5 @@
 /**
- * Cursor stop hook — force drain when BACKLOG_WAKE ended without starting work.
+ * Cursor stop hook — force drain when BACKLOG_WAKE_EXECUTE ended without starting work.
  */
 import { execSync } from "node:child_process";
 import { existsSync, readFileSync } from "node:fs";

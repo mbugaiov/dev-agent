@@ -1,6 +1,10 @@
 // Loop wiring preflight — pure.
 
 import {
+  validateArmScriptContent,
+  validateLoopWatchPatterns,
+} from "./devFactoryExecutionOnly.ts";
+import {
   DEV_FACTORY_LOOP_WATCH_PATTERNS,
   LOOP_ARM_SCRIPT,
   LOOP_ARM_SENTINEL,
@@ -13,7 +17,9 @@ import {
 export const LOOP_WIRING_PREFLIGHT_PATHS = [
   "lib/devFactoryLoopWiring.ts",
   "lib/devFactoryLoop.ts",
+  "lib/devFactoryExecutionOnly.ts",
   "lib/devFactoryExecution.ts",
+  "scripts/validate_execution_only_policy.ts",
   "lib/projectConfig.ts",
   "scripts/arm_dev_loop.sh",
   "scripts/dev_factory_tick.ts",
@@ -37,13 +43,7 @@ export function touchesLoopWiringPreflight(paths: string[]): boolean {
 }
 
 export function loopWatchPatternsComplete(): boolean {
-  const patterns = DEV_FACTORY_LOOP_WATCH_PATTERNS.map((w) => w.pattern);
-  return (
-    patterns.includes("^BACKLOG_WAKE_EXECUTE") &&
-    patterns.includes("^BACKLOG_WAKE") &&
-    patterns.includes("^DEV_FACTORY_IDLE") &&
-    patterns.includes("^MR_SESSION_MERGED_STALE_BRANCH")
-  );
+  return validateLoopWatchPatterns(DEV_FACTORY_LOOP_WATCH_PATTERNS).ok;
 }
 
 export function armScriptMentionedInDocs(
@@ -99,6 +99,10 @@ export function runLoopWiringPreflight(input: {
   }
   if (!input.armScript.includes("BACKLOG_WAKE_EXECUTE")) {
     return { ok: false, reason: "arm_dev_loop.sh must mention BACKLOG_WAKE_EXECUTE" };
+  }
+  const armPolicy = validateArmScriptContent(input.armScript);
+  if (!armPolicy.ok) {
+    return { ok: false, reason: armPolicy.violations[0]?.reason ?? "arm script policy failed" };
   }
   if (input.hooksJson && !input.hooksJson.includes("dev-factory-drain-stop")) {
     return { ok: false, reason: "hooks.json missing dev-factory drain stop hook" };

@@ -13,9 +13,10 @@ Launch in a background Cursor Shell with `notify_on_output` on watch patterns fr
 
 | Sentinel | Meaning |
 |----------|---------|
-| `BACKLOG_WAKE_EXECUTE` | Start oldest ticket **now** |
-| `BACKLOG_WAKE` | Drain backlog in this session |
+| `BACKLOG_WAKE_EXECUTE` | Start oldest ticket **now** — drain backlog same session |
 | `DEV_FACTORY_IDLE` | No tickets — wait for next tick |
+
+**Execution-only:** backlog ticks never emit a separate inform-only `BACKLOG_WAKE` line.
 
 ## Project config
 
@@ -39,8 +40,12 @@ in `lib/devFactoryExecution.ts`. Status-only summaries are forbidden.
 bash tests/run_tests.sh
 bash scripts/portability_check.sh      # after git init
 bash scripts/projects_isolation_check.sh
+npx tsx scripts/validate_execution_only_policy.ts   # execution-only tick guard
+npx tsx scripts/lint_secrets_env.ts projects/<slug>/.secrets/jira.env
 npm test
 ```
+
+`validate_execution_only_policy.ts` scans engine source for inform-only `BACKLOG_WAKE` regressions (removed formatter, watcher patterns, arm script, tick emit path).
 
 ## Teams tick notifications (optional)
 
@@ -50,7 +55,44 @@ each `dev_factory_tick.sh` run POSTs an Adaptive Card summary to Power Automate:
 - **Backlog wake** — pick ticket key + summary, backlog count, next loop wake (UTC)
 - **Idle** — explicit no-work message + next wake time
 
-Unset URL skips the POST; tick stdout (`BACKLOG_WAKE` / `DEV_FACTORY_IDLE`) is unchanged.
+Tick stdout (`BACKLOG_WAKE_EXECUTE` / `DEV_FACTORY_IDLE`) is unchanged by notification state.
+
+### Configured delivery is never silent
+
+`postDevFactoryTickNotify()` returns a structured `TickNotifyOutcome`:
+
+| Outcome | Reported? |
+|---------|-----------|
+| `delivered` | — |
+| `not_configured` (variable unset — Teams is optional) | No, quiet by design |
+| `invalid_webhook_url` (set but malformed / truncated) | **`TICK_NOTIFY_FAILED`** |
+| `http_error` (non-2xx, includes status + body) | **`TICK_NOTIFY_FAILED`** |
+| `exception` (network/DNS) | **`TICK_NOTIFY_FAILED`** |
+
+Once a webhook **is** configured, a failure can never pass silently. Use
+`shouldReportTickNotifyOutcome()` to make that distinction.
+
+**Quote the webhook URL.** Power Automate URLs contain `&`. An unquoted value in
+`.secrets/jira.env` is split by the shell, so the variable arrives **empty** and
+notifications vanish with no error:
+
+```bash
+# WRONG — truncated to empty, fails silently
+DEV_FACTORY_TEAMS_WEBHOOK_URL=https://prod-1.westus.logic.azure.com/...?api-version=2016-06-01&sig=abc
+
+# RIGHT
+DEV_FACTORY_TEAMS_WEBHOOK_URL="https://prod-1.westus.logic.azure.com/...?api-version=2016-06-01&sig=abc"
+```
+
+Guards against this class:
+
+| Guard | Behavior |
+|-------|----------|
+| `scripts/source_project_secrets.sh` | Parses values without shell eval, so `&` can't truncate; warns `SECRETS_ENV_UNSAFE` |
+| `scripts/lint_secrets_env.ts` | Exit 1 on unquoted metacharacter values |
+| `checkWebhookUrl()` | Rejects relative / non-https / missing `sig` (truncation); unset → `not_configured` |
+| `setup_verify.sh` | Fails on bad quoting **and** on `TICK_NOTIFY_FAILED` (not on an unset webhook) |
+| `tests/run_tests.sh` | Lints every `projects/*/.secrets/*.env` |
 
 The loop passes the next wake epoch via `DEV_FACTORY_NEXT_WAKE_EPOCH` before each tick
 (see `scripts/dev-loop.sh`). Standalone tick runs omit next-wake when env is unset.

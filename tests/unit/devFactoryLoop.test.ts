@@ -6,11 +6,11 @@ import {
   devFactoryShouldWake,
   devHandoffForQaLoop,
   DEV_FACTORY_HANDOFF_STATUS,
-  formatBacklogWakeLine,
   formatDevFactoryIdleLine,
   formatJiraUnavailableTick,
   devFactoryJql,
 } from "../../lib/devFactoryLoop.ts";
+import { formatBacklogWakeExecuteLine } from "../../lib/devFactoryExecution.ts";
 import { DEV_FACTORY_TICK_POLICY } from "../../lib/projectConfig.ts";
 import { FIXTURE_CONFIG } from "../fixtures/projectFixture.ts";
 
@@ -38,7 +38,7 @@ describe("devFactoryLoop", () => {
     expect(devFactoryShouldWake(0)).toBe(false);
   });
 
-  it("wake prompt drains queue", () => {
+  it("wake prompt drains queue via execute-only tick", () => {
     expect(devHandoffForQaLoop(DEV_FACTORY_HANDOFF_STATUS, "Validate/Testing")).toBe(
       true,
     );
@@ -48,7 +48,12 @@ describe("devFactoryLoop", () => {
     expect(payload.prompt).toContain("Validate/Testing");
     expect(payload.prompt).toContain(DEV_FACTORY_TICK_POLICY);
     expect(payload.prompt).toContain("do NOT stop after one ticket");
-    expect(formatBacklogWakeLine(payload)).toMatch(/^BACKLOG_WAKE /);
+    const line = formatBacklogWakeExecuteLine(
+      payload,
+      FIXTURE_CONFIG.git.branch_prefixes,
+    );
+    expect(line).toMatch(/^BACKLOG_WAKE_EXECUTE /);
+    expect(line).not.toMatch(/^BACKLOG_WAKE /);
   });
 
   it("DEV_FACTORY_IDLE waits for next tick", () => {
@@ -57,9 +62,11 @@ describe("devFactoryLoop", () => {
     expect(line).toContain("Wait for the next loop tick");
   });
 
-  it("Jira-unavailable fallback includes drain policy", () => {
+  it("Jira-unavailable fallback requires execute re-tick contract", () => {
     const line = formatJiraUnavailableTick(FIXTURE_CONFIG);
     expect(line).toContain(`AGENT_LOOP_TICK_${FIXTURE_CONFIG.loop.purpose}`);
+    expect(line).toContain("executeNow");
+    expect(line).toContain("BACKLOG_WAKE_EXECUTE");
     expect(line).toContain("fallback");
   });
 });
