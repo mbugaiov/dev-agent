@@ -6,10 +6,13 @@
  *   npx tsx scripts/should_kick_ux.ts <slug> [--labels a,b] [--surfaces "a,b"] [--diff]
  */
 import { execFileSync } from "node:child_process";
-import { readFileSync, existsSync } from "node:fs";
-import { join, dirname } from "node:path";
+import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
-import { shouldKickUx, DEFAULT_UI_PATH_GLOBS } from "../lib/uxSubagentKick.ts";
+import { loadProjectConfig, resolveAppRoot } from "../lib/loadProject.ts";
+import {
+  shouldKickUx,
+  DEFAULT_UI_PATH_GLOBS,
+} from "../lib/uxSubagentKick.ts";
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..");
 
@@ -37,39 +40,6 @@ function parseArgs(argv: string[]) {
   return { slug, labels, surfaces, useDiff };
 }
 
-function loadProject(slug: string): {
-  repoPath: string;
-  defaultBranch: string;
-  uiGlobs: string[];
-} {
-  const yamlPath = join(ROOT, "projects", slug, "project.yaml");
-  if (!existsSync(yamlPath)) {
-    console.error(`Missing ${yamlPath}`);
-    process.exit(2);
-  }
-  const raw = readFileSync(yamlPath, "utf8");
-  const repoMatch = raw.match(/repo_path:\s*(\S+)/);
-  const branchMatch = raw.match(/default_branch:\s*(\S+)/);
-  const repoPath = repoMatch?.[1]?.replace(/^["']|["']$/g, "") ?? "";
-  const defaultBranch = branchMatch?.[1]?.replace(/^["']|["']$/g, "") ?? "main";
-  const globs: string[] = [];
-  const globSection = raw.match(/ui_path_globs:\s*\n((?:\s*-\s+.+\n)+)/);
-  if (globSection) {
-    for (const line of globSection[1].split("\n")) {
-      const m = line.match(/^\s*-\s+(.+)$/);
-      if (m) globs.push(m[1].trim().replace(/^["']|["']$/g, ""));
-    }
-  }
-  const absRepo = repoPath.startsWith("/")
-    ? repoPath
-    : join(ROOT, "projects", slug, repoPath);
-  return {
-    repoPath: absRepo,
-    defaultBranch,
-    uiGlobs: globs.length ? globs : [...DEFAULT_UI_PATH_GLOBS],
-  };
-}
-
 function diffPaths(repoPath: string, defaultBranch: string): string[] {
   try {
     const out = execFileSync(
@@ -83,14 +53,29 @@ function diffPaths(repoPath: string, defaultBranch: string): string[] {
   }
 }
 
+type UxKickYaml = {
+  ui_path_globs?: string[];
+};
+
 const { slug, labels, surfaces, useDiff } = parseArgs(process.argv);
-const project = loadProject(slug);
-const diffs = useDiff ? diffPaths(project.repoPath, project.defaultBranch) : [];
+let config;
+try {
+  config = loadProjectConfig(ROOT, slug);
+} catch (err) {
+  console.error(String(err));
+  process.exit(2);
+}
+const repoPath = resolveAppRoot(ROOT, config);
+const defaultBranch = config.git.default_branch;
+const uxKick = (config as { ux_kick?: UxKickYaml }).ux_kick;
+const uiGlobs =
+  uxKick?.ui_path_globs?.length ? uxKick.ui_path_globs : [...DEFAULT_UI_PATH_GLOBS];
+const diffs = useDiff ? diffPaths(repoPath, defaultBranch) : [];
 const result = shouldKickUx({
   labels,
   surfaces,
   diffPaths: diffs,
-  uiPathGlobs: project.uiGlobs,
+  uiPathGlobs: uiGlobs,
 });
 
 const payload = {
