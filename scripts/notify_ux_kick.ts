@@ -4,7 +4,7 @@
  *
  * Usage:
  *   npx tsx scripts/notify_ux_kick.ts <slug> \
- *     --ticket RQ-123 --branch feat/x --surfaces 'components/A.tsx' [--mode hephaestus-kick|charter]
+ *     --ticket ABC-123 --branch feat/x --surfaces 'components/A.tsx' [--mode hephaestus-kick|charter]
  *
  * Resolves Athena root: UX_AGENT_ROOT → project.yaml ux_kick.ux_agent_path → ../ux-agent
  * Loads webhook from ux-agent projects/<slug>/.secrets/jira.env (or falls back to
