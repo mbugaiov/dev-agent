@@ -32,7 +32,16 @@ UI globs (config `ux_kick.ui_path_globs` or defaults):
 
 ## How to wake (mandatory shape)
 
-Use the **Task** tool (`subagent_type: generalPurpose`) — there is no separate
+**Before** spawning the Task, notify Teams (same channel as factory ticks when webhook URLs match):
+
+```bash
+# From dev-agent root — quiet if webhook unset; loud on real failure
+npx tsx scripts/notify_ux_kick.ts <slug> \
+  --ticket <KEY> --branch <feature-branch> \
+  --surfaces 'components/…,lib/ui.ts'
+```
+
+Then use the **Task** tool (`subagent_type: generalPurpose`) — there is no separate
 `ux-design` subagent type. Prompt must include:
 
 1. Role: **Athena / UX** — follow `ux-agent` skills `ux-impeccable`, `ux-phases`,
