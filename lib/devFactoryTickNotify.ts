@@ -39,12 +39,19 @@ export function buildTickNotifySummary(input: TickNotifyInput): string {
   return `[${input.slug}] Dev factory execute — pick ${input.pickKey}: ${input.pickSummary}${others}. Next tick: ${next}`;
 }
 
+/** Adaptive Card title colour for Hephaestus / Dev (distinct from Athena/Argus). */
+export const DEV_FACTORY_CARD_COLOR = "Accent" as const;
+export const DEV_FACTORY_AGENT_ID = "Hephaestus / Dev";
+
 export function buildTickNotifyWebhookBody(input: TickNotifyInput): object {
   const summary = buildTickNotifySummary(input);
   const title =
-    input.kind === "idle" ? "Dev factory idle" : "Dev factory execute";
+    input.kind === "idle"
+      ? "Hephaestus · Dev factory idle"
+      : "Hephaestus · Dev factory execute";
 
   const facts: { title: string; value: string }[] = [
+    { title: "Agent", value: DEV_FACTORY_AGENT_ID },
     { title: "Project", value: input.slug },
     { title: "Tick", value: input.kind === "idle" ? "idle" : "backlog execute" },
     { title: "Next tick (UTC)", value: formatNextWake(input.nextWakeUtc) },
@@ -83,7 +90,7 @@ export function buildTickNotifyWebhookBody(input: TickNotifyInput): object {
               text: title,
               weight: "Bolder",
               size: "Medium",
-              color: input.kind === "idle" ? "Default" : "Accent",
+              color: DEV_FACTORY_CARD_COLOR,
               wrap: true,
             },
             { type: "FactSet", facts, spacing: "Medium" },

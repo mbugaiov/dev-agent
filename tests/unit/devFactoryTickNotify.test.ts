@@ -50,12 +50,30 @@ describe("devFactoryTickNotify", () => {
       nextWakeUtc: "2026-07-31 04:00:00 UTC",
     }) as {
       summary: string;
-      attachments: { content: { body: { facts?: { title: string }[] }[] } }[];
+      attachments: {
+        content: {
+          body: Array<{
+            type?: string;
+            text?: string;
+            color?: string;
+            facts?: { title: string; value: string }[];
+          }>;
+        };
+      }[];
     };
     expect(body.summary).toContain("TST-105");
+    const titleBlock = body.attachments[0]?.content.body.find(
+      (b) => b.type === "TextBlock",
+    );
+    expect(titleBlock?.text).toContain("Hephaestus");
+    expect(titleBlock?.color).toBe("Accent");
     const factSet = body.attachments[0]?.content.body.find(
       (b) => b.facts !== undefined,
     );
+    expect(factSet?.facts?.some((f) => f.title === "Agent")).toBe(true);
+    expect(
+      factSet?.facts?.find((f) => f.title === "Agent")?.value,
+    ).toContain("Hephaestus");
     expect(factSet?.facts?.some((f) => f.title === "Pick")).toBe(true);
     expect(factSet?.facts?.some((f) => f.title === "Backlog")).toBe(true);
   });
