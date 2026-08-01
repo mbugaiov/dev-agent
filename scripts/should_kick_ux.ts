@@ -4,29 +4,63 @@
  *
  * Usage:
  *   npx tsx scripts/should_kick_ux.ts <slug> [--labels a,b] [--surfaces "a,b"] [--diff]
+ *     [--when before-implement|after-implement] [--charter-ready] [--ticket KEY]
+ *
+ * before-implement + label ux-charter-first:
+ *   kicks Mode B charter unless Jira has UX_CHARTER_READY (--charter-ready or --ticket fetch).
+ * after-implement (default): Mode A polish when needs-ux-pass / impl-ux / UI surfaces/diff.
  */
 import { execFileSync } from "node:child_process";
+import { existsSync, readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { loadProjectConfig, resolveAppRoot } from "../lib/loadProject.ts";
+import { jiraFetch } from "../lib/jiraClient.ts";
+import { jiraAdfToPlainText } from "../lib/jiraCommentGate.ts";
 import {
-  shouldKickUx,
+  resolveUxFactoryPhase,
+  commentsHaveUxCharterReady,
   DEFAULT_UI_PATH_GLOBS,
+  type UxKickWhen,
 } from "../lib/uxSubagentKick.ts";
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..");
+
+function loadSecretsEnv(slug: string): void {
+  const p = join(ROOT, "projects", slug, ".secrets", "jira.env");
+  if (!existsSync(p)) return;
+  for (const line of readFileSync(p, "utf8").split("\n")) {
+    const t = line.trim();
+    if (!t || t.startsWith("#")) continue;
+    const i = t.indexOf("=");
+    if (i < 1) continue;
+    const k = t.slice(0, i).trim();
+    let v = t.slice(i + 1).trim();
+    if (
+      (v.startsWith('"') && v.endsWith('"')) ||
+      (v.startsWith("'") && v.endsWith("'"))
+    ) {
+      v = v.slice(1, -1);
+    }
+    if (!(k in process.env) || !process.env[k]) process.env[k] = v;
+  }
+}
 
 function parseArgs(argv: string[]) {
   const slug = argv[2];
   if (!slug || slug.startsWith("-")) {
     console.error(
-      "Usage: should_kick_ux.ts <slug> [--labels a,b] [--surfaces path,path] [--diff]",
+      "Usage: should_kick_ux.ts <slug> [--labels a,b] [--surfaces path,path] [--diff] " +
+        "[--when before-implement|after-implement] [--charter-ready] [--ticket KEY]",
     );
     process.exit(2);
   }
   let labels: string[] = [];
   let surfaces: string[] = [];
   let useDiff = false;
+  let when: UxKickWhen = "after-implement";
+  let charterReady = false;
+  let ticket = "";
   for (let i = 3; i < argv.length; i++) {
     const a = argv[i];
     if (a === "--labels" && argv[i + 1]) {
@@ -35,9 +69,20 @@ function parseArgs(argv: string[]) {
       surfaces = argv[++i].split(",").map((s) => s.trim()).filter(Boolean);
     } else if (a === "--diff") {
       useDiff = true;
+    } else if (a === "--when" && argv[i + 1]) {
+      const w = argv[++i];
+      if (w !== "before-implement" && w !== "after-implement") {
+        console.error(`Invalid --when ${w}`);
+        process.exit(2);
+      }
+      when = w;
+    } else if (a === "--charter-ready") {
+      charterReady = true;
+    } else if (a === "--ticket" && argv[i + 1]) {
+      ticket = argv[++i];
     }
   }
-  return { slug, labels, surfaces, useDiff };
+  return { slug, labels, surfaces, useDiff, when, charterReady, ticket };
 }
 
 function diffPaths(repoPath: string, defaultBranch: string): string[] {
@@ -53,11 +98,31 @@ function diffPaths(repoPath: string, defaultBranch: string): string[] {
   }
 }
 
+async function fetchCharterReady(ticket: string): Promise<boolean> {
+  const res = await jiraFetch(
+    `/rest/api/3/issue/${encodeURIComponent(ticket)}/comment?maxResults=100`,
+  );
+  if (!res.ok) {
+    throw new Error(`Jira comments ${ticket}: HTTP ${res.status}`);
+  }
+  const data = (await res.json()) as {
+    comments?: Array<{ body?: unknown }>;
+  };
+  const comments = (data.comments ?? []).map((c) => ({
+    body: jiraAdfToPlainText(c.body),
+  }));
+  return commentsHaveUxCharterReady(comments);
+}
+
 type UxKickYaml = {
   ui_path_globs?: string[];
 };
 
-const { slug, labels, surfaces, useDiff } = parseArgs(process.argv);
+const { slug, labels, surfaces, useDiff, when, charterReady, ticket } =
+  parseArgs(process.argv);
+
+loadSecretsEnv(slug);
+
 let config;
 try {
   config = loadProjectConfig(ROOT, slug);
@@ -71,17 +136,34 @@ const uxKick = (config as { ux_kick?: UxKickYaml }).ux_kick;
 const uiGlobs =
   uxKick?.ui_path_globs?.length ? uxKick.ui_path_globs : [...DEFAULT_UI_PATH_GLOBS];
 const diffs = useDiff ? diffPaths(repoPath, defaultBranch) : [];
-const result = shouldKickUx({
+
+let ready = charterReady;
+if (when === "before-implement" && ticket && !charterReady) {
+  try {
+    ready = await fetchCharterReady(ticket);
+  } catch (err) {
+    console.error(String(err));
+    process.exit(2);
+  }
+}
+
+const result = resolveUxFactoryPhase({
   labels,
   surfaces,
   diffPaths: diffs,
   uiPathGlobs: uiGlobs,
+  when,
+  charterReady: ready,
 });
 
 const payload = {
   slug,
+  when,
+  phase: result.phase,
   kick: result.kick,
+  mode: result.mode,
   reasons: result.reasons,
+  charterReady: ready,
   labels,
   surfaces,
   diffHits: diffs.filter((d) =>
@@ -89,9 +171,25 @@ const payload = {
   ),
 };
 console.log(JSON.stringify(payload));
-console.log(
-  result.kick
-    ? "UX_KICK_YES — wake Athena subagent on current feature branch (skill dev-ux-subagent)"
-    : "UX_KICK_NO — skip UX subagent",
-);
+
+if (result.phase === "charter" && result.kick) {
+  console.log(
+    "UX_KICK_YES — wake Athena Mode B CHARTER on current feature branch " +
+      "(skill dev-ux-subagent; notify --mode charter). Do not implement UI until UX_CHARTER_READY.",
+  );
+} else if (result.phase === "polish" && result.kick) {
+  console.log(
+    "UX_KICK_YES — wake Athena Mode A polish on current feature branch (skill dev-ux-subagent)",
+  );
+} else if (
+  when === "before-implement" &&
+  result.reasons.includes("charter:ready")
+) {
+  console.log(
+    "UX_KICK_NO — ux-charter-first satisfied (UX_CHARTER_READY); proceed to implement",
+  );
+} else {
+  console.log("UX_KICK_NO — skip UX subagent");
+}
+
 process.exit(result.kick ? 0 : 1);

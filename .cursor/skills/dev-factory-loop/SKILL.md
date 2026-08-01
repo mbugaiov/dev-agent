@@ -47,11 +47,15 @@ Follow skill **`dev-mr-pipeline`** (project overrides in `projects/<slug>/` if p
 
 0. In Progress + scope comment
 1. Branch off `app.git.default_branch` in **app repo** (`project.yaml` → `app.repo_path`)
-2. OpenSpec spec-first (when enabled)
-3. Implement → **UX subagent kick when required** (skill **`dev-ux-subagent`** / `should_kick_ux.ts`) on the **same branch**
-4. `app.gate_command` → `app.mr_push_command`
-5. Merge → STG buildId → `preflight_jira_handoff.ts` → `post_jira_handoff.ts` → Validate/Testing
-6. Re-run JQL → next ticket
+2. OpenSpec spec-first (when enabled) — shell / propose OK before charter
+3. **If label `ux-charter-first`:** run `should_kick_ux.ts … --when before-implement --ticket KEY`.
+   On `UX_KICK_YES` (phase charter), wake Athena Mode B (**`dev-ux-subagent`**) — **do not implement UI**
+   until Jira has `UX_CHARTER_READY`. Then implement from the charter.
+4. Implement feature behaviour
+5. **UX polish when required** — `should_kick_ux.ts` (default after-implement) → Athena Mode A on the **same branch**
+6. `app.gate_command` → `app.mr_push_command`
+7. Merge → STG buildId → `preflight_jira_handoff.ts` → `post_jira_handoff.ts` → Validate/Testing
+8. Re-run JQL → next ticket
 
 ## QA RETURN
 
