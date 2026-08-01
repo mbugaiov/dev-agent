@@ -43,6 +43,23 @@ export function buildTickNotifySummary(input: TickNotifyInput): string {
 export const DEV_FACTORY_CARD_COLOR = "Accent" as const;
 export const DEV_FACTORY_AGENT_ID = "Hephaestus / Dev";
 
+const QUEUE_MAX = 5;
+
+/**
+ * Remaining backlog lines for the Adaptive Card (excludes the current pick).
+ * One ticket per line so Teams FactSet does not collapse the queue into a blob.
+ */
+export function formatQueueLines(
+  issues: TickIssueSummary[],
+  pickKey: string,
+  max = QUEUE_MAX,
+): string[] {
+  return issues
+    .filter((i) => i.key !== pickKey)
+    .slice(0, max)
+    .map((i) => `• ${i.key} — ${i.summary}`);
+}
+
 export function buildTickNotifyWebhookBody(input: TickNotifyInput): object {
   const summary = buildTickNotifySummary(input);
   const title =
@@ -57,20 +74,43 @@ export function buildTickNotifyWebhookBody(input: TickNotifyInput): object {
     { title: "Next tick (UTC)", value: formatNextWake(input.nextWakeUtc) },
   ];
 
+  let queueLines: string[] = [];
   if (input.kind === "wake") {
     facts.unshift(
       { title: "Pick", value: `${input.pickKey} — ${input.pickSummary}` },
       { title: "Backlog", value: String(input.count) },
     );
-    if (input.issues.length > 1) {
-      facts.push({
-        title: "Queue",
-        value: input.issues
-          .slice(0, 5)
-          .map((i) => `${i.key}: ${i.summary}`)
-          .join(" · "),
-      });
-    }
+    queueLines = formatQueueLines(input.issues, input.pickKey);
+  }
+
+  const body: object[] = [
+    {
+      type: "TextBlock",
+      text: title,
+      weight: "Bolder",
+      size: "Medium",
+      color: DEV_FACTORY_CARD_COLOR,
+      wrap: true,
+    },
+    { type: "FactSet", facts, spacing: "Medium" },
+  ];
+
+  if (queueLines.length > 0) {
+    body.push(
+      {
+        type: "TextBlock",
+        text: "Queue",
+        weight: "Bolder",
+        spacing: "Medium",
+        wrap: true,
+      },
+      {
+        type: "TextBlock",
+        text: queueLines.join("\n"),
+        wrap: true,
+        spacing: "Small",
+      },
+    );
   }
 
   return {
@@ -84,23 +124,12 @@ export function buildTickNotifyWebhookBody(input: TickNotifyInput): object {
           type: "AdaptiveCard",
           version: "1.4",
           msteams: { width: "Full" },
-          body: [
-            {
-              type: "TextBlock",
-              text: title,
-              weight: "Bolder",
-              size: "Medium",
-              color: DEV_FACTORY_CARD_COLOR,
-              wrap: true,
-            },
-            { type: "FactSet", facts, spacing: "Medium" },
-          ],
+          body,
         },
       },
     ],
   };
 }
-
 export function getDevFactoryTeamsWebhookUrl(): string | undefined {
   const url = process.env.DEV_FACTORY_TEAMS_WEBHOOK_URL?.trim();
   return url || undefined;
