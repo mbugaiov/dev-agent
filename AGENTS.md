@@ -69,7 +69,7 @@ immediately.
 - **Dual-repo delivery** — engine + app pointer/rule changes merge **both** repos same session (GitHub + Bitbucket); see `dev-engine.mdc`.
 - **Execution-only ticks** — backlog ticks emit `BACKLOG_WAKE_EXECUTE` only; enforced by `lib/devFactoryExecutionOnly.ts` + `scripts/validate_execution_only_policy.ts` (runs in `tests/run_tests.sh`).
 - **No silent notify** — once a tick webhook is configured, failures print `TICK_NOTIFY_FAILED` (reason + status); an unset webhook stays quiet (optional feature). Secrets values must be quoted; `scripts/lint_secrets_env.ts` enforces it (unquoted `&` truncates a webhook URL to empty).
-- **Teams card identity (RQ-1957)** — Hephaestus / Dev Adaptive Cards use title colour `Accent` (Athena=`Good`, Argus=`Warning`). Keep the three colours distinct.
+- **Teams card identity** — Hephaestus / Dev Adaptive Cards use title colour `Accent` (Athena=`Good`, Argus=`Warning`). Keep the three colours distinct.
 
 ## Engine delivery (GitHub)
 
