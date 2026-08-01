@@ -78,6 +78,45 @@ describe("devFactoryTickNotify", () => {
     expect(factSet?.facts?.some((f) => f.title === "Backlog")).toBe(true);
   });
 
+  it("renders queue as one ticket per line (not a middot blob)", () => {
+    const body = buildTickNotifyWebhookBody({
+      slug: "selftest",
+      kind: "wake",
+      count: 3,
+      pickKey: "TST-1",
+      pickSummary: "Pick me",
+      issues: [
+        { key: "TST-1", summary: "Pick me" },
+        { key: "TST-2", summary: "Second" },
+        { key: "TST-3", summary: "Third" },
+      ],
+      nextWakeUtc: "2026-07-31 04:00:00 UTC",
+    }) as {
+      attachments: {
+        content: {
+          body: Array<{ type?: string; text?: string; facts?: unknown }>;
+        };
+      }[];
+    };
+    const blocks = body.attachments[0]?.content.body ?? [];
+    expect(blocks.some((b) => b.facts && JSON.stringify(b).includes("Queue"))).toBe(
+      false,
+    );
+    const queueHeading = blocks.find((b) => b.type === "TextBlock" && b.text === "Queue");
+    expect(queueHeading).toBeTruthy();
+    const queueBody = blocks.find(
+      (b) =>
+        b.type === "TextBlock" &&
+        typeof b.text === "string" &&
+        b.text.includes("TST-2") &&
+        b.text.includes("\n"),
+    );
+    expect(queueBody?.text).toContain("• TST-2 — Second");
+    expect(queueBody?.text).toContain("• TST-3 — Third");
+    expect(queueBody?.text).not.toContain(" · ");
+    expect(queueBody?.text).not.toContain("TST-1");
+  });
+
   it("treats unset webhook as not_configured and stays quiet", async () => {
     const fetchMock = vi.fn();
     const outcome = await postDevFactoryTickNotify(
