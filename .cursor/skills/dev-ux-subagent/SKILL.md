@@ -13,7 +13,7 @@ separate UX pilot branch and not a second Jira epic.
 
 | Phase | Label / signal | When | Athena mode | Notify `--mode` |
 |-------|----------------|------|-------------|-----------------|
-| **Charter** | `ux-charter-first` and no Jira `UX_CHARTER_READY` | **Before** feature UI implement | Mode B — IA / wire / freeze | `charter` |
+| **Charter** | `ux-charter-first` and no tracker `UX_CHARTER_READY` | **Before** feature UI implement | Mode B — IA / wire / freeze | `charter` |
 | **Polish** | `needs-ux-pass` / `impl-ux` / UI surfaces or diff | **After** feature behaviour works | Mode A — audit / polish / harden | `hephaestus-kick` |
 
 Detect helpers:
@@ -31,7 +31,8 @@ npx tsx scripts/should_kick_ux.ts <slug> \
   --labels <ticket-labels> --surfaces "…" --diff
 ```
 
-`--ticket` loads comments and looks for sentinel **`UX_CHARTER_READY`**.  
+`--ticket` loads comments (Jira or GitHub Issues per `tracker.provider`) and looks for
+sentinel **`UX_CHARTER_READY`**.  
 Or pass `--charter-ready` when the charter comment is already known.
 
 UI globs (config `ux_kick.ui_path_globs` or defaults):
@@ -48,7 +49,7 @@ pickup → branch → OpenSpec shell
 ```
 
 **Forbidden:** implementing UI for a `ux-charter-first` ticket before `UX_CHARTER_READY`
-appears on the Jira ticket (comment from Athena or human).
+appears on the tracker ticket (Jira or GitHub Issue comment from Athena or human).
 
 ## How to wake (mandatory shape)
 
@@ -68,9 +69,9 @@ Then use the **Task** tool (`subagent_type: generalPurpose`). Prompt must includ
 1. Role: **Athena / UX** — skills `ux-loop` Mode B, `ux-phases`, `ux-jira`.
 2. **Branch lock:** stay on current app branch; prefer **no product code commits**
    unless the ticket explicitly asks for a pilot implement.
-3. Deliverable: IA + primary CTA / hierarchy + freeze list; post Jira comment containing
-   exact sentinel **`UX_CHARTER_READY`**; write run folder under ux-agent
-   `projects/<slug>/runs/…`.
+3. Deliverable: IA + primary CTA / hierarchy + freeze list; post tracker comment containing
+   exact sentinel **`UX_CHARTER_READY`** (`gh issue comment` when `tracker.provider=github_issues`,
+   else Jira); write run folder under ux-agent `projects/<slug>/runs/…`.
 4. Do **not** add/remove `impl-dev`. Leave `ux-charter-first` on the ticket.
 5. Return: path to `run.md` + summary for Hephaestus implement.
 

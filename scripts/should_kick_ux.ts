@@ -17,6 +17,8 @@ import { fileURLToPath } from "node:url";
 import { loadProjectConfig, resolveAppRoot } from "../lib/loadProject.ts";
 import { jiraFetch } from "../lib/jiraClient.ts";
 import { jiraAdfToPlainText } from "../lib/jiraCommentGate.ts";
+import { parseGithubIssueNumber } from "../lib/githubIssuesBacklog.ts";
+import { resolveTrackerProvider } from "../lib/projectConfig.ts";
 import {
   resolveUxFactoryPhase,
   commentsHaveUxCharterReady,
@@ -98,7 +100,7 @@ function diffPaths(repoPath: string, defaultBranch: string): string[] {
   }
 }
 
-async function fetchCharterReady(ticket: string): Promise<boolean> {
+async function fetchCharterReadyJira(ticket: string): Promise<boolean> {
   const res = await jiraFetch(
     `/rest/api/3/issue/${encodeURIComponent(ticket)}/comment?maxResults=100`,
   );
@@ -111,6 +113,26 @@ async function fetchCharterReady(ticket: string): Promise<boolean> {
   const comments = (data.comments ?? []).map((c) => ({
     body: jiraAdfToPlainText(c.body),
   }));
+  return commentsHaveUxCharterReady(comments);
+}
+
+function fetchCharterReadyGithub(
+  owner: string,
+  repo: string,
+  ticket: string,
+  slug: string,
+): boolean {
+  const num = parseGithubIssueNumber(ticket, slug);
+  if (num === null) {
+    throw new Error(`Invalid GitHub issue key for charter check: ${ticket}`);
+  }
+  const raw = execFileSync(
+    "gh",
+    ["api", `repos/${owner}/${repo}/issues/${num}/comments`],
+    { encoding: "utf8" },
+  );
+  const arr = JSON.parse(raw) as { body?: string }[];
+  const comments = arr.map((c) => ({ body: c.body ?? "" }));
   return commentsHaveUxCharterReady(comments);
 }
 
@@ -140,7 +162,17 @@ const diffs = useDiff ? diffPaths(repoPath, defaultBranch) : [];
 let ready = charterReady;
 if (when === "before-implement" && ticket && !charterReady) {
   try {
-    ready = await fetchCharterReady(ticket);
+    const tracker = resolveTrackerProvider(config);
+    if (tracker === "github_issues") {
+      ready = fetchCharterReadyGithub(
+        config.git.workspace,
+        config.git.repo,
+        ticket,
+        slug,
+      );
+    } else {
+      ready = await fetchCharterReadyJira(ticket);
+    }
   } catch (err) {
     console.error(String(err));
     process.exit(2);
