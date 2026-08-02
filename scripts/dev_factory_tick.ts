@@ -21,10 +21,18 @@ import {
 } from "../lib/devFactoryExecution.ts";
 import { assertValidTickLine } from "../lib/devFactoryExecutionOnly.ts";
 import { devFactoryJql } from "../lib/devFactoryLoop.ts";
-import { loadProjectConfig } from "../lib/loadProject.ts";
+import { loadProjectConfig, resolveAppRoot } from "../lib/loadProject.ts";
+import {
+  filterExcludedIssueNumbers,
+  githubIssuesSearchUrl,
+  mapGithubSearchItem,
+  type GithubIssueLike,
+} from "../lib/githubIssuesBacklog.ts";
+import { resolveTrackerProvider } from "../lib/projectConfig.ts";
 import { mkdir, readFile, writeFile, unlink } from "node:fs/promises";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
+import { execFileSync } from "node:child_process";
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..");
 const slug = process.argv[2] ?? process.env.DEV_AGENT_SLUG ?? "";
@@ -119,6 +127,128 @@ async function fetchDevFactoryIssues(): Promise<DevFactoryIssue[]> {
   }));
 }
 
+function githubToken(): string {
+  return (
+    process.env.GITHUB_TOKEN?.trim() ||
+    process.env.GH_TOKEN?.trim() ||
+    ""
+  );
+}
+
+async function fetchGithubDevFactoryIssues(): Promise<DevFactoryIssue[]> {
+  const owner = config.git.workspace;
+  const repo = config.git.repo;
+  const excludedLabels = [
+    ...config.dev_factory.excluded_labels,
+    ...(config.tracker?.validate_label
+      ? [config.tracker.validate_label]
+      : []),
+  ];
+  const searchUrl = githubIssuesSearchUrl({
+    owner,
+    repo,
+    pickupLabel: config.dev_factory.pickup_label,
+    excludedLabels,
+  });
+
+  const token = githubToken();
+  let items: {
+    number: number;
+    title: string;
+    state: string;
+    labels?: { name: string }[];
+  }[] = [];
+
+  if (token) {
+    const res = await fetch(searchUrl, {
+      headers: {
+        Accept: "application/vnd.github+json",
+        Authorization: `Bearer ${token}`,
+        "X-GitHub-Api-Version": "2022-11-28",
+      },
+    });
+    if (!res.ok) {
+      throw new Error(`GitHub search failed: ${res.status} ${await res.text()}`);
+    }
+    const data = (await res.json()) as { items?: typeof items };
+    items = data.items ?? [];
+  } else {
+    // Prefer authenticated `gh` CLI (local agent sessions).
+    // Note: `gh issue list --state open --label X` can return empty incorrectly;
+    // filter state client-side after listing by pickup label.
+    const labelArgs = [
+      "issue",
+      "list",
+      "-R",
+      `${owner}/${repo}`,
+      "--label",
+      config.dev_factory.pickup_label,
+      "--json",
+      "number,title,state,labels",
+      "--limit",
+      "30",
+    ];
+    const raw = execFileSync("gh", labelArgs, { encoding: "utf8" });
+    const listed = JSON.parse(raw) as {
+      number: number;
+      title: string;
+      state: string;
+      labels: { name: string }[];
+    }[];
+    const excluded = new Set([
+      ...config.dev_factory.excluded_labels,
+      ...(config.tracker?.validate_label ? [config.tracker.validate_label] : []),
+    ]);
+    items = listed
+      .filter((i) => i.state.toLowerCase() === "open")
+      .filter((i) => !i.labels.some((l) => excluded.has(l.name)))
+      .map((i) => ({
+        number: i.number,
+        title: i.title,
+        state: i.state.toLowerCase(),
+        labels: i.labels,
+      }))
+      .sort((a, b) => a.number - b.number);
+  }
+
+  const excludedSet = new Set(excludedLabels);
+  items = items.filter(
+    (i) => !(i.labels ?? []).some((l) => excludedSet.has(l.name)),
+  );
+  const mapped: GithubIssueLike[] = items.map((i) =>
+    mapGithubSearchItem(i, config.slug),
+  );
+  const excludedNums = (config.dev_factory.excluded_issue_keys ?? [])
+    .map((k) => {
+      const m = String(k).match(/(\d+)$/);
+      return m ? Number(m[1]) : NaN;
+    })
+    .filter((n) => Number.isFinite(n));
+  return filterExcludedIssueNumbers(mapped, excludedNums).map((i) => ({
+    key: i.key,
+    summary: i.summary,
+    status: i.status,
+  }));
+}
+
+async function fetchGithubIssueComments(
+  issueNumber: number,
+): Promise<JiraCommentLike[]> {
+  const owner = config.git.workspace;
+  const repo = config.git.repo;
+  const raw = execFileSync(
+    "gh",
+    ["api", `repos/${owner}/${repo}/issues/${issueNumber}/comments`],
+    { encoding: "utf8" },
+  );
+  try {
+    const arr = JSON.parse(raw) as { created_at: string; body: string }[];
+    return arr.map((c) => ({ created: c.created_at, body: c.body ?? "" }));
+  } catch {
+    return [];
+  }
+}
+
 async function fetchIssueComments(key: string): Promise<JiraCommentLike[]> {
   const res = await jiraFetch(`/rest/api/3/issue/${key}?fields=comment`);
   if (!res.ok) return [];
@@ -203,13 +333,32 @@ async function notifyTick(
 }
 
 async function main() {
+  const tracker = resolveTrackerProvider(config);
+  if (config.dev_factory.enabled === false) {
+    await clearPendingExecute();
+    emitTickLine(formatDevFactoryIdleLine(config, 0));
+    await notifyTick({ kind: "idle" });
+    return;
+  }
+
   try {
-    const issues = await fetchDevFactoryIssues();
+    const issues =
+      tracker === "github_issues"
+        ? await fetchGithubDevFactoryIssues()
+        : await fetchDevFactoryIssues();
+
     if (devFactoryShouldWake(issues.length)) {
       const commentsByKey: Record<string, JiraCommentLike[]> = {};
       await Promise.all(
         issues.map(async (issue) => {
-          commentsByKey[issue.key] = await fetchIssueComments(issue.key);
+          if (tracker === "github_issues") {
+            const num = Number(issue.key.split("#").pop());
+            commentsByKey[issue.key] = Number.isFinite(num)
+              ? await fetchGithubIssueComments(num)
+              : [];
+          } else {
+            commentsByKey[issue.key] = await fetchIssueComments(issue.key);
+          }
         }),
       );
       const plan = planBacklogWithFollowOns(
@@ -226,6 +375,12 @@ async function main() {
         formatBacklogWakeExecuteLine(payload, config.git.branch_prefixes),
       );
       await notifyTick({ kind: "wake", payload });
+      // Touch app root so resolve stays warm (github path)
+      try {
+        resolveAppRoot(ROOT, config);
+      } catch {
+        /* ignore */
+      }
       process.exit(0);
     }
     await clearPendingExecute();
