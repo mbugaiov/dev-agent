@@ -27,7 +27,7 @@ Human exceptions: `projects/<slug>/docs/HUMAN-EXCEPTIONS.md`.
 → arm + tick + drain in **same turn**. See `.cursor/rules/dev-factory-active.mdc`.
 
 1. **Arm:** `bash scripts/arm_dev_loop.sh <slug>` — **slug-scoped** (kills only that slug’s
-   `dev-loop.sh`; `lrm` and `pantheon` can run side by side)
+   `dev-loop.sh`; multiple `<slug>` factories can run side by side)
 2. **Tick:** `scripts/dev-loop.sh` → `dev_factory_tick.sh <slug>` → **`BACKLOG_WAKE_EXECUTE`** (execution-only) or `DEV_FACTORY_IDLE`
 3. **Watch patterns:** `lib/devFactoryLoopWiring.ts` — **`notify_on_output`** required on `^BACKLOG_WAKE_EXECUTE` only (no inform-only wake)
 4. **Stop hook:** `.cursor/hooks.json` — auto-followup if pending execute unconsumed

@@ -2,7 +2,7 @@
 # Arm the dev factory loop — supported entry point.
 # Usage: bash scripts/arm_dev_loop.sh <slug>
 #
-# Slug-scoped: arming pantheon does NOT kill an armed lrm loop (and vice versa).
+# Slug-scoped: arming one factory does NOT kill another slug's loop.
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
