@@ -1,6 +1,6 @@
 ---
 name: dev-ux-subagent
-description: When and how Hephaestus wakes an Athena UX subagent on the current feature branch — Mode B charter before implement (ux-charter-first), or Mode A polish after implement (needs-ux-pass / UI).
+description: When and how Hephaestus wakes an Athena UX subagent on the current feature branch — Mode B charter before implement (ux-charter-first), or Mode A polish after implement (needs-ux-pass / UI). Uses upgraded Athena pipeline.
 ---
 
 # Dev → UX subagent kick (same feature branch)
@@ -9,12 +9,15 @@ Hephaestus **does** invoke Athena as a **Cursor Task subagent** when the ticket 
 UX. Work lands on the **same feature branch** Hephaestus already opened — not a
 separate UX pilot branch and not a second Jira epic.
 
+Athena pipeline (engine `docs/UX-PIPELINE.md`):
+architect → DESIGN.md → visual direction → browser → UI rules → a11y → **Impeccable last**.
+
 ## Two phases
 
 | Phase | Label / signal | When | Athena mode | Notify `--mode` |
 |-------|----------------|------|-------------|-----------------|
-| **Charter** | `ux-charter-first` and no tracker `UX_CHARTER_READY` | **Before** feature UI implement | Mode B — IA / wire / freeze | `charter` |
-| **Polish** | `needs-ux-pass` / `impl-ux` / UI surfaces or diff | **After** feature behaviour works | Mode A — audit / polish / harden | `hephaestus-kick` |
+| **Charter** | `ux-charter-first` and no tracker `UX_CHARTER_READY` | **Before** feature UI implement | Mode B — architect + direction + freeze | `charter` |
+| **Polish** | `needs-ux-pass` / `impl-ux` / UI surfaces or diff | **After** feature behaviour works | Mode A — browser → rules → a11y → Impeccable | `hephaestus-kick` |
 
 Detect helpers:
 
@@ -66,25 +69,31 @@ Then use the **Task** tool (`subagent_type: generalPurpose`). Prompt must includ
 
 ### Mode B — charter (`ux-charter-first`, before implement)
 
-1. Role: **Athena / UX** — skills `ux-loop` Mode B, `ux-phases`, `ux-jira`.
+1. Role: **Athena / UX** — skills `ux-loop` Mode B, `ux-phases`, `ux-architect`,
+   `ux-visual-direction`, `ux-browser-review`, `ux-jira`. Read `docs/UX-PIPELINE.md`.
 2. **Branch lock:** stay on current app branch; prefer **no product code commits**
    unless the ticket explicitly asks for a pilot implement.
-3. Deliverable: IA + primary CTA / hierarchy + freeze list; post tracker comment containing
-   exact sentinel **`UX_CHARTER_READY`** (`gh issue comment` when `tracker.provider=github_issues`,
-   else Jira); write run folder under ux-agent `projects/<slug>/runs/…`.
-4. Do **not** add/remove `impl-dev`. Leave `ux-charter-first` on the ticket.
-5. Return: path to `run.md` + summary for Hephaestus implement.
+3. **DESIGN.md:** if it marks prior direction failed / not accepted, propose **new**
+   directions — do not polish the failed look.
+4. Deliverable: architect + chosen visual direction + freeze; baseline screenshots for
+   first-viewport redesigns; post tracker comment with exact sentinel **`UX_CHARTER_READY`**
+   (`gh issue comment` when `tracker.provider=github_issues`, else Jira); write run folder
+   under ux-agent `projects/<slug>/runs/…`.
+5. Do **not** add/remove `impl-dev`. Leave `ux-charter-first` on the ticket.
+6. Return: path to `run.md` + summary for Hephaestus implement.
 
 ### Mode A — polish (after implement)
 
-1. Role: **Athena / UX** — `ux-impeccable`, `ux-phases`, `ux-jira`.
+1. Role: **Athena / UX** — `ux-loop` Mode A, `ux-phases`, `ux-browser-review`,
+   `ux-ui-rules-review`, `ux-a11y-review`, `ux-impeccable` (**last**), `ux-jira`.
 2. **Branch lock:** stay on current app branch; **do not** create `feat/ux-*` pilot.
-3. Prefer `audit` / `polish` / `harden` / `critique` — avoid `craft` / `overdrive` / `delight`.
+3. Order: browser screenshots → UI rules → a11y → Impeccable `audit|polish|harden|critique`.
+   Avoid `craft` / `overdrive` / `delight`.
 4. Freeze: routes, `data-testid`s, server actions unless the ticket owns them.
-5. Deliverable: commit UX fixes on this branch (or note if nothing to change).
+5. Deliverable: commit UX fixes on this branch (or note if nothing to change) + screenshot paths.
 6. Return: list of files changed + residual risks.
 
-Example Task descriptions: `Athena charter RQ-XXXX` / `Athena UX pass RQ-XXXX`.
+Example Task descriptions: `Athena charter …` / `Athena UX pass …`.
 
 After charter returns: re-run `should_kick_ux … --when before-implement --ticket KEY`
 until `UX_KICK_NO` with `charter:ready`, then **implement**.  
@@ -105,7 +114,7 @@ Do **not** file a separate UX-only child for the in-branch pass.
 - Skipping charter kick when `ux-charter-first` is present and charter is not ready
 - Implementing UI before `UX_CHARTER_READY` on a `ux-charter-first` ticket
 - Skipping polish kick when `needs-ux-pass` / `impl-ux` is present after implement
+- Asking Athena to “just Impeccable” a failed redesign without Mode B architect
 - Nested redesign that opens a second app MR while this ticket's MR is open
 - Deploying STG from a UX-only pilot
-- Leaving **shared Athena engine** edits only local — open a **GitHub PR** on `ux-agent`
-  when engine files change (see ux-agent `PORTABILITY.md`)
+- Leaving **shared Athena / Hephaestus engine** edits only local — open **GitHub PRs**
