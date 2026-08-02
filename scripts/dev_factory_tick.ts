@@ -168,19 +168,19 @@ async function fetchGithubDevFactoryIssues(): Promise<DevFactoryIssue[]> {
     items = data.items ?? [];
   } else {
     // Prefer authenticated `gh` CLI (local agent sessions).
+    // Note: `gh issue list --state open --label X` can return empty incorrectly;
+    // filter state client-side after listing by pickup label.
     const labelArgs = [
       "issue",
       "list",
       "-R",
       `${owner}/${repo}`,
-      "--state",
-      "open",
       "--label",
       config.dev_factory.pickup_label,
       "--json",
       "number,title,state,labels",
       "--limit",
-      "20",
+      "30",
     ];
     const raw = execFileSync("gh", labelArgs, { encoding: "utf8" });
     const listed = JSON.parse(raw) as {
