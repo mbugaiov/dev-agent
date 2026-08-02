@@ -58,7 +58,11 @@ async function writePendingExecute(
   payload: ReturnType<typeof buildBacklogWakePayload>,
 ) {
   const existing = await readPendingExecute();
-  const state = buildPendingExecuteState(payload, config.git.branch_prefixes);
+  const state = buildPendingExecuteState(
+    payload,
+    config.git.branch_prefixes,
+    resolveTrackerProvider(config),
+  );
   if (
     existing?.consumed &&
     existing.oldest === payload.oldest &&
@@ -174,19 +178,20 @@ async function fetchGithubDevFactoryIssues(): Promise<DevFactoryIssue[]> {
     items = data.items ?? [];
   } else {
     // Prefer authenticated `gh` CLI (local agent sessions).
-    // Note: `gh issue list --state open --label X` can return empty incorrectly;
-    // filter state client-side after listing by pickup label.
+    // List open issues and filter pickup label client-side — `gh --label`
+    // can miss newly labeled issues.
+    const pickup = config.dev_factory.pickup_label;
     const labelArgs = [
       "issue",
       "list",
       "-R",
       `${owner}/${repo}`,
-      "--label",
-      config.dev_factory.pickup_label,
+      "--state",
+      "open",
       "--json",
       "number,title,state,labels",
       "--limit",
-      "30",
+      "100",
     ];
     const raw = execFileSync("gh", labelArgs, { encoding: "utf8" });
     const listed = JSON.parse(raw) as {
@@ -201,6 +206,7 @@ async function fetchGithubDevFactoryIssues(): Promise<DevFactoryIssue[]> {
     ]);
     items = listed
       .filter((i) => i.state.toLowerCase() === "open")
+      .filter((i) => i.labels.some((l) => l.name === pickup))
       .filter((i) => !i.labels.some((l) => excluded.has(l.name)))
       .map((i) => ({
         number: i.number,
@@ -372,7 +378,11 @@ async function main() {
       });
       await writePendingExecute(payload);
       emitTickLine(
-        formatBacklogWakeExecuteLine(payload, config.git.branch_prefixes),
+        formatBacklogWakeExecuteLine(
+          payload,
+          config.git.branch_prefixes,
+          resolveTrackerProvider(config),
+        ),
       );
       await notifyTick({ kind: "wake", payload });
       // Touch app root so resolve stays warm (github path)

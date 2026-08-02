@@ -1,6 +1,6 @@
 ---
 name: dev-mr-pipeline
-description: Per-ticket dev delivery pipeline — branch, OpenSpec, local gate, MR push, pipeline wait, merge, STG verify, Jira handoff. App-specific gate commands come from projects/<slug>/project.yaml.
+description: Per-ticket dev delivery pipeline — branch, OpenSpec, local gate, MR push, pipeline wait, merge, STG verify, tracker handoff (Jira or GitHub Issues). App-specific gate commands come from projects/<slug>/project.yaml.
 ---
 
 # Dev MR pipeline (per ticket)
@@ -9,7 +9,9 @@ Generic flow; **app repo** holds product code and CI. Read `projects/<slug>/proj
 
 ## Steps
 
-0. **Jira pickup:** `bash scripts/pickup_jira_ticket.sh <slug> <KEY> --scope "<plan>" --points <n>` — transition, assign, estimate (empty fields only), scope comment. Config: `project.yaml` → `jira.pickup`.
+0. **Pickup** (from `tracker.provider`):
+   - **jira:** `bash scripts/pickup_jira_ticket.sh <slug> <KEY> --scope "<plan>" --points <n>` — transition, assign, estimate, scope comment (`jira.pickup`).
+   - **github_issues:** `bash scripts/pickup_github_ticket.sh <slug> <KEY> --scope "<plan>"` — ensure pickup label, scope comment (no story points).
 1. **Branch:** `git checkout -B <prefix>/<KEY>-<slug> origin/<default_branch>` in app repo
 2. **OpenSpec:** when `app.openspec_enabled` (default) — propose/apply/archive per app repo skills. App must pass `verify_app_openspec.sh` at setup (`SETUP.md` §6). Shell/propose may precede charter.
 3. **UX charter (when `ux-charter-first`):** skill **`dev-ux-subagent`**. Run
@@ -25,7 +27,9 @@ Generic flow; **app repo** holds product code and CI. Read `projects/<slug>/proj
 8. **Fix loop** until pipeline green + **app repo** code review clear (CR runs in app CI — not dev-agent)
 9. **Merge** (squash per team policy)
 10. **STG:** `wait_main_deploy.sh` + `check_stg_build.sh <slug>`
-11. **Handoff:** `preflight_jira_handoff.ts` → `post_jira_handoff.ts --transition`
+11. **Handoff:**
+    - **jira:** `preflight_jira_handoff.ts` → `post_jira_handoff.ts --transition`
+    - **github_issues:** `npx tsx scripts/post_github_handoff.ts <slug> <KEY> --pr URL --stg-build SHA --main SHA`
 12. **Drain:** re-query backlog; start next ticket if count > 0
 
 ## Project overrides

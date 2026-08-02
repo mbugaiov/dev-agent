@@ -149,8 +149,21 @@ export function shouldConsumePendingOnHandoff(
 export function buildBacklogWakeExecution(
   payload: BacklogWakePayload,
   branchPrefixes: readonly string[],
+  tracker: "jira" | "github_issues" = "jira",
 ): BacklogWakeExecution {
   const oldest = payload.oldest;
+  const pickupStep =
+    tracker === "github_issues"
+      ? `bash scripts/pickup_github_ticket.sh <slug> ${oldest} --scope "<plan>"`
+      : `bash scripts/pickup_jira_ticket.sh <slug> ${oldest} --scope "<plan>" --points <n>`;
+  const progressStep =
+    tracker === "github_issues"
+      ? `Ensure ${oldest} stays open with pickup label (impl-dev); remove validate-testing if present`
+      : `Transition ${oldest} → In Progress (if To Do)`;
+  const handoffHint =
+    tracker === "github_issues"
+      ? "OpenSpec change → implement → run app gate command → MR push → post_github_handoff.ts"
+      : "OpenSpec change → implement → run app gate command → MR push";
   return {
     executeNow: true,
     oldest,
@@ -158,10 +171,10 @@ export function buildBacklogWakeExecution(
     branchPrefix: ticketBranchPrefix(oldest, branchPrefixes),
     forbidden: [...STATUS_ONLY_PHRASES],
     firstSteps: [
-      `bash scripts/pickup_jira_ticket.sh <slug> ${oldest} --scope "<plan>" --points <n>`,
-      `Transition ${oldest} → In Progress (if To Do)`,
+      pickupStep,
+      progressStep,
       `git checkout -B <prefix>/${oldest}-<slug> origin/<default-branch>`,
-      "OpenSpec change → implement → run app gate command → MR push",
+      handoffHint,
       "Do NOT end turn with status-only; drain until DEV_FACTORY_IDLE",
     ],
   };
@@ -170,8 +183,9 @@ export function buildBacklogWakeExecution(
 export function buildPendingExecuteState(
   payload: BacklogWakePayload,
   branchPrefixes: readonly string[],
+  tracker: "jira" | "github_issues" = "jira",
 ): PendingExecuteState {
-  const execution = buildBacklogWakeExecution(payload, branchPrefixes);
+  const execution = buildBacklogWakeExecution(payload, branchPrefixes, tracker);
   return {
     oldest: payload.oldest,
     count: payload.count,
@@ -194,8 +208,9 @@ export function formatExecutePrompt(execution: BacklogWakeExecution): string {
 export function formatBacklogWakeExecuteLine(
   payload: BacklogWakePayload,
   branchPrefixes: readonly string[],
+  tracker: "jira" | "github_issues" = "jira",
 ): string {
-  const execution = buildBacklogWakeExecution(payload, branchPrefixes);
+  const execution = buildBacklogWakeExecution(payload, branchPrefixes, tracker);
   return `${BACKLOG_WAKE_EXECUTE_SENTINEL} ${JSON.stringify({
     ...execution,
     issues: payload.issues,

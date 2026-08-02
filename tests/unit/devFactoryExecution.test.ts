@@ -28,6 +28,19 @@ describe("devFactoryExecution", () => {
     expect(execution.firstSteps[0]).toContain("pickup_jira_ticket.sh");
   });
 
+  it("EX-01b github_issues firstSteps use pickup_github_ticket", () => {
+    const execution = buildBacklogWakeExecution(
+      payload,
+      branches,
+      "github_issues",
+    );
+    expect(execution.firstSteps[0]).toContain("pickup_github_ticket.sh");
+    expect(execution.firstSteps[0]).not.toContain("pickup_jira_ticket.sh");
+    expect(execution.firstSteps.some((s) => s.includes("post_github_handoff"))).toBe(
+      true,
+    );
+  });
+
   it("EX-02 formatBacklogWakeExecuteLine emits sentinel JSON", () => {
     const line = formatBacklogWakeExecuteLine(payload, branches);
     expect(line).toMatch(new RegExp(`^${BACKLOG_WAKE_EXECUTE_SENTINEL} `));
