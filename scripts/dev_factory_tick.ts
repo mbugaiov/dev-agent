@@ -207,7 +207,8 @@ async function fetchGithubDevFactoryIssues(): Promise<DevFactoryIssue[]> {
         title: i.title,
         state: i.state.toLowerCase(),
         labels: i.labels,
-      }));
+      }))
+      .sort((a, b) => a.number - b.number);
   }
 
   const excludedSet = new Set(excludedLabels);

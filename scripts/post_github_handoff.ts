@@ -1,7 +1,7 @@
 /**
  * Post STG handoff on a GitHub Issue (non-Jira factories).
  * Usage: npx tsx scripts/post_github_handoff.ts <slug> <issue-key-or-number> \
- *   --pr <url> --stg-build <sha> --main <sha>
+ *   --pr <url> --stg-build <sha> --main <sha> [--pipeline N] [--summary "..."]
  */
 import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import { loadProjectConfig } from "../lib/loadProject.ts";
@@ -9,7 +9,16 @@ import { parseGithubIssueNumber } from "../lib/githubIssuesBacklog.ts";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { execFileSync } from "node:child_process";
-import { stgBuildIdMatchesMain } from "../lib/projectConfig.ts";
+import {
+  buildPrUrlPattern,
+  formatHandoffComment,
+  handoffCommentValid,
+  stgBuildIdMatchesMain,
+} from "../lib/projectConfig.ts";
+import {
+  qaReturnBlocksValidateTesting,
+  type JiraCommentLike,
+} from "../lib/jiraCommentGate.ts";
 import {
   consumePendingExecuteState,
   PENDING_EXECUTE_PATH,
@@ -45,9 +54,27 @@ function consumePendingExecuteForHandoff(ticketKey: string) {
   }
 }
 
+function fetchGithubComments(
+  owner: string,
+  repo: string,
+  num: number,
+): JiraCommentLike[] {
+  const raw = execFileSync(
+    "gh",
+    ["api", `repos/${owner}/${repo}/issues/${num}/comments`],
+    { encoding: "utf8" },
+  );
+  try {
+    const arr = JSON.parse(raw) as { created_at: string; body: string }[];
+    return arr.map((c) => ({ created: c.created_at, body: c.body ?? "" }));
+  } catch {
+    return [];
+  }
+}
+
 if (!slug || !issueArg) {
   console.error(
-    "Usage: post_github_handoff.ts <slug> <issue#> --pr URL --stg-build SHA --main SHA",
+    "Usage: post_github_handoff.ts <slug> <issue#> --pr URL --stg-build SHA --main SHA [--pipeline N] [--summary text]",
   );
   process.exit(1);
 }
@@ -62,6 +89,9 @@ if (!num) {
 const pr = arg("--pr");
 const stg = arg("--stg-build");
 const main = arg("--main");
+const pipeline = arg("--pipeline") || "0";
+const summary =
+  arg("--summary") || `STG handoff for ${config.slug}#${num}`;
 if (!pr || !stg || !main) {
   console.error("Required: --pr --stg-build --main");
   process.exit(1);
@@ -72,27 +102,41 @@ if (!stgBuildIdMatchesMain(stg, main)) {
   process.exit(1);
 }
 
-const validateLabel =
-  config.tracker?.validate_label ?? "validate-testing";
-const pickupLabel = config.dev_factory.pickup_label;
 const owner = config.git.workspace;
 const repo = config.git.repo;
-const stgUrl = config.stg.base_url;
 const repoRef = `${owner}/${repo}`;
 const ticketKey = `${config.slug}#${num}`;
 
-const body = [
-  "## STG handoff (Hephaestus)",
-  "",
-  `- **PR:** ${pr}`,
-  `- **main:** \`${main.slice(0, 12)}\``,
-  `- **STG buildId:** \`${stg.slice(0, 12)}\` — matches main`,
-  `- **STG:** ${stgUrl}`,
-  "",
-  `Removed \`${pickupLabel}\`; applied \`${validateLabel}\` — QA may validate on STG.`,
-  "",
-  "Tracker: GitHub Issues (no Jira).",
-].join("\n");
+const comments = fetchGithubComments(owner, repo, num);
+const gate = qaReturnBlocksValidateTesting(comments);
+if (gate.blocked) {
+  console.error(
+    `QA_RETURN_BLOCKS_HANDOFF ${ticketKey}: ${gate.reason ?? "unresolved QA RETURN"}`,
+  );
+  process.exit(1);
+}
+
+const body = formatHandoffComment({
+  mergedPrUrl: pr,
+  pipelineBuildNumber: pipeline,
+  stgBuildId: stg,
+  mainCommit: main,
+  summary,
+  acceptanceSteps: [
+    `Validate on STG: ${config.stg.base_url}`,
+    "Tracker: GitHub Issues — close issue after QA pass (or add done label).",
+  ],
+});
+
+const prPattern = buildPrUrlPattern(config.git);
+if (!handoffCommentValid(body, prPattern)) {
+  console.error("HANDOFF_COMMENT_INVALID — formatHandoffComment failed validation");
+  process.exit(1);
+}
+
+const validateLabel =
+  config.tracker?.validate_label ?? "validate-testing";
+const pickupLabel = config.dev_factory.pickup_label;
 
 execFileSync(
   "gh",
