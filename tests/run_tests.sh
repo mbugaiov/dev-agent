@@ -62,6 +62,11 @@ have "scripts/lint_secrets_env.ts"
 have "scripts/test_tick_notify.ts"
 have "scripts/test_tick_notify.sh"
 have "scripts/notify_ux_kick.ts"
+have "scripts/arm_dev_loop.sh"
+grep -q 'exact trailing slug' scripts/arm_dev_loop.sh \
+  && grep -q 'pgrep -f "scripts/dev-loop.sh"' scripts/arm_dev_loop.sh \
+  && ok "arm_dev_loop slug-scoped kill" \
+  || no "arm_dev_loop must kill only target slug"
 have "scripts/validate_execution_only_policy.ts"
 have "lib/secretsEnvLint.ts"
 have "lib/devFactoryExecutionOnly.ts"

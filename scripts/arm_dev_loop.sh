@@ -1,6 +1,8 @@
 #!/usr/bin/env bash
 # Arm the dev factory loop — supported entry point.
 # Usage: bash scripts/arm_dev_loop.sh <slug>
+#
+# Slug-scoped: arming one factory does NOT kill another slug's loop.
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
@@ -9,12 +11,22 @@ if [[ -z "$SLUG" ]]; then
   echo "Usage: arm_dev_loop.sh <slug>" >&2
   exit 1
 fi
+if [[ ! "$SLUG" =~ ^[a-z0-9][a-z0-9-]*$ ]]; then
+  echo "Invalid slug '$SLUG' — expected ^[a-z0-9][a-z0-9-]*$" >&2
+  exit 2
+fi
 
 PR_BACKUP="${DEV_PR_BACKUP_SEC:-300}"
 
+# Kill only this slug's loop — other factories must coexist.
+# Match exact trailing slug (not a hyphenated prefix of another slug).
 while read -r pid; do
-  [ -n "$pid" ] && kill "$pid" 2>/dev/null || true
-done < <(pgrep -f 'scripts/dev-loop.sh' 2>/dev/null || true)
+  [ -z "$pid" ] && continue
+  cmd="$(ps -p "$pid" -o args= 2>/dev/null || true)"
+  if [[ "$cmd" =~ scripts/dev-loop\.sh[[:space:]]+${SLUG}([[:space:]]|$) ]]; then
+    kill "$pid" 2>/dev/null || true
+  fi
+done < <(pgrep -f "scripts/dev-loop.sh" 2>/dev/null || true)
 
 cd "$ROOT"
 export DEV_AGENT_SLUG="$SLUG"
