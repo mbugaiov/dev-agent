@@ -30,6 +30,8 @@ Generic flow; **app repo** holds product code and CI. Read `projects/<slug>/proj
 11. **Handoff:**
     - **jira:** `preflight_jira_handoff.ts` → `post_jira_handoff.ts --transition`
     - **github_issues:** `npx tsx scripts/post_github_handoff.ts <slug> <KEY> --pr URL --stg-build SHA --main SHA`
+      **Forbidden in PR body:** `Closes #N` / `Fixes #N` before Argus PASS — merge would
+      auto-close the issue and drop it out of `validate-testing`. Use `Related: #N`.
 12. **Drain:** re-query backlog; start next ticket if count > 0
 
 ## Project overrides
