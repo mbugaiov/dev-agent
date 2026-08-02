@@ -3,6 +3,7 @@
 import {
   buildDevFactoryJql,
   DEV_FACTORY_TICK_POLICY,
+  resolveTrackerProvider,
   type ProjectConfig,
 } from "./projectConfig.ts";
 import {
@@ -73,6 +74,7 @@ export function buildBacklogWakePayload(
   const execution = buildBacklogWakeExecution(
     draft,
     config.git.branch_prefixes,
+    resolveTrackerProvider(config),
   );
   const followOnNote =
     Object.keys(blocked).length > 0

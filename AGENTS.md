@@ -43,7 +43,7 @@ factory; one tick = one backlog drain attempt.
 1. Arm        → bash scripts/arm_dev_loop.sh <slug> (notify_on_output on watch patterns)
 2. Tick       → dev_factory_tick → **BACKLOG_WAKE_EXECUTE only** (execution-only) or DEV_FACTORY_IDLE
 3. Pick       → oldest impl-dev ticket (respect QA follow-on routing)
-4. Pickup     → pickup_jira_ticket.sh → branch; OpenSpec;
+4. Pickup     → pickup_jira_ticket.sh or pickup_github_ticket.sh → branch; OpenSpec;
                 **if ux-charter-first: Athena Mode B until UX_CHARTER_READY**;
                 implement; **UX polish if should_kick_ux** (same branch); app gate command
 5. Ship       → mr:push → wait_pr_pipeline → merge

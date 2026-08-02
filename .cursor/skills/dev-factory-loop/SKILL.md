@@ -1,6 +1,6 @@
 ---
 name: dev-factory-loop
-description: Dev factory loop — picks impl-dev tickets from Jira, runs OpenSpec → MR → merge → STG → Validate/Testing in the app repo. Separate from qa-agent qa-loop. Use on BACKLOG_WAKE_EXECUTE / DEV_FACTORY_IDLE or when user says run loop / execute loop / arm loop / drain backlog.
+description: Dev factory loop — picks impl-dev tickets from Jira or GitHub Issues, runs OpenSpec → MR → merge → STG → Validate/Testing in the app repo. Separate from qa-agent qa-loop. Use on BACKLOG_WAKE_EXECUTE / DEV_FACTORY_IDLE or when user says run loop / execute loop / arm loop / drain backlog.
 ---
 
 # Dev factory loop (impl-dev only)
@@ -9,9 +9,14 @@ description: Dev factory loop — picks impl-dev tickets from Jira, runs OpenSpe
 This skill covers **To Do / In Progress → Validate/Testing** for tickets labelled per
 `projects/<slug>/project.yaml` → `dev_factory.pickup_label`.
 
-## JQL
+## Tracker
 
-Built at runtime: `buildDevFactoryJql()` in `lib/projectConfig.ts` from project config.
+| `tracker.provider` | Pickup | Handoff |
+|--------------------|--------|---------|
+| `jira` (default) | `pickup_jira_ticket.sh` | `preflight_jira_handoff.ts` → `post_jira_handoff.ts` |
+| `github_issues` | `pickup_github_ticket.sh` | `post_github_handoff.ts` (QA RETURN via issue comments) |
+
+Backlog query: Jira JQL via `buildDevFactoryJql()`, or GitHub Issues with pickup label.
 Human exceptions: `projects/<slug>/docs/HUMAN-EXCEPTIONS.md`.
 
 **First-time setup:** follow **`SETUP.md`** through `setup_verify.sh` green before arming.
@@ -45,28 +50,31 @@ Policy: one open MR at a time; many tickets per tick when backlog exists.
 
 Follow skill **`dev-mr-pipeline`** (project overrides in `projects/<slug>/` if present):
 
-0. In Progress + scope comment
+0. Pickup + scope comment (`pickup_jira_ticket.sh` or `pickup_github_ticket.sh`)
 1. Branch off `app.git.default_branch` in **app repo** (`project.yaml` → `app.repo_path`)
 2. OpenSpec spec-first (when enabled) — shell / propose OK before charter
 3. **If label `ux-charter-first`:** run `should_kick_ux.ts … --when before-implement --ticket KEY`.
    On `UX_KICK_YES` (phase charter), wake Athena Mode B (**`dev-ux-subagent`**) — **do not implement UI**
-   until Jira has `UX_CHARTER_READY`. Then implement from the charter.
+   until the tracker has `UX_CHARTER_READY`. Then implement from the charter.
 4. Implement feature behaviour
 5. **UX polish when required** — `should_kick_ux.ts` (default after-implement) → Athena Mode A on the **same branch**
 6. `app.gate_command` → `app.mr_push_command`
-7. Merge → STG buildId → `preflight_jira_handoff.ts` → `post_jira_handoff.ts` → Validate/Testing
-8. Re-run JQL → next ticket
+7. Merge → STG buildId → handoff (`post_jira_handoff.ts` or `post_github_handoff.ts`) → Validate/Testing
+8. Re-query backlog → next ticket
 
 ## QA RETURN
 
-Before any Validate/Testing transition:
+Before handoff to Validate/Testing:
 
 ```bash
+# Jira
 npx tsx scripts/preflight_jira_handoff.ts <slug> <KEY>
+# GitHub Issues — baked into post_github_handoff.ts (same QA RETURN comment gate)
+npx tsx scripts/post_github_handoff.ts <slug> <KEY> --pr URL --stg-build SHA --main SHA
 ```
 
 If blocked: fix, merge, **new** handoff — never drift-triage over qa-agent work.
-See `lib/jiraCommentGate.ts`.
+See `lib/jiraCommentGate.ts` (shared comment protocol).
 
 ## Out of scope
 
