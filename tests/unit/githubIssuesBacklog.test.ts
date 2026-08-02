@@ -10,15 +10,15 @@ import {
 describe("githubIssuesBacklog", () => {
   it("builds search URL with pickup and excluded labels", () => {
     const url = githubIssuesSearchUrl({
-      owner: "mbugaiov",
-      repo: "pantheon",
+      owner: "example-corp",
+      repo: "my-app",
       pickupLabel: "impl-dev",
       excludedLabels: ["human-required", "factory-pause"],
     });
     expect(url).toContain("api.github.com/search/issues");
     expect(decodeURIComponent(url)).toContain("label:impl-dev");
     expect(decodeURIComponent(url)).toContain("-label:human-required");
-    expect(decodeURIComponent(url)).toContain("repo:mbugaiov/pantheon");
+    expect(decodeURIComponent(url)).toContain("repo:example-corp/my-app");
   });
 
   it("maps search items to factory keys", () => {
@@ -27,11 +27,11 @@ describe("githubIssuesBacklog", () => {
         number: 12,
         title: "Add seals",
         state: "open",
-        labels: [{ name: "impl-dev" }, { name: "pantheon" }],
+        labels: [{ name: "impl-dev" }, { name: "my-app" }],
       },
-      "pantheon",
+      "my-app",
     );
-    expect(issue.key).toBe("pantheon#12");
+    expect(issue.key).toBe("my-app#12");
     expect(issue.labels).toContain("impl-dev");
   });
 
@@ -39,11 +39,11 @@ describe("githubIssuesBacklog", () => {
     const issues = [
       mapGithubSearchItem(
         { number: 1, title: "a", state: "open" },
-        "pantheon",
+        "my-app",
       ),
       mapGithubSearchItem(
         { number: 2, title: "b", state: "open" },
-        "pantheon",
+        "my-app",
       ),
     ];
     expect(filterExcludedIssueNumbers(issues, [1]).map((i) => i.number)).toEqual([
@@ -52,7 +52,7 @@ describe("githubIssuesBacklog", () => {
   });
 
   it("parses issue numbers from keys", () => {
-    expect(parseGithubIssueNumber("pantheon#9")).toBe(9);
+    expect(parseGithubIssueNumber("my-app#9")).toBe(9);
     expect(parseGithubIssueNumber("#9")).toBe(9);
     expect(parseGithubIssueNumber("nope")).toBeNull();
   });

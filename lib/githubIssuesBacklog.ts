@@ -1,10 +1,10 @@
 /**
- * GitHub Issues backlog for factories that do not use Jira (e.g. Pantheon).
+ * GitHub Issues backlog for factories that do not use Jira.
  * Mirrors Jira pickup labels: impl-dev, exclude human-required / factory-pause / etc.
  */
 
 export type GithubIssueLike = {
-  key: string; // e.g. "pantheon#12"
+  key: string; // e.g. "my-app#12"
   number: number;
   summary: string;
   status: string; // "open" | "closed"
@@ -78,7 +78,5 @@ export function parseGithubIssueNumber(
 export function commentsHaveUxCharterReady(
   comments: { body?: string | null }[],
 ): boolean {
-  return comments.some((c) =>
-    (c.body ?? "").includes("UX_CHARTER_READY"),
-  );
+  return comments.some((c) => (c.body ?? "").includes("UX_CHARTER_READY"));
 }

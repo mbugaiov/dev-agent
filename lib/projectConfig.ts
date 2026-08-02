@@ -78,7 +78,7 @@ export type ProjectConfig = {
   stg: { base_url: string; health_path?: string };
   app: AppConfig;
   loop: { purpose: string; interval_sec_default: number };
-  /** Backlog tracker — omit or jira for classic LRM; github_issues for Pantheon. */
+  /** Backlog tracker — omit or jira for classic LRM; github_issues for GitHub Issues-backed apps. */
   tracker?: TrackerConfig;
   jira?: {
     enabled?: boolean;

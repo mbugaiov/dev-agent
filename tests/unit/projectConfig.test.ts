@@ -53,3 +53,61 @@ describe("projectConfig", () => {
     expect(stgBuildIdMatchesMain("abc1234", "abc1234def567")).toBe(true);
   });
 });
+
+import { resolveTrackerProvider } from "../../lib/projectConfig.ts";
+import type { ProjectConfig } from "../../lib/projectConfig.ts";
+
+function baseConfig(over: Partial<ProjectConfig> = {}): ProjectConfig {
+  return {
+    name: "My App",
+    slug: "myapp",
+    dev_factory: FIXTURE_DEV_FACTORY,
+    git: {
+      provider: "github",
+      workspace: "example-corp",
+      repo: "my-app",
+      default_branch: "main",
+      branch_prefixes: ["feat"],
+      ticket_key_pattern: "TST-\\d+",
+    },
+    stg: { base_url: "https://stg.example.com" },
+    app: {
+      repo_path: "../my-app",
+      gate_command: "npm test",
+      mr_push_command: "npm run mr:push",
+      openspec_enabled: true,
+      openspec_specs_dir: "openspec/specs",
+    },
+    loop: { purpose: "myappdev", interval_sec_default: 300 },
+    ...over,
+  };
+}
+
+describe("resolveTrackerProvider", () => {
+  it("defaults to jira", () => {
+    expect(resolveTrackerProvider(baseConfig({ git: {
+      provider: "bitbucket",
+      workspace: "example-corp",
+      repo: "my-app",
+      default_branch: "main",
+      branch_prefixes: ["feat"],
+      ticket_key_pattern: "TST-\\d+",
+    }}))).toBe("jira");
+  });
+
+  it("uses explicit tracker.provider", () => {
+    expect(
+      resolveTrackerProvider(
+        baseConfig({ tracker: { provider: "github_issues" } }),
+      ),
+    ).toBe("github_issues");
+  });
+
+  it("infers github_issues when jira disabled + github git", () => {
+    expect(
+      resolveTrackerProvider(
+        baseConfig({ jira: { enabled: false } }),
+      ),
+    ).toBe("github_issues");
+  });
+});

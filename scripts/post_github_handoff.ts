@@ -1,5 +1,5 @@
 /**
- * Post STG handoff on a GitHub Issue (Pantheon / non-Jira factories).
+ * Post STG handoff on a GitHub Issue (non-Jira factories).
  * Usage: npx tsx scripts/post_github_handoff.ts <slug> <issue-key-or-number> \
  *   --pr <url> --stg-build <sha> --main <sha>
  */
@@ -48,9 +48,11 @@ if (!stgBuildIdMatchesMain(stg, main)) {
 
 const validateLabel =
   config.tracker?.validate_label ?? "validate-testing";
+const pickupLabel = config.dev_factory.pickup_label;
 const owner = config.git.workspace;
 const repo = config.git.repo;
 const stgUrl = config.stg.base_url;
+const repoRef = `${owner}/${repo}`;
 
 const body = [
   "## STG handoff (Hephaestus)",
@@ -60,14 +62,14 @@ const body = [
   `- **STG buildId:** \`${stg.slice(0, 12)}\` — matches main`,
   `- **STG:** ${stgUrl}`,
   "",
-  `Label \`${validateLabel}\` applied — **Argus** may validate on STG.`,
+  `Removed \`${pickupLabel}\`; applied \`${validateLabel}\` — QA may validate on STG.`,
   "",
   "Tracker: GitHub Issues (no Jira).",
 ].join("\n");
 
 execFileSync(
   "gh",
-  ["issue", "comment", String(num), "-R", `${owner}/${repo}`, "--body", body],
+  ["issue", "comment", String(num), "-R", repoRef, "--body", body],
   { stdio: "inherit" },
 );
 execFileSync(
@@ -77,10 +79,12 @@ execFileSync(
     "edit",
     String(num),
     "-R",
-    `${owner}/${repo}`,
+    repoRef,
     "--add-label",
     validateLabel,
+    "--remove-label",
+    pickupLabel,
   ],
   { stdio: "inherit" },
 );
-console.log(`GITHUB_HANDOFF_OK ${owner}/${repo}#${num} → ${validateLabel}`);
+console.log(`GITHUB_HANDOFF_OK ${repoRef}#${num} → ${validateLabel} (−${pickupLabel})`);

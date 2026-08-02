@@ -138,11 +138,17 @@ function githubToken(): string {
 async function fetchGithubDevFactoryIssues(): Promise<DevFactoryIssue[]> {
   const owner = config.git.workspace;
   const repo = config.git.repo;
+  const excludedLabels = [
+    ...config.dev_factory.excluded_labels,
+    ...(config.tracker?.validate_label
+      ? [config.tracker.validate_label]
+      : []),
+  ];
   const searchUrl = githubIssuesSearchUrl({
     owner,
     repo,
     pickupLabel: config.dev_factory.pickup_label,
-    excludedLabels: config.dev_factory.excluded_labels,
+    excludedLabels,
   });
 
   const token = githubToken();
@@ -189,7 +195,10 @@ async function fetchGithubDevFactoryIssues(): Promise<DevFactoryIssue[]> {
       state: string;
       labels: { name: string }[];
     }[];
-    const excluded = new Set(config.dev_factory.excluded_labels);
+    const excluded = new Set([
+      ...config.dev_factory.excluded_labels,
+      ...(config.tracker?.validate_label ? [config.tracker.validate_label] : []),
+    ]);
     items = listed
       .filter((i) => i.state.toLowerCase() === "open")
       .filter((i) => !i.labels.some((l) => excluded.has(l.name)))
@@ -201,6 +210,10 @@ async function fetchGithubDevFactoryIssues(): Promise<DevFactoryIssue[]> {
       }));
   }
 
+  const excludedSet = new Set(excludedLabels);
+  items = items.filter(
+    (i) => !(i.labels ?? []).some((l) => excludedSet.has(l.name)),
+  );
   const mapped: GithubIssueLike[] = items.map((i) =>
     mapGithubSearchItem(i, config.slug),
   );
