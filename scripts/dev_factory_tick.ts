@@ -191,6 +191,7 @@ async function fetchGithubDevFactoryIssues(): Promise<DevFactoryIssue[]> {
     }[];
     const excluded = new Set(config.dev_factory.excluded_labels);
     items = listed
+      .filter((i) => i.state.toLowerCase() === "open")
       .filter((i) => !i.labels.some((l) => excluded.has(l.name)))
       .map((i) => ({
         number: i.number,
