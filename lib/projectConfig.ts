@@ -2,6 +2,8 @@
 // Pure parsing helpers — file I/O in scripts.
 
 export type DevFactoryConfig = {
+  /** When false, tick always idles (config pause — distinct from factory-pause label). */
+  enabled?: boolean;
   epic_key: string;
   pickup_label: string;
   excluded_labels: readonly string[];
@@ -59,6 +61,15 @@ export type JiraPickupConfig = {
   transition_from_statuses?: string[];
 };
 
+export type TrackerConfig = {
+  /** Default jira. Use github_issues when the app backlog is GitHub Issues only. */
+  provider: "jira" | "github_issues";
+  /** Label applied after STG handoff (GitHub Issues). */
+  validate_label?: string;
+  /** Label / state meaning Done (GitHub Issues). */
+  done_label?: string;
+};
+
 export type ProjectConfig = {
   name: string;
   slug: string;
@@ -67,6 +78,8 @@ export type ProjectConfig = {
   stg: { base_url: string; health_path?: string };
   app: AppConfig;
   loop: { purpose: string; interval_sec_default: number };
+  /** Backlog tracker — omit or jira for classic LRM; github_issues for Pantheon. */
+  tracker?: TrackerConfig;
   jira?: {
     enabled?: boolean;
     default_labels?: string[];
@@ -74,6 +87,16 @@ export type ProjectConfig = {
     pickup?: JiraPickupConfig;
   };
 };
+
+export function resolveTrackerProvider(
+  config: ProjectConfig,
+): "jira" | "github_issues" {
+  if (config.tracker?.provider) return config.tracker.provider;
+  if (config.jira?.enabled === false && config.git.provider === "github") {
+    return "github_issues";
+  }
+  return "jira";
+}
 
 /** Build JQL from project dev_factory block (no hardcoded epic). */
 export function buildDevFactoryJql(df: DevFactoryConfig): string {

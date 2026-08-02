@@ -19,10 +19,22 @@ export function loadProjectConfig(
 ): ProjectConfig {
   const raw = readFileSync(projectYamlPath(engineRoot, slug), "utf8");
   const parsed = parseYaml(raw) as ProjectConfig;
-  if (!parsed?.slug || !parsed?.dev_factory?.epic_key) {
+  if (!parsed?.slug || !parsed?.dev_factory) {
     throw new Error(
-      `Invalid project.yaml for slug "${slug}" — need slug and dev_factory.epic_key`,
+      `Invalid project.yaml for slug "${slug}" — need slug and dev_factory`,
     );
+  }
+  const tracker = parsed.tracker?.provider;
+  const githubIssues =
+    tracker === "github_issues" ||
+    (parsed.jira?.enabled === false && parsed.git?.provider === "github");
+  if (!githubIssues && !parsed.dev_factory.epic_key) {
+    throw new Error(
+      `Invalid project.yaml for slug "${slug}" — need dev_factory.epic_key (or tracker.provider: github_issues)`,
+    );
+  }
+  if (githubIssues && !parsed.dev_factory.epic_key) {
+    parsed.dev_factory.epic_key = `github:${parsed.git.workspace}/${parsed.git.repo}`;
   }
   return parsed;
 }
