@@ -9,7 +9,7 @@ Hephaestus **does** invoke Athena as a **Cursor Task subagent** when the ticket 
 UX. Work lands on the **same feature branch** Hephaestus already opened — not a
 separate UX pilot branch and not a second Jira epic.
 
-Athena pipeline (engine `docs/UX-PIPELINE.md`):
+Athena pipeline (in **ux-agent** repo: `docs/UX-PIPELINE.md`, not this repo):
 architect → DESIGN.md → visual direction → browser → UI rules → a11y → **Impeccable last**.
 
 ## Two phases
@@ -70,7 +70,8 @@ Then use the **Task** tool (`subagent_type: generalPurpose`). Prompt must includ
 ### Mode B — charter (`ux-charter-first`, before implement)
 
 1. Role: **Athena / UX** — skills `ux-loop` Mode B, `ux-phases`, `ux-architect`,
-   `ux-visual-direction`, `ux-browser-review`, `ux-jira`. Read `docs/UX-PIPELINE.md`.
+   `ux-visual-direction`, `ux-browser-review`, `ux-jira`. Read **ux-agent**
+   `docs/UX-PIPELINE.md` (path under `ux_kick.ux_agent_path`).
 2. **Branch lock:** stay on current app branch; prefer **no product code commits**
    unless the ticket explicitly asks for a pilot implement.
 3. **DESIGN.md:** if it marks prior direction failed / not accepted, propose **new**
@@ -117,4 +118,6 @@ Do **not** file a separate UX-only child for the in-branch pass.
 - Asking Athena to “just Impeccable” a failed redesign without Mode B architect
 - Nested redesign that opens a second app MR while this ticket's MR is open
 - Deploying STG from a UX-only pilot
-- Leaving **shared Athena / Hephaestus engine** edits only local — open **GitHub PRs**
+- Leaving **shared Athena / Hephaestus engine** edits only local — open a **GitHub PR**
+  on `ux-agent` when Athena skills/docs change, and on `dev-agent` when kick/factory
+  skills change (see each engine `PORTABILITY.md`)
