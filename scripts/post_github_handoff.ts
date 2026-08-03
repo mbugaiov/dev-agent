@@ -25,6 +25,7 @@ import {
   shouldConsumePendingOnHandoff,
   type PendingExecuteState,
 } from "../lib/devFactoryExecution.ts";
+import { QA_KICK_YES, resolveQaHandoffKick } from "../lib/qaSubagentKick.ts";
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..");
 const slug = process.argv[2] ?? "";
