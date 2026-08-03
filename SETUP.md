@@ -154,6 +154,9 @@ Edit `projects/<SLUG>/project.yaml`. Replace **all** angle-bracket placeholders.
 | `app.mr_push_command` | App MR push script/command |
 | `loop.purpose` | `<SLUG>dev` (used in loop tick sentinel) |
 | `jira.transitions.validate_testing` | Jira transition id to Validate/Testing |
+| `stack:` (optional) | Tech summary for agents — language, framework, gate, CI, deploy, `stg_url` |
+
+Fill `stack:` so pickup/coding agents can read the app tech without guessing. Prefer mirroring the app repo `AGENTS.md` § Stack.
 
 **Discover Validate/Testing transition id** (agent):
 
