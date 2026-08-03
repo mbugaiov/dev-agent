@@ -1,5 +1,6 @@
 /**
- * Cursor stop hook — force drain when BACKLOG_WAKE_EXECUTE ended without starting work.
+ * Cursor stop hook — force drain when BACKLOG_WAKE_EXECUTE ended without starting work,
+ * or when Argus kick after handoff was not acknowledged.
  */
 import { execSync } from "node:child_process";
 import { existsSync, readFileSync } from "node:fs";
@@ -9,6 +10,11 @@ import {
   shouldForceDrainFollowup,
   type PendingExecuteState,
 } from "../lib/devFactoryExecution.ts";
+import {
+  PENDING_ARGUS_KICK_PATH,
+  shouldForceArgusKickFollowup,
+  type PendingArgusKickState,
+} from "../lib/argusKickPending.ts";
 import { loadProjectConfig, resolveAppRoot } from "../lib/loadProject.ts";
 
 type StopHookInput = {
@@ -31,6 +37,16 @@ function readPending(root: string): PendingExecuteState | null {
   if (!existsSync(path)) return null;
   try {
     return JSON.parse(readFileSync(path, "utf8")) as PendingExecuteState;
+  } catch {
+    return null;
+  }
+}
+
+function readArgusPending(root: string): PendingArgusKickState | null {
+  const path = join(root, PENDING_ARGUS_KICK_PATH);
+  if (!existsSync(path)) return null;
+  try {
+    return JSON.parse(readFileSync(path, "utf8")) as PendingArgusKickState;
   } catch {
     return null;
   }
@@ -82,6 +98,18 @@ function main() {
   }
 
   const engineRoot = process.cwd();
+  const loopCount = input.loop_count ?? 0;
+
+  // Prefer forcing Argus wake after handoff — ticket already left impl-dev.
+  const argusDecision = shouldForceArgusKickFollowup({
+    pending: readArgusPending(engineRoot),
+    loopCount,
+  });
+  if (argusDecision.force) {
+    console.log(JSON.stringify({ followup_message: argusDecision.message }));
+    return;
+  }
+
   const slug = process.env.DEV_AGENT_SLUG ?? "";
   if (!slug) {
     console.log("{}");
@@ -104,7 +132,7 @@ function main() {
     currentBranch: gitBranch(gitCwd),
     hasWorkingTreeChanges: hasWorkingTreeChanges(gitCwd),
     hasOpenPr: hasOpenPr(appRoot),
-    loopCount: input.loop_count ?? 0,
+    loopCount,
     git: config.git,
   });
 
