@@ -160,3 +160,9 @@ execFileSync(
 );
 consumePendingExecuteForHandoff(ticketKey);
 console.log(`GITHUB_HANDOFF_OK ${repoRef}#${num} → ${validateLabel} (−${pickupLabel})`);
+console.log(
+  `QA_KICK_YES {"slug":"${config.slug}","ticket":"${ticketKey}","reasons":["handoff:ok","argus:validate-testing"]}`,
+);
+console.log(
+  `ARGUS_KICK → wake qa-agent for ${config.slug} (${ticketKey}) — skill dev-qa-subagent / BACKLOG_WAKE_EXECUTE`,
+);

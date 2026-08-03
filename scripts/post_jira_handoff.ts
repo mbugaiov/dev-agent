@@ -248,6 +248,14 @@ async function main() {
   }
 
   consumePendingExecuteForHandoff(args.key);
+  if (args.transition) {
+    console.log(
+      `QA_KICK_YES {"slug":"${config.slug}","ticket":"${args.key}","reasons":["handoff:ok","argus:validate-testing"]}`,
+    );
+    console.log(
+      `ARGUS_KICK → wake qa-agent for ${config.slug} (${args.key}) — skill dev-qa-subagent / BACKLOG_WAKE_EXECUTE`,
+    );
+  }
 }
 
 main().catch((e) => {
