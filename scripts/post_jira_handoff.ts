@@ -23,6 +23,7 @@ import {
   shouldConsumePendingOnHandoff,
   type PendingExecuteState,
 } from "../lib/devFactoryExecution.ts";
+import { QA_KICK_YES, resolveQaHandoffKick } from "../lib/qaSubagentKick.ts";
 import {
   jiraFetch,
   plainTextToAdf,
@@ -248,6 +249,20 @@ async function main() {
   }
 
   consumePendingExecuteForHandoff(args.key);
+  // Kick only when status moved (or already) to Validate/Testing via --transition.
+  const qaKick = resolveQaHandoffKick({ handoffOk: Boolean(args.transition) });
+  if (qaKick.kick) {
+    console.log(
+      `${QA_KICK_YES} ${JSON.stringify({
+        slug: config.slug,
+        ticket: args.key,
+        reasons: qaKick.reasons,
+      })}`,
+    );
+    console.log(
+      `ARGUS_KICK → wake qa-agent for ${config.slug} (${args.key}) — skill dev-qa-subagent / BACKLOG_WAKE_EXECUTE`,
+    );
+  }
 }
 
 main().catch((e) => {

@@ -25,6 +25,7 @@ import {
   shouldConsumePendingOnHandoff,
   type PendingExecuteState,
 } from "../lib/devFactoryExecution.ts";
+import { QA_KICK_YES, resolveQaHandoffKick } from "../lib/qaSubagentKick.ts";
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..");
 const slug = process.argv[2] ?? "";
@@ -160,3 +161,16 @@ execFileSync(
 );
 consumePendingExecuteForHandoff(ticketKey);
 console.log(`GITHUB_HANDOFF_OK ${repoRef}#${num} → ${validateLabel} (−${pickupLabel})`);
+const qaKick = resolveQaHandoffKick({ handoffOk: true });
+if (qaKick.kick) {
+  console.log(
+    `${QA_KICK_YES} ${JSON.stringify({
+      slug: config.slug,
+      ticket: ticketKey,
+      reasons: qaKick.reasons,
+    })}`,
+  );
+  console.log(
+    `ARGUS_KICK → wake qa-agent for ${config.slug} (${ticketKey}) — skill dev-qa-subagent / BACKLOG_WAKE_EXECUTE`,
+  );
+}

@@ -23,6 +23,7 @@ factory; one tick = one backlog drain attempt.
 | Per-ticket flow (branch → OpenSpec → gate → MR → merge → handoff) | `dev-mr-pipeline` |
 | Wake Athena UX subagent on the feature branch | `dev-ux-subagent` |
 | Wake Hermes BA subagent before implement (`ba-spec-first`) | `dev-ba-subagent` |
+| Wake Argus QA after Validate/Testing handoff | `dev-qa-subagent` |
 | Jira transitions, handoff comments, QA RETURN gates | `dev-jira` |
 | Phase checklist (spec-first, test gate, archive) | `dev-phases` |
 | **Engine PR code review** (before merge on dev-agent repo) | `dev-code-review` |
@@ -49,7 +50,7 @@ factory; one tick = one backlog drain attempt.
                 implement; **UX polish if should_kick_ux** (same branch); app gate command
 5. Ship       → mr:push → wait_pr_pipeline → merge
 6. STG        → wait_main_deploy + check_stg_build (buildId gate)
-7. Handoff    → preflight_jira_handoff (block on QA RETURN) → post_jira_handoff → Validate/Testing
+7. Handoff    → preflight → post_*_handoff → Validate/Testing → **on `QA_KICK_YES`: wake Argus (`dev-qa-subagent`)**
 8. Drain      → re-run JQL; next ticket same session until DEV_FACTORY_IDLE
 ```
 

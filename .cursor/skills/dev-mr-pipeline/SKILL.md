@@ -37,6 +37,9 @@ Generic flow; **app repo** holds product code and CI. Read `projects/<slug>/proj
     - **github_issues:** `npx tsx scripts/post_github_handoff.ts <slug> <KEY> --pr URL --stg-build SHA --main SHA`
       **Forbidden in PR body:** `Closes #N` / `Fixes #N` before Argus PASS — merge would
       auto-close the issue and drop it out of `validate-testing`. Use `Related: #N`.
+11b. **Argus kick (mandatory):** handoff prints `QA_KICK_YES` → skill **`dev-qa-subagent`**
+    (Cursor Task into `qa-agent`, `BACKLOG_WAKE_EXECUTE` / drain `qa_scope`). Do **not** wait
+    for `arm_qa_loop` timer — same pattern as Hermes/Athena kicks.
 12. **Drain:** re-query backlog; start next ticket if count > 0
 
 ## Project overrides
@@ -55,3 +58,4 @@ App-specific MR workflow (OpenSpec gates, CI commands) lives in
 - Implementing UI on a `ux-charter-first` ticket before `UX_CHARTER_READY`
 - Skipping polish `dev-ux-subagent` when `needs-ux-pass` / `impl-ux` is on the ticket
 - Waiting for human BA sign-off (Hermes lint + skeptical review is the gate)
+- Ending handoff without waking Argus (`dev-qa-subagent`) when `QA_KICK_YES` is printed
