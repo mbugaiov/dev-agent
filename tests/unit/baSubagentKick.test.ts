@@ -15,7 +15,17 @@ describe("ba-spec-first", () => {
     expect(
       commentsHaveBaSpecReady([{ body: "done\n\nBA_SPEC_READY\n" }]),
     ).toBe(true);
+    expect(
+      commentsHaveBaSpecReady([{ body: "## BA_SPEC_READY\n\nHermes published" }]),
+    ).toBe(true);
     expect(commentsHaveBaSpecReady([{ body: "still drafting" }])).toBe(false);
+    expect(
+      commentsHaveBaSpecReady([
+        {
+          body: "Wait BA_SPEC_READY before implement.\n\n_pickup_github_ticket_",
+        },
+      ]),
+    ).toBe(false);
   });
 
   it("kicks when pending", () => {

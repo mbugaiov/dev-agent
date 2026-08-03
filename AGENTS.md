@@ -22,6 +22,7 @@ factory; one tick = one backlog drain attempt.
 | Backlog drain, loop arm, tick policy | `dev-factory-loop` |
 | Per-ticket flow (branch → OpenSpec → gate → MR → merge → handoff) | `dev-mr-pipeline` |
 | Wake Athena UX subagent on the feature branch | `dev-ux-subagent` |
+| Wake Hermes BA subagent before implement (`ba-spec-first`) | `dev-ba-subagent` |
 | Jira transitions, handoff comments, QA RETURN gates | `dev-jira` |
 | Phase checklist (spec-first, test gate, archive) | `dev-phases` |
 | **Engine PR code review** (before merge on dev-agent repo) | `dev-code-review` |
