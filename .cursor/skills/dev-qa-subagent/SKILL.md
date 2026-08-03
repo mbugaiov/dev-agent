@@ -42,7 +42,7 @@ Prompt must include:
    or `QA RETURN`.
 5. End with `backlog_drained` when scope count=0.
 
-**Isolation:** never hit another product STG under this slug (Pantheon ≠ LRM).
+**Isolation:** never hit another product STG under this `<slug>` (one slug = one tenant).
 
 ## Ordering
 
@@ -59,5 +59,5 @@ kick.
 ## Forbidden
 
 - Ending the handoff turn with only `GITHUB_HANDOFF_OK` / `HANDOFF_POSTED` and no Argus wake
-- Assuming `arm_qa_loop.sh <slug>` is running (it may not be — Pantheon gap)
-- Asking the human “want me to run QA?” — kick is mandatory after handoff
+- Assuming `arm_qa_loop.sh <slug>` is running (it may not be — timer wake is not required for the kick)
+- Asking the human to decide whether QA should run — kick is mandatory after handoff

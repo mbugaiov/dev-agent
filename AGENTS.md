@@ -50,7 +50,7 @@ factory; one tick = one backlog drain attempt.
                 implement; **UX polish if should_kick_ux** (same branch); app gate command
 5. Ship       → mr:push → wait_pr_pipeline → merge
 6. STG        → wait_main_deploy + check_stg_build (buildId gate)
-7. Handoff    → preflight_jira_handoff (block on QA RETURN) → post_jira_handoff → Validate/Testing
+7. Handoff    → preflight → post_*_handoff → Validate/Testing → **on `QA_KICK_YES`: wake Argus (`dev-qa-subagent`)**
 8. Drain      → re-run JQL; next ticket same session until DEV_FACTORY_IDLE
 ```
 

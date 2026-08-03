@@ -65,8 +65,7 @@ Follow skill **`dev-mr-pipeline`** (project overrides in `projects/<slug>/` if p
 6. `app.gate_command` → `app.mr_push_command`
 7. Merge → STG buildId → handoff (`post_jira_handoff.ts` or `post_github_handoff.ts`) → Validate/Testing
 7b. **On `QA_KICK_YES`:** wake Argus now (`dev-qa-subagent`) — do not rely on `arm_qa_loop` alone
-8. Re-query; next ticket or IDLE
-8. Re-query backlog → next ticket
+8. Re-query backlog → next ticket or IDLE
 
 ## QA RETURN
 
