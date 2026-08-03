@@ -95,3 +95,5 @@ report:
 # ux_kick:
 #   ui_path_globs: []                 # override default UI globs
 #   ux_agent_path: ../ux-agent        # Athena checkout; or set UX_AGENT_ROOT
+# qa_kick:
+#   qa_agent_path: ../qa-agent        # Argus checkout; or set QA_AGENT_ROOT

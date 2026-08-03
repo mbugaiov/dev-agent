@@ -37,7 +37,9 @@ Generic flow; **app repo** holds product code and CI. Read `projects/<slug>/proj
     - **github_issues:** `npx tsx scripts/post_github_handoff.ts <slug> <KEY> --pr URL --stg-build SHA --main SHA`
       **Forbidden in PR body:** `Closes #N` / `Fixes #N` before Argus PASS — merge would
       auto-close the issue and drop it out of `validate-testing`. Use `Related: #N`.
-11b. **Argus kick (mandatory):** handoff prints `QA_KICK_YES` → skill **`dev-qa-subagent`**
+11b. **Argus kick (mandatory):** handoff prints `QA_KICK_YES` + `QA_WAKE_EXECUTE`,
+     writes qa/dev pending latches → skill **`dev-qa-subagent`** (Task Argus) →
+     `npx tsx scripts/ack_argus_kick.ts`
     (Cursor Task into `qa-agent`, `BACKLOG_WAKE_EXECUTE` / drain `qa_scope`). Do **not** wait
     for `arm_qa_loop` timer — same pattern as Hermes/Athena kicks.
 12. **Drain:** re-query backlog; start next ticket if count > 0

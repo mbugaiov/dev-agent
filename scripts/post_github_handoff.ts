@@ -1,9 +1,9 @@
 /**
  * Post STG handoff on a GitHub Issue (non-Jira factories).
  * Usage: npx tsx scripts/post_github_handoff.ts <slug> <issue-key-or-number> \
- *   --pr <url> --stg-build <sha> --main <sha> [--pipeline N] [--summary "..."]
+ *   --pr <url> --stg-build <sha> --main <sha> [--pipeline N] [--summary "..."] [--no-kick]
  */
-import { existsSync, readFileSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { loadProjectConfig } from "../lib/loadProject.ts";
 import { parseGithubIssueNumber } from "../lib/githubIssuesBacklog.ts";
 import { dirname, join } from "node:path";
@@ -26,6 +26,11 @@ import {
   type PendingExecuteState,
 } from "../lib/devFactoryExecution.ts";
 import { QA_KICK_YES, resolveQaHandoffKick } from "../lib/qaSubagentKick.ts";
+import { fireQaHandoffKick } from "../lib/qaHandoffKickBridge.ts";
+import {
+  buildPendingArgusKickState,
+  PENDING_ARGUS_KICK_PATH,
+} from "../lib/argusKickPending.ts";
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..");
 const slug = process.argv[2] ?? "";
@@ -34,6 +39,10 @@ const issueArg = process.argv[3] ?? "";
 function arg(name: string): string {
   const i = process.argv.indexOf(name);
   return i >= 0 ? (process.argv[i + 1] ?? "") : "";
+}
+
+function hasFlag(name: string): boolean {
+  return process.argv.includes(name);
 }
 
 function consumePendingExecuteForHandoff(ticketKey: string) {
@@ -161,7 +170,10 @@ execFileSync(
 );
 consumePendingExecuteForHandoff(ticketKey);
 console.log(`GITHUB_HANDOFF_OK ${repoRef}#${num} → ${validateLabel} (−${pickupLabel})`);
-const qaKick = resolveQaHandoffKick({ handoffOk: true });
+const qaKick = resolveQaHandoffKick({
+  handoffOk: true,
+  suppress: hasFlag("--no-kick"),
+});
 if (qaKick.kick) {
   console.log(
     `${QA_KICK_YES} ${JSON.stringify({
@@ -170,7 +182,45 @@ if (qaKick.kick) {
       reasons: qaKick.reasons,
     })}`,
   );
-  console.log(
-    `ARGUS_KICK → wake qa-agent for ${config.slug} (${ticketKey}) — skill dev-qa-subagent / BACKLOG_WAKE_EXECUTE`,
+  const fired = fireQaHandoffKick({
+    engineRoot: ROOT,
+    slug: config.slug,
+    ticketKey,
+    config: config as { qa_kick?: { qa_agent_path?: string } },
+  });
+  if (fired.ok) {
+    process.stdout.write(fired.stdout);
+    console.log(
+      `ARGUS_HARD_KICK_OK ${JSON.stringify({
+        slug: config.slug,
+        ticket: ticketKey,
+        qaAgentRoot: fired.qaAgentRoot,
+      })}`,
+    );
+  } else {
+    console.error(
+      `ARGUS_HARD_KICK_FAIL ${JSON.stringify({
+        slug: config.slug,
+        ticket: ticketKey,
+        qaAgentRoot: fired.qaAgentRoot,
+        reason: fired.reason,
+      })}`,
+    );
+  }
+  const pendingArgus = buildPendingArgusKickState({
+    slug: config.slug,
+    ticket: ticketKey,
+    qaAgentRoot: fired.qaAgentRoot,
+  });
+  const pendingPath = join(ROOT, PENDING_ARGUS_KICK_PATH);
+  mkdirSync(dirname(pendingPath), { recursive: true });
+  writeFileSync(
+    pendingPath,
+    JSON.stringify(pendingArgus, null, 2) + "\n",
+    "utf8",
   );
+  console.log(
+    `ARGUS_KICK → wake qa-agent for ${config.slug} (${ticketKey}) — skill dev-qa-subagent; pending ${PENDING_ARGUS_KICK_PATH}`,
+  );
+  console.log(pendingArgus.executePrompt);
 }
