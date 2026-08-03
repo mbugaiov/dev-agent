@@ -15,6 +15,7 @@ review.md
 
 # Per-session dev factory execute latch (runtime state)
 .cursor/dev-factory-pending-execute.json
+.cursor/dev-factory-pending-argus-kick.json
 
 **/node_modules/
 __pycache__/

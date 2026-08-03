@@ -3,7 +3,7 @@
  * Post Validate/Testing handoff comment; optionally transition.
  * Usage: post_jira_handoff.ts <slug> <JIRA_KEY> --pr-url ... --transition
  */
-import { existsSync, readFileSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import {
@@ -24,6 +24,11 @@ import {
   type PendingExecuteState,
 } from "../lib/devFactoryExecution.ts";
 import { QA_KICK_YES, resolveQaHandoffKick } from "../lib/qaSubagentKick.ts";
+import { fireQaHandoffKick } from "../lib/qaHandoffKickBridge.ts";
+import {
+  buildPendingArgusKickState,
+  PENDING_ARGUS_KICK_PATH,
+} from "../lib/argusKickPending.ts";
 import {
   jiraFetch,
   plainTextToAdf,
@@ -250,7 +255,10 @@ async function main() {
 
   consumePendingExecuteForHandoff(args.key);
   // Kick only when status moved (or already) to Validate/Testing via --transition.
-  const qaKick = resolveQaHandoffKick({ handoffOk: Boolean(args.transition) });
+  const qaKick = resolveQaHandoffKick({
+    handoffOk: Boolean(args.transition),
+    suppress: process.argv.includes("--no-kick"),
+  });
   if (qaKick.kick) {
     console.log(
       `${QA_KICK_YES} ${JSON.stringify({
@@ -259,9 +267,47 @@ async function main() {
         reasons: qaKick.reasons,
       })}`,
     );
-    console.log(
-      `ARGUS_KICK → wake qa-agent for ${config.slug} (${args.key}) — skill dev-qa-subagent / BACKLOG_WAKE_EXECUTE`,
+    const fired = fireQaHandoffKick({
+      engineRoot: ROOT,
+      slug: config.slug,
+      ticketKey: args.key,
+      config: config as { qa_kick?: { qa_agent_path?: string } },
+    });
+    if (fired.ok) {
+      process.stdout.write(fired.stdout);
+      console.log(
+        `ARGUS_HARD_KICK_OK ${JSON.stringify({
+          slug: config.slug,
+          ticket: args.key,
+          qaAgentRoot: fired.qaAgentRoot,
+        })}`,
+      );
+    } else {
+      console.error(
+        `ARGUS_HARD_KICK_FAIL ${JSON.stringify({
+          slug: config.slug,
+          ticket: args.key,
+          qaAgentRoot: fired.qaAgentRoot,
+          reason: fired.reason,
+        })}`,
+      );
+    }
+    const pendingArgus = buildPendingArgusKickState({
+      slug: config.slug,
+      ticket: args.key,
+      qaAgentRoot: fired.qaAgentRoot,
+    });
+    const pendingPath = join(ROOT, PENDING_ARGUS_KICK_PATH);
+    mkdirSync(dirname(pendingPath), { recursive: true });
+    writeFileSync(
+      pendingPath,
+      JSON.stringify(pendingArgus, null, 2) + "\n",
+      "utf8",
     );
+    console.log(
+      `ARGUS_KICK → wake qa-agent for ${config.slug} (${args.key}) — skill dev-qa-subagent; pending ${PENDING_ARGUS_KICK_PATH}`,
+    );
+    console.log(pendingArgus.executePrompt);
   }
 }
 
