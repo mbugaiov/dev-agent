@@ -130,7 +130,15 @@ export function fireQaHandoffKick(input: {
         },
       );
       return { ok: true, qaAgentRoot: qaRoot, stdout };
-    } catch {
+    } catch (err) {
+      const detail = err instanceof Error ? err.message : String(err);
+      console.error(
+        `QA_HANDOFF_KICK_CLI_FALLBACK ${JSON.stringify({
+          slug: input.slug,
+          ticket: input.ticketKey,
+          detail,
+        })}`,
+      );
       /* fall through to direct write */
     }
   }

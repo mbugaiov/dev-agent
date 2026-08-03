@@ -13,21 +13,21 @@ import {
 describe("argusKickPending", () => {
   it("forces followup while unconsumed", () => {
     const pending = buildPendingArgusKickState({
-      slug: "pantheon",
-      ticket: "pantheon#66",
+      slug: "selftest",
+      ticket: "selftest#1",
     });
     const d = shouldForceArgusKickFollowup({ pending, loopCount: 0 });
     expect(d.force).toBe(true);
     if (d.force) {
       expect(d.message).toContain("ARGUS_KICK_EXECUTE");
-      expect(d.message).toContain("pantheon#66");
+      expect(d.message).toContain("selftest#1");
     }
   });
 
   it("skips when consumed or max loops", () => {
     const pending = buildPendingArgusKickState({
-      slug: "pantheon",
-      ticket: "pantheon#66",
+      slug: "selftest",
+      ticket: "selftest#1",
     });
     expect(
       shouldForceArgusKickFollowup({
@@ -60,13 +60,13 @@ describe("qaHandoffKickBridge", () => {
 
   it("formats QA_WAKE_EXECUTE line with executeNow", () => {
     const state = buildQaWakePayload({
-      slug: "pantheon",
-      ticketKey: "pantheon#66",
+      slug: "selftest",
+      ticketKey: "selftest#1",
     });
     const line = formatQaWakeExecuteLine(state);
     expect(line.startsWith(QA_WAKE_EXECUTE_SENTINEL)).toBe(true);
     expect(line).toContain('"executeNow":true');
-    expect(line).toContain("pantheon#66");
+    expect(line).toContain("selftest#1");
     expect(state.consumed).toBe(false);
     expect(state.source).toBe("handoff");
   });
