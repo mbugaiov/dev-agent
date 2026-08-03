@@ -21,7 +21,9 @@ export function hasBaSpecFirstLabel(labels?: string[]): boolean {
 }
 
 export function isBaSpecReadyComment(commentText: string): boolean {
-  return new RegExp(`\\b${BA_SPEC_READY_SENTINEL}\\b`).test(commentText);
+  // Require a dedicated sentinel line — not prose mentioning BA_SPEC_READY.
+  // Matches: "BA_SPEC_READY" alone, or "## BA_SPEC_READY", optional trailing punctuation.
+  return /(?:^|\n)\s*(?:##\s*)?BA_SPEC_READY\s*(?:\n|$)/.test(commentText);
 }
 
 export function commentsHaveBaSpecReady(
