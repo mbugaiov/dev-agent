@@ -13,7 +13,12 @@ Generic flow; **app repo** holds product code and CI. Read `projects/<slug>/proj
    - **jira:** `bash scripts/pickup_jira_ticket.sh <slug> <KEY> --scope "<plan>" --points <n>` — transition, assign, estimate, scope comment (`jira.pickup`).
    - **github_issues:** `bash scripts/pickup_github_ticket.sh <slug> <KEY> --scope "<plan>"` — ensure pickup label, scope comment (no story points).
 1. **Branch:** `git checkout -B <prefix>/<KEY>-<slug> origin/<default_branch>` in app repo
-2. **OpenSpec:** when `app.openspec_enabled` (default) — propose/apply/archive per app repo skills. App must pass `verify_app_openspec.sh` at setup (`SETUP.md` §6). Shell/propose may precede charter.
+2. **OpenSpec:** when `app.openspec_enabled` (default) — propose/apply/archive per app repo skills. App must pass `verify_app_openspec.sh` at setup (`SETUP.md` §6). Shell/propose may precede charter **after** BA gate when `ba-spec-first`.
+2b. **BA spec (when `ba-spec-first`):** skill **`dev-ba-subagent`**. Run
+   `npx tsx scripts/should_kick_ba.ts <slug> --labels <labels> --ticket <KEY>`.
+   If `BA_KICK_YES`: wake Hermes (`ba-agent` / `ba-loop`) — **block implement** until
+   comment `BA_SPEC_READY`. No human approval — Hermes self-critique + lint is the gate.
+   Then continue OpenSpec from published change artifacts.
 3. **UX charter (when `ux-charter-first`):** skill **`dev-ux-subagent`**. Run
    `npx tsx scripts/should_kick_ux.ts <slug> --labels <labels> --surfaces "<surfaces>" --when before-implement --ticket <KEY>`.
    If phase `charter` / `UX_KICK_YES`: notify `--mode charter`, wake Athena Mode B, **block UI implement**
@@ -44,6 +49,9 @@ App-specific MR workflow (OpenSpec gates, CI commands) lives in
 - Direct commits to default branch
 - Moving feature tickets to Done
 - Validate/Testing while QA RETURN unresolved
+- Skipping BA when `ba-spec-first` is set and `BA_SPEC_READY` is missing
+- Implementing on a `ba-spec-first` ticket before `BA_SPEC_READY`
 - Skipping charter when `ux-charter-first` is set and `UX_CHARTER_READY` is missing
 - Implementing UI on a `ux-charter-first` ticket before `UX_CHARTER_READY`
 - Skipping polish `dev-ux-subagent` when `needs-ux-pass` / `impl-ux` is on the ticket
+- Waiting for human BA sign-off (Hermes lint + skeptical review is the gate)

@@ -53,7 +53,10 @@ Follow skill **`dev-mr-pipeline`** (project overrides in `projects/<slug>/` if p
 
 0. Pickup + scope comment (`pickup_jira_ticket.sh` or `pickup_github_ticket.sh`)
 1. Branch off `app.git.default_branch` in **app repo** (`project.yaml` → `app.repo_path`)
-2. OpenSpec spec-first (when enabled) — shell / propose OK before charter
+2. OpenSpec spec-first (when enabled) — after BA gate when `ba-spec-first`
+2b. **If label `ba-spec-first`:** run `should_kick_ba.ts … --ticket KEY`.
+   On `BA_KICK_YES`, wake Hermes (`dev-ba-subagent`) — **do not implement**
+   until the tracker has `BA_SPEC_READY` (Hermes self-critique + lint; no human approve).
 3. **If label `ux-charter-first`:** run `should_kick_ux.ts … --when before-implement --ticket KEY`.
    On `UX_KICK_YES` (phase charter), wake Athena Mode B (**`dev-ux-subagent`**) — **do not implement UI**
    until the tracker has `UX_CHARTER_READY`. Then implement from the charter.
