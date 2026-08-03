@@ -57,7 +57,7 @@ jobs:
               return;
             }
 
-            const required = ['test', 'review'];
+            const required = ['test', 'review (Themis)', 'isolation (Themis)'];
             const { data: checks } = await github.rest.checks.listForRef({
               owner,
               repo,

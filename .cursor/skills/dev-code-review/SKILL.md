@@ -28,7 +28,8 @@ git push -u origin HEAD
 gh pr create --base main --title "…" --body "…"
 ```
 
-Wait for **`test`** + **`review`** green → auto-merge (or merge manually if auto-merge skipped).
+Wait for **`test`** + **`review (Themis)`** + **`isolation (Themis)`** green → auto-merge
+(or merge manually if auto-merge skipped).
 
 ## Step 1 — Automated gates (blocking)
 
@@ -50,12 +51,13 @@ Runs:
 ### On GitHub PRs
 
 Workflow `.github/workflows/code-review.yml` runs when `CURSOR_API_KEY` is configured.
-When **CI** (`test`) and **Code Review** (`review`) both succeed, `.github/workflows/auto-merge.yml`
-squash-merges the PR (same policy as app-repo Bitbucket auto-merge).
+Two checks run in parallel: **`review (Themis)`** (project rules) and **`isolation (Themis)`**
+(checkout `themis-agent` → `ci_isolation.sh`). When **CI** (`test`) and both Themis checks
+succeed, `.github/workflows/auto-merge.yml` squash-merges the PR.
 
-1. Runs `cursor-agent` with `.cursor/rules/code-review.mdc`
-2. Writes `review.md` and posts PR comment
-3. Fails if `scripts/check_review_gate.sh` finds blockers
+1. `review (Themis)`: `cursor-agent` with `.cursor/rules/code-review.mdc` → `review.md` + gate
+2. `isolation (Themis)`: portable scan + optional LLM isolation pass
+3. Either failing blocks merge
 
 Enable: GitHub repo → Settings → Secrets → `CURSOR_API_KEY`.
 

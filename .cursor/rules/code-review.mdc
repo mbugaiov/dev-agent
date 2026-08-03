@@ -31,16 +31,11 @@ Read `AGENTS.md`, `ARCHITECTURE.md`, `PORTABILITY.md`, and `.cursor/rules/dev-en
 
 Prioritise: **correctness · security · portability leaks · missing/broken tests**, then maintainability.
 
-## Isolation sub-step (Themis engine)
+## Isolation (Themis) — separate CI check
 
-Project-specific review above stays. **Also** enforce portable isolation (docs/skills/rules —
-not language style). When `themis-agent` is available, follow skill `themis-isolation`
-(mode=`engine`) and/or run:
-
-`bash "$THEMIS_AGENT_PATH/scripts/isolation_scan.sh" --mode engine --root "$PWD"`
-
-Fold any isolation findings into **`## Blocking issues`** (customer/project slugs, host
-paths, secrets, cross-tenant copy-paste). Do not skip because the product CR is green.
+Primary enforcement is the CI job **`isolation (Themis)`** (checkout `themis-agent` →
+`ci_isolation.sh`). Project review here stays focused on engine rules. If you still see
+leaks (customer slugs, host paths, secrets), fold them into **`## Blocking issues`**.
 
 ## Review focus by change type
 
