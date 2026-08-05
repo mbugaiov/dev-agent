@@ -37,10 +37,11 @@ export function buildQaWakePayload(input: {
   const oldest = keys[0]!;
   const source = input.source ?? "handoff";
   const executePrompt =
-    `${QA_WAKE_EXECUTE_SENTINEL}: Drain validate-testing for ${input.slug} NOW. ` +
+    `${QA_WAKE_EXECUTE_SENTINEL}: Drain QA scope for ${input.slug} NOW. ` +
     `Oldest ${oldest}. cd qa-agent → eval "$(bash scripts/qa_scope.sh ${input.slug} --log --shell)" → ` +
-    `handoff+OpenSpec+TC+STG evidence → qa-verdict-review → close or QA RETURN → ` +
-    `drain until backlog_drained. Forbidden: notify-only / status-only.`;
+    `validate-testing first (handoff+OpenSpec+TC+STG evidence → qa-verdict-review → close or QA RETURN); ` +
+    `when retest empty, continue open impl-qa charters (marathon until Done). ` +
+    `Drain until backlog_drained (scope count=0). Forbidden: notify-only / status-only.`;
   return {
     slug: input.slug,
     oldest,
