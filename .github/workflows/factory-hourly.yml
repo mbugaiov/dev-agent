@@ -1,0 +1,78 @@
+name: Cloud factory (hourly)
+
+# Unattended Hephaestus wake via Cursor SDK cloud runtime.
+# Does NOT depend on a local Cursor IDE session.
+#
+# Enable scheduled runs: repo Settings → Variables → CLOUD_FACTORY_ENABLED = true
+# Manual: Actions → Cloud factory (hourly) → Run workflow (dry-run default on)
+
+on:
+  schedule:
+    # Hourly at :17 UTC (offset from :00 to reduce thundering herd)
+    - cron: "17 * * * *"
+  workflow_dispatch:
+    inputs:
+      slug:
+        description: "Project slug (projects/<slug>/project.yaml)"
+        required: true
+        default: "pantheon"
+        type: string
+      dry_run:
+        description: "Plan only — do not spawn a cloud agent"
+        required: true
+        default: true
+        type: boolean
+
+concurrency:
+  group: cloud-factory-${{ github.event.inputs.slug || 'pantheon' }}
+  cancel-in-progress: false
+
+jobs:
+  wake:
+    name: Tick + cloud wake
+    runs-on: ubuntu-latest
+    # Scheduled ticks only when explicitly enabled. Manual dispatch always allowed.
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      vars.CLOUD_FACTORY_ENABLED == 'true'
+    permissions:
+      contents: read
+    env:
+      SLUG: ${{ github.event.inputs.slug || 'pantheon' }}
+      CURSOR_API_KEY: ${{ secrets.CURSOR_API_KEY }}
+      # Cross-repo Issues (private app repos). Prefer FACTORY_GITHUB_TOKEN PAT.
+      GITHUB_TOKEN: ${{ secrets.FACTORY_GITHUB_TOKEN || secrets.GH_TOKEN || github.token }}
+      CLOUD_FACTORY_DRY_RUN: ${{ github.event_name == 'workflow_dispatch' && inputs.dry_run && '1' || '' }}
+      # Schedule is always live spawn when CLOUD_FACTORY_ENABLED; force dry-run off
+      # unless CLOUD_FACTORY_FORCE_DRY_RUN=true (repo variable) for soak tests.
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+
+      - name: Install
+        run: npm ci
+
+      - name: Require CURSOR_API_KEY when not dry-run
+        if: env.CLOUD_FACTORY_DRY_RUN != '1'
+        run: |
+          if [[ -z "${CURSOR_API_KEY:-}" ]]; then
+            echo "::error::CURSOR_API_KEY secret missing on this repo (Settings → Secrets → Actions)."
+            exit 1
+          fi
+
+      - name: Apply force dry-run variable
+        if: vars.CLOUD_FACTORY_FORCE_DRY_RUN == 'true'
+        run: echo "CLOUD_FACTORY_DRY_RUN=1" >> "$GITHUB_ENV"
+
+      - name: Cloud factory wake
+        run: |
+          set -euo pipefail
+          EXTRA=()
+          if [[ "${CLOUD_FACTORY_DRY_RUN:-}" == "1" ]]; then
+            EXTRA+=(--dry-run)
+          fi
+          bash scripts/cloud_factory_wake.sh "$SLUG" "${EXTRA[@]}"

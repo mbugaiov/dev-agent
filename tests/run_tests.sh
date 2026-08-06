@@ -62,6 +62,8 @@ have "scripts/lint_secrets_env.ts"
 have "scripts/test_tick_notify.ts"
 have "scripts/test_tick_notify.sh"
 have "scripts/notify_ux_kick.ts"
+have "scripts/cloud_factory_wake.sh"
+have "scripts/cloud_factory_wake.ts"
 have "scripts/arm_dev_loop.sh"
 grep -q 'exact trailing slug' scripts/arm_dev_loop.sh \
   && grep -q 'pgrep -f "scripts/dev-loop.sh"' scripts/arm_dev_loop.sh \

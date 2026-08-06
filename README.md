@@ -19,7 +19,8 @@ contain product names, Jira keys, or live URLs. Each **app** gets `projects/<slu
 ## Quickstart (generic)
 
 **AI agents:** follow **`SETUP.md`** end-to-end (includes `setup_verify.sh` gate).  
-**Setup tiers (L3 / L4 / L5′):** see **`docs/SETUP-LEVELS.md`** — minimal vs Jira+Bitbucket vs full factory.
+**Setup tiers (L3 / L4 / L5′):** see **`docs/SETUP-LEVELS.md`** — minimal vs Jira+Bitbucket vs full factory.  
+**Unattended (no local Cursor IDE):** see **`docs/CLOUD-FACTORY.md`** — GitHub Actions + Cursor SDK cloud wake.
 
 Human summary:
 
