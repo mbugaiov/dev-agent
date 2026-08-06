@@ -10,6 +10,17 @@ export type CloudRepoSpec = {
   startingRef: string;
 };
 
+/**
+ * Master kill-switch for unattended cloud factory.
+ * Default OFF — only `"true" | "1" | "yes"` (case-insensitive) enables.
+ */
+export function isCloudFactoryEnabled(
+  env: Record<string, string | undefined> = process.env,
+): boolean {
+  const v = (env.CLOUD_FACTORY_ENABLED ?? "").trim().toLowerCase();
+  return v === "true" || v === "1" || v === "yes";
+}
+
 export type ParsedTick =
   | { kind: "wake"; line: string }
   | { kind: "idle"; line: string }

@@ -3,8 +3,10 @@ name: Cloud factory (hourly)
 # Unattended Hephaestus wake via Cursor SDK cloud runtime.
 # Does NOT depend on a local Cursor IDE session.
 #
-# Enable scheduled runs: repo Settings → Variables → CLOUD_FACTORY_ENABLED = true
-# Manual: Actions → Cloud factory (hourly) → Run workflow (dry-run default on)
+# DEFAULT: OFF. Nothing runs (schedule or manual) until:
+#   Settings → Variables → CLOUD_FACTORY_ENABLED = true
+#
+# Manual dry-run after enable: Actions → Run workflow (dry_run default on)
 
 on:
   schedule:
@@ -28,13 +30,22 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
+  disabled-notice:
+    name: Disabled unless CLOUD_FACTORY_ENABLED
+    if: vars.CLOUD_FACTORY_ENABLED != 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Cloud factory is OFF
+        run: |
+          echo "::notice::Cloud factory is disabled by default."
+          echo "Set repository variable CLOUD_FACTORY_ENABLED=true to enable schedule + manual wake."
+          echo "CLOUD_FACTORY_DISABLED"
+
   wake:
     name: Tick + cloud wake
     runs-on: ubuntu-latest
-    # Scheduled ticks only when explicitly enabled. Manual dispatch always allowed.
-    if: >-
-      github.event_name == 'workflow_dispatch' ||
-      vars.CLOUD_FACTORY_ENABLED == 'true'
+    # Hard gate: schedule AND workflow_dispatch require the variable.
+    if: vars.CLOUD_FACTORY_ENABLED == 'true'
     permissions:
       contents: read
     env:
@@ -42,9 +53,8 @@ jobs:
       CURSOR_API_KEY: ${{ secrets.CURSOR_API_KEY }}
       # Cross-repo Issues (private app repos). Prefer FACTORY_GITHUB_TOKEN PAT.
       GITHUB_TOKEN: ${{ secrets.FACTORY_GITHUB_TOKEN || secrets.GH_TOKEN || github.token }}
+      CLOUD_FACTORY_ENABLED: "true"
       CLOUD_FACTORY_DRY_RUN: ${{ github.event_name == 'workflow_dispatch' && inputs.dry_run && '1' || '' }}
-      # Schedule is always live spawn when CLOUD_FACTORY_ENABLED; force dry-run off
-      # unless CLOUD_FACTORY_FORCE_DRY_RUN=true (repo variable) for soak tests.
     steps:
       - uses: actions/checkout@v4
 

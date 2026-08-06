@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   cloudReposForProject,
   hourlyIdempotencyKey,
+  isCloudFactoryEnabled,
   oldestKeyFromWakeLine,
   parseTickStdout,
   planCloudWake,
@@ -39,6 +40,23 @@ const sampleConfig = {
   },
   loop: { purpose: "sampledev", interval_sec_default: 300 },
 } satisfies ProjectConfig;
+
+describe("isCloudFactoryEnabled", () => {
+  it("is off by default", () => {
+    expect(isCloudFactoryEnabled({})).toBe(false);
+    expect(isCloudFactoryEnabled({ CLOUD_FACTORY_ENABLED: "" })).toBe(false);
+    expect(isCloudFactoryEnabled({ CLOUD_FACTORY_ENABLED: "false" })).toBe(
+      false,
+    );
+  });
+
+  it("accepts true|1|yes", () => {
+    expect(isCloudFactoryEnabled({ CLOUD_FACTORY_ENABLED: "true" })).toBe(true);
+    expect(isCloudFactoryEnabled({ CLOUD_FACTORY_ENABLED: "TRUE" })).toBe(true);
+    expect(isCloudFactoryEnabled({ CLOUD_FACTORY_ENABLED: "1" })).toBe(true);
+    expect(isCloudFactoryEnabled({ CLOUD_FACTORY_ENABLED: "yes" })).toBe(true);
+  });
+});
 
 describe("parseTickStdout", () => {
   it("finds wake as last matching line", () => {

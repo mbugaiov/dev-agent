@@ -7,7 +7,11 @@ import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { Agent, CursorAgentError } from "@cursor/sdk";
 import { loadProjectConfig } from "../lib/loadProject.ts";
-import { planCloudWake, parseTickStdout } from "../lib/cloudFactoryWake.ts";
+import {
+  isCloudFactoryEnabled,
+  planCloudWake,
+  parseTickStdout,
+} from "../lib/cloudFactoryWake.ts";
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..");
 const args = process.argv.slice(2);
@@ -20,6 +24,14 @@ const dryRun =
 if (!slug) {
   console.error("Usage: cloud_factory_wake.ts <slug> [--dry-run]");
   process.exit(1);
+}
+
+// Default OFF — refuse tick/spawn until CLOUD_FACTORY_ENABLED=true|1|yes
+if (!isCloudFactoryEnabled()) {
+  console.log(
+    'CLOUD_FACTORY_DISABLED {"reason":"CLOUD_FACTORY_ENABLED is not true","hint":"Set repo variable or env CLOUD_FACTORY_ENABLED=true to enable"}',
+  );
+  process.exit(0);
 }
 
 const config = loadProjectConfig(ROOT, slug);
