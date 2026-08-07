@@ -26,6 +26,9 @@ npx tsx scripts/should_kick_ba.ts <slug> --labels <labels> --ticket <KEY>
 
 ## Hermes contract (remind in kick prompt)
 
+- **Before work:** post issue comment + chat banner:
+  `### Hermes started` / **Ticket** / **Mode:** BA spec / **Doing:** …
+  (Pantheon `FACTORY.md` → Agent start)
 - Run Elicit → Model → Challenge → Specify → Validate → Publish
 - **No human approve**
 - Lint `validators/lint-requirements.ts` PASS
