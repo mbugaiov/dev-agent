@@ -127,9 +127,11 @@ function main() {
   }
 
   const scopeBody = [
-    "### Hephaestus pickup",
+    "### Hephaestus started",
     "",
-    args.scope,
+    `**Ticket:** ${config.slug}#${num}`,
+    "**Mode:** pickup / implement",
+    `**Doing:** ${args.scope}`,
     "",
     `_pickup_github_ticket · ${new Date().toISOString()}_`,
   ].join("\n");
