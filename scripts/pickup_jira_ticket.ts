@@ -182,9 +182,18 @@ async function main() {
 
   actions.push("scope comment");
   if (!args.dryRun) {
+    const scopeBody = [
+      "### Hephaestus started",
+      "",
+      `**Ticket:** ${args.key}`,
+      "**Mode:** pickup / implement",
+      `**Doing:** ${args.scope}`,
+      "",
+      `_pickup_jira_ticket · ${new Date().toISOString()}_`,
+    ].join("\n");
     const commentRes = await jiraFetch(`/rest/api/3/issue/${args.key}/comment`, {
       method: "POST",
-      body: JSON.stringify({ body: plainTextToAdf(args.scope) }),
+      body: JSON.stringify({ body: plainTextToAdf(scopeBody) }),
     });
     if (!commentRes.ok) {
       console.error(
