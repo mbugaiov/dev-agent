@@ -67,12 +67,15 @@ grep -q 'de1665cf52dab33f8095efc2b4062815220a69f1' .github/workflows/auto-merge.
 grep -q 'de1665cf52dab33f8095efc2b4062815220a69f1' .github/workflows/code-review.yml || no "code-review pins themis SHA"
 ENS_ROOT=$(ROOT=/ bash scripts/ensure_themis_agent.sh)
 ENGINE_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
+PIN_SHA=de1665cf52dab33f8095efc2b4062815220a69f1
+ENS_HEAD=$(git -C "$ENS_ROOT" rev-parse HEAD 2>/dev/null || true)
 if [[ "$ENS_ROOT" == "$ENGINE_ROOT/.themis-agent" \
   && "$ENS_ROOT" != "/.themis-agent" \
-  && "$ENS_ROOT" != "//.themis-agent" ]]; then
-  ok "ensure ignores ROOT=/"
+  && "$ENS_ROOT" != "//.themis-agent" \
+  && "$ENS_HEAD" == "$PIN_SHA" ]]; then
+  ok "ensure ignores ROOT=/ and checks out pin"
 else
-  echo "ENS_ROOT=$ENS_ROOT"; no "ensure must resolve under engine root (ignore ROOT=/)"
+  echo "ENS_ROOT=$ENS_ROOT ENS_HEAD=$ENS_HEAD"; no "ensure must resolve under engine root at pin"
 fi
 grep -q 'GITHUB_REPOSITORY' scripts/check_review_followups_disposed.sh || no "dispose prefers GITHUB_REPOSITORY"
 grep -q 'GITHUB_REPOSITORY' scripts/file_review_followups.sh || no "file prefers GITHUB_REPOSITORY"
