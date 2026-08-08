@@ -7,7 +7,7 @@ ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 DEST="${THEMIS_AGENT_PATH:-$ROOT/.themis-agent}"
 REPO_URL="${THEMIS_AGENT_GIT_URL:-https://github.com/mbugaiov/themis-agent.git}"
 # Bump when intentionally upgrading shared follow-up / isolation tooling.
-# Keep in sync with ref: in .github/workflows (auto-merge / code-review / pr.yml).
+# Keep in sync with ref: in .github/workflows (auto-merge.yml / code-review.yml).
 REF="${THEMIS_AGENT_REF:-de1665cf52dab33f8095efc2b4062815220a69f1}"
 
 ready() {
@@ -29,10 +29,12 @@ checkout_pin() {
 }
 
 if [[ -d "$DEST/.git" ]]; then
-  if checkout_pin; then
+  # Skip network when actions/checkout (or prior ensure) already at pin.
+  if ready && at_pin; then
+    :
+  elif checkout_pin; then
     :
   elif ready && at_pin; then
-    # Transient fetch noise but HEAD already matches pin (e.g. actions/checkout).
     echo "ensure_themis_agent: pin refresh failed; keeping pinned checkout ${REF:0:12}" >&2
   else
     echo "ensure_themis_agent: refresh to ${REF:0:12} failed — recloning" >&2
