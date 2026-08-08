@@ -84,6 +84,8 @@ gh pr create …
 # Engine GitHub PR: bash scripts/wait_github_pr_pipeline.sh <PR>
 # Suggestions/Risks: fix in PR or bash scripts/file_review_followups.sh <PR> --from-comment
 # Auto-merge only after follow-ups disposed (themis-agent FOLLOWUPS).
+# If wait fails on followups_undisposed: dispose then re-run wait_github_pr_pipeline.sh
+# (REQUIRED checks are listed in that script — add new gates there explicitly).
 ```
 
 **Forbidden:** `git push origin main`, `git push --force`, merging locally then pushing main.

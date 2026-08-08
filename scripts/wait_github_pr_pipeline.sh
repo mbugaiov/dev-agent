@@ -55,8 +55,11 @@ while true; do
   fi
   if [[ "$PENDING" -eq 0 ]]; then
     # Suggestions / High priority / Risks must be fixed in PR or filed to backlog
-    if ! bash "$ROOT/scripts/check_review_followups_disposed.sh" "$PR"; then
+    # Re-use resolved REPO so dispose cannot disagree with checks above.
+    # After filing follow-ups, re-run this waiter (fail-closed until disposed).
+    if ! THEMIS_FOLLOWUP_REPO="$REPO" bash "$ROOT/scripts/check_review_followups_disposed.sh" "$PR"; then
       echo "PR_PIPELINE_FAILED {\"pr\":${PR},\"repo\":\"${REPO}\",\"reason\":\"followups_undisposed\"}"
+      echo "File/fix Suggestions·Risks then re-run: bash scripts/wait_github_pr_pipeline.sh $PR"
       exit 1
     fi
     echo "PR_PIPELINE_GREEN {\"pr\":${PR},\"repo\":\"${REPO}\"}"

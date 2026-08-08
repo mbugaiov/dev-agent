@@ -3,6 +3,7 @@
 set -uo pipefail
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$ROOT"
+unset THEMIS_REVIEW_MARKER THEMIS_FOLLOWUP_SECTIONS THEMIS_FOLLOWUP_DISPOSE_MARKER THEMIS_FOLLOWUP_REPO || true
 PASS=0; FAIL=0
 ok()  { PASS=$((PASS+1)); echo "  ✓ $1"; }
 no()  { FAIL=$((FAIL+1)); echo "  ✗ $1"; }
@@ -60,6 +61,18 @@ have "scripts/ensure_themis_agent.sh"
 have "scripts/check_review_followups_disposed.sh"
 have "scripts/file_review_followups.sh"
 grep -q 'Require Themis Suggestions' .github/workflows/auto-merge.yml || no "auto-merge gates followups"
+grep -q 'de1665cf52dab33f8095efc2b4062815220a69f1' scripts/ensure_themis_agent.sh || no "ensure pins themis SHA"
+grep -q 'de1665cf52dab33f8095efc2b4062815220a69f1' .github/workflows/auto-merge.yml || no "auto-merge pins themis SHA"
+ENS_ROOT=$(ROOT=/ bash scripts/ensure_themis_agent.sh)
+case "$ENS_ROOT" in
+  *"/dev-agent/.themis-agent") ok "ensure ignores ROOT=/" ;;
+  *) echo "ENS_ROOT=$ENS_ROOT"; no "ensure must ignore ROOT=/" ;;
+esac
+grep -q 'GITHUB_REPOSITORY' scripts/check_review_followups_disposed.sh || no "dispose prefers GITHUB_REPOSITORY"
+grep -q 'cd "\$ROOT" && gh repo view' scripts/check_review_followups_disposed.sh || no "dispose gh from ROOT"
+grep -q 'THEMIS_FOLLOWUP_REPO="\$REPO"' scripts/wait_github_pr_pipeline.sh || no "wait passes REPO to dispose"
+grep -q 'scripts/check_review_followups_disposed.sh' .github/workflows/auto-merge.yml || no "auto-merge uses engine dispose wrapper"
+grep -q 're-run this waiter\|wait_github_pr_pipeline.sh' scripts/wait_github_pr_pipeline.sh || no "wait documents re-run after dispose"
 have "scripts/wait_main_deploy.sh"
 have "scripts/resolve_app_root.ts"
 have "scripts/resolve_loop_interval.ts"
