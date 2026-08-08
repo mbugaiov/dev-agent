@@ -49,7 +49,10 @@ factory; one tick = one backlog drain attempt.
                 **if ux-charter-first: Athena Mode B until UX_CHARTER_READY**;
                 implement; **UX polish if should_kick_ux** (same branch); app gate command
 5. Ship       → mr:push → wait_pr_pipeline → merge
-6. STG        → wait_main_deploy + check_stg_build (buildId gate)
+6. STG        → wait_main_deploy + check_stg_build (buildId gate).
+               GitHub: bot merge via GITHUB_TOKEN does not fire push deploys —
+               app CI must workflow_dispatch Deploy STG after bot merge;
+               wait_main_deploy may self-dispatch once if the run is missing.
 7. Handoff    → preflight → post_*_handoff → Validate/Testing → **on `QA_KICK_YES` + `QA_WAKE_EXECUTE`: wake Argus (`dev-qa-subagent`) + `ack_argus_kick.ts`**
 8. Drain      → re-run JQL; next ticket same session until DEV_FACTORY_IDLE
 ```

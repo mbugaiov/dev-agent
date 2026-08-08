@@ -54,10 +54,15 @@ Do not hand off if gate fails. Fix, re-run gate, update MR.
 ## STG verify (phase 7)
 
 ```bash
+bash scripts/wait_main_deploy.sh <slug>
 bash scripts/check_stg_build.sh <slug> <merge-commit-prefix>
 ```
 
-Expect stdout containing `STG_BUILD_OK`. On `STG_BUILD_MISMATCH`, run `wait_main_deploy.sh` and retry.
+Expect stdout containing `STG_BUILD_OK` / `MAIN_DEPLOY_GREEN` with **this**
+merge SHA. On `STG_BUILD_MISMATCH`, re-run `wait_main_deploy` (it may
+`workflow_dispatch` Deploy STG once — required after bot merges that use
+`GITHUB_TOKEN`, which suppress `push` deploy workflows). Never hand off
+against an older STG `buildId`.
 
 ## Project overrides
 
