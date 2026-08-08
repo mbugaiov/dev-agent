@@ -67,11 +67,13 @@ grep -q 'de1665cf52dab33f8095efc2b4062815220a69f1' .github/workflows/auto-merge.
 grep -q 'de1665cf52dab33f8095efc2b4062815220a69f1' .github/workflows/code-review.yml || no "code-review pins themis SHA"
 ENS_ROOT=$(ROOT=/ bash scripts/ensure_themis_agent.sh)
 ENGINE_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
-[[ "$ENS_ROOT" == "$ENGINE_ROOT/.themis-agent" ]] || { echo "ENS_ROOT=$ENS_ROOT"; no "ensure must resolve under engine root"; }
-case "$ENS_ROOT" in
-  "/.themis-agent"|"//.themis-agent") no "ensure must not use / or // DEST" ;;
-esac
-ok "ensure ignores ROOT=/"
+if [[ "$ENS_ROOT" == "$ENGINE_ROOT/.themis-agent" \
+  && "$ENS_ROOT" != "/.themis-agent" \
+  && "$ENS_ROOT" != "//.themis-agent" ]]; then
+  ok "ensure ignores ROOT=/"
+else
+  echo "ENS_ROOT=$ENS_ROOT"; no "ensure must resolve under engine root (ignore ROOT=/)"
+fi
 grep -q 'GITHUB_REPOSITORY' scripts/check_review_followups_disposed.sh || no "dispose prefers GITHUB_REPOSITORY"
 grep -q 'GITHUB_REPOSITORY' scripts/file_review_followups.sh || no "file prefers GITHUB_REPOSITORY"
 grep -q 'cd "\$ROOT" && gh repo view' scripts/check_review_followups_disposed.sh || no "dispose gh from ROOT"

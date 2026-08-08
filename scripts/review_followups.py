@@ -21,6 +21,23 @@ os.environ.setdefault(
 os.environ.setdefault(
     "THEMIS_FOLLOWUP_DISPOSE_MARKER", "<!-- dev-agent-review-followups-disposed -->"
 )
+if not os.environ.get("THEMIS_FOLLOWUP_REPO", "").strip():
+    repo = os.environ.get("GITHUB_REPOSITORY", "").strip()
+    if not repo:
+        repo = subprocess.check_output(
+            [
+                "gh",
+                "repo",
+                "view",
+                "--json",
+                "nameWithOwner",
+                "-q",
+                ".nameWithOwner",
+            ],
+            cwd=ROOT,
+            text=True,
+        ).strip()
+    os.environ["THEMIS_FOLLOWUP_REPO"] = repo
 themis_root = Path(
     subprocess.check_output(
         ["bash", str(ROOT / "scripts" / "ensure_themis_agent.sh")],

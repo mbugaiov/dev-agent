@@ -7,6 +7,7 @@ ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 DEST="${THEMIS_AGENT_PATH:-$ROOT/.themis-agent}"
 REPO_URL="${THEMIS_AGENT_GIT_URL:-https://github.com/mbugaiov/themis-agent.git}"
 # Bump when intentionally upgrading shared follow-up / isolation tooling.
+# Keep in sync with ref: in .github/workflows (auto-merge / code-review / pr.yml).
 REF="${THEMIS_AGENT_REF:-de1665cf52dab33f8095efc2b4062815220a69f1}"
 
 ready() {
@@ -15,24 +16,31 @@ ready() {
     && -f "$DEST/scripts/ci_isolation.sh" ]]
 }
 
+at_pin() {
+  local head
+  head="$(git -C "$DEST" rev-parse HEAD 2>/dev/null || true)"
+  [[ -n "$head" ]] || return 1
+  [[ "$head" == "$REF" || "$head" == "$REF"* ]]
+}
+
 checkout_pin() {
   git -C "$DEST" fetch --depth 1 origin "$REF"
   git -C "$DEST" checkout --detach --force FETCH_HEAD
 }
 
 if [[ -d "$DEST/.git" ]]; then
-  if ! checkout_pin; then
-    # Keep a ready tree (e.g. actions/checkout pin) on transient fetch failure.
-    if ready; then
-      echo "ensure_themis_agent: pin refresh failed; keeping existing checkout" >&2
-    else
-      echo "ensure_themis_agent: refresh to ${REF:0:12} failed — recloning" >&2
-      rm -rf "$DEST"
-    fi
+  if checkout_pin; then
+    :
+  elif ready && at_pin; then
+    # Transient fetch noise but HEAD already matches pin (e.g. actions/checkout).
+    echo "ensure_themis_agent: pin refresh failed; keeping pinned checkout ${REF:0:12}" >&2
+  else
+    echo "ensure_themis_agent: refresh to ${REF:0:12} failed — recloning" >&2
+    rm -rf "$DEST"
   fi
 fi
 
-if ! ready; then
+if ! ready || ! at_pin; then
   rm -rf "$DEST"
   if ! git clone --depth 1 "$REPO_URL" "$DEST"; then
     echo "ensure_themis_agent: git clone failed: $REPO_URL" >&2
@@ -44,8 +52,8 @@ if ! ready; then
   fi
 fi
 
-if ! ready; then
-  echo "ensure_themis_agent: follow-up/isolation scripts missing under $DEST" >&2
+if ! ready || ! at_pin; then
+  echo "ensure_themis_agent: follow-up/isolation scripts missing or not at pin under $DEST" >&2
   exit 1
 fi
 echo "$DEST"
