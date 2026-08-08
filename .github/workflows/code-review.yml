@@ -114,6 +114,8 @@ jobs:
       - uses: actions/checkout@v4
         with:
           repository: mbugaiov/themis-agent
+          # Keep in sync with THEMIS_AGENT_REF in scripts/ensure_themis_agent.sh
+          ref: de1665cf52dab33f8095efc2b4062815220a69f1
           path: .themis-agent
       - name: Install Cursor CLI
         run: |

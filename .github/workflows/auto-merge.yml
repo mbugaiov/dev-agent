@@ -95,11 +95,13 @@ jobs:
         if: steps.pr.outputs.skip == 'false'
         uses: actions/checkout@v4
 
-      - name: Checkout themis-agent (follow-up scripts)
+      - name: Checkout themis-agent (follow-up scripts, pinned)
         if: steps.pr.outputs.skip == 'false'
         uses: actions/checkout@v4
         with:
           repository: mbugaiov/themis-agent
+          # Keep in sync with THEMIS_AGENT_REF in scripts/ensure_themis_agent.sh
+          ref: de1665cf52dab33f8095efc2b4062815220a69f1
           path: .themis-agent
 
       - name: Require Themis Suggestions/Risks disposed
@@ -110,7 +112,7 @@ jobs:
           THEMIS_REVIEW_MARKER: "<!-- dev-agent-cursor-review -->"
           THEMIS_FOLLOWUP_DISPOSE_MARKER: "<!-- dev-agent-review-followups-disposed -->"
           THEMIS_FOLLOWUP_SECTIONS: "Suggestions,High priority issues,Risks"
-        run: bash .themis-agent/scripts/check_review_followups_disposed.sh "${{ steps.pr.outputs.number }}"
+        run: bash scripts/check_review_followups_disposed.sh "${{ steps.pr.outputs.number }}"
 
       - name: Merge PR
         if: steps.pr.outputs.skip == 'false'
