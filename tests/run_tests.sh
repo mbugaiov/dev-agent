@@ -60,16 +60,22 @@ have "scripts/wait_github_pr_pipeline.sh"
 have "scripts/ensure_themis_agent.sh"
 have "scripts/check_review_followups_disposed.sh"
 have "scripts/file_review_followups.sh"
+have "scripts/review_followups.py"
 grep -q 'Require Themis Suggestions' .github/workflows/auto-merge.yml || no "auto-merge gates followups"
 grep -q 'de1665cf52dab33f8095efc2b4062815220a69f1' scripts/ensure_themis_agent.sh || no "ensure pins themis SHA"
 grep -q 'de1665cf52dab33f8095efc2b4062815220a69f1' .github/workflows/auto-merge.yml || no "auto-merge pins themis SHA"
+grep -q 'de1665cf52dab33f8095efc2b4062815220a69f1' .github/workflows/code-review.yml || no "code-review pins themis SHA"
 ENS_ROOT=$(ROOT=/ bash scripts/ensure_themis_agent.sh)
+ENGINE_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
+[[ "$ENS_ROOT" == "$ENGINE_ROOT/.themis-agent" ]] || { echo "ENS_ROOT=$ENS_ROOT"; no "ensure must resolve under engine root"; }
 case "$ENS_ROOT" in
-  *"/dev-agent/.themis-agent") ok "ensure ignores ROOT=/" ;;
-  *) echo "ENS_ROOT=$ENS_ROOT"; no "ensure must ignore ROOT=/" ;;
+  "/.themis-agent"|"//.themis-agent") no "ensure must not use / or // DEST" ;;
 esac
+ok "ensure ignores ROOT=/"
 grep -q 'GITHUB_REPOSITORY' scripts/check_review_followups_disposed.sh || no "dispose prefers GITHUB_REPOSITORY"
+grep -q 'GITHUB_REPOSITORY' scripts/file_review_followups.sh || no "file prefers GITHUB_REPOSITORY"
 grep -q 'cd "\$ROOT" && gh repo view' scripts/check_review_followups_disposed.sh || no "dispose gh from ROOT"
+grep -q 'ensure_themis_agent.sh' scripts/review_followups.py || no "python wrapper always ensures themis"
 grep -q 'THEMIS_FOLLOWUP_REPO="\$REPO"' scripts/wait_github_pr_pipeline.sh || no "wait passes REPO to dispose"
 grep -q 'scripts/check_review_followups_disposed.sh' .github/workflows/auto-merge.yml || no "auto-merge uses engine dispose wrapper"
 grep -q 're-run this waiter\|wait_github_pr_pipeline.sh' scripts/wait_github_pr_pipeline.sh || no "wait documents re-run after dispose"
