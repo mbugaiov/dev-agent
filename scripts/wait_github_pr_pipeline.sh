@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
-# Poll GitHub PR checks until required Iris gates are green (or failed).
+# Poll GitHub PR checks until required engine GitHub gates are green (or failed).
 # Required: test, review (Themis), isolation (Themis)
 #
-# Usage: bash scripts/wait_pr_pipeline.sh <PR_NUMBER> [POLL_SEC]
+# Usage: bash scripts/wait_github_pr_pipeline.sh <PR_NUMBER> [POLL_SEC]
 # Exit 0 → PR_PIPELINE_GREEN — safe to merge.
 # Exit 1 → PR_PIPELINE_FAILED — fix Blocking / CI first. Do NOT merge.
 set -euo pipefail
@@ -12,7 +12,7 @@ cd "$ROOT"
 PR="${1:-}"
 POLL="${2:-30}"
 if [[ -z "$PR" || ! "$PR" =~ ^[0-9]+$ ]]; then
-  echo "Usage: wait_pr_pipeline.sh <PR_NUMBER> [POLL_SEC]" >&2
+  echo "Usage: wait_github_pr_pipeline.sh <PR_NUMBER> [POLL_SEC]" >&2
   exit 2
 fi
 
