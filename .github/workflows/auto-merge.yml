@@ -10,6 +10,7 @@ permissions:
   contents: write
   pull-requests: write
   checks: read
+  issues: read
 
 jobs:
   auto-merge:
@@ -18,7 +19,8 @@ jobs:
       github.event.workflow_run.event == 'pull_request'
     runs-on: ubuntu-latest
     steps:
-      - name: Merge PR when required checks are green
+      - name: Resolve PR
+        id: pr
         uses: actions/github-script@v7
         with:
           script: |
@@ -35,10 +37,10 @@ jobs:
             });
             if (prs.data.length === 0) {
               core.info('No open PR for branch — skip');
+              core.setOutput('skip', 'true');
               return;
             }
 
-            // Re-fetch PR so head SHA is current; only merge the SHA this run tested.
             const pr = (
               await github.rest.pulls.get({
                 owner,
@@ -48,12 +50,14 @@ jobs:
             ).data;
             if (pr.draft) {
               core.info('Draft PR — skip auto-merge');
+              core.setOutput('skip', 'true');
               return;
             }
             if (pr.head.sha !== run.head_sha) {
               core.info(
                 `PR head ${pr.head.sha} !== run head ${run.head_sha} — skip (newer push pending)`,
               );
+              core.setOutput('skip', 'true');
               return;
             }
 
@@ -78,22 +82,57 @@ jobs:
                 core.info(
                   `Required check "${name}" not success yet (${check?.conclusion ?? 'missing'}) — skip`,
                 );
+                core.setOutput('skip', 'true');
                 return;
               }
             }
 
+            core.setOutput('skip', 'false');
+            core.setOutput('number', String(pr.number));
+            core.setOutput('sha', run.head_sha);
+
+      - name: Checkout default branch (trusted wrappers)
+        if: steps.pr.outputs.skip == 'false'
+        uses: actions/checkout@v4
+
+      - name: Checkout themis-agent (follow-up scripts)
+        if: steps.pr.outputs.skip == 'false'
+        uses: actions/checkout@v4
+        with:
+          repository: mbugaiov/themis-agent
+          path: .themis-agent
+
+      - name: Require Themis Suggestions/Risks disposed
+        if: steps.pr.outputs.skip == 'false'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+          THEMIS_REVIEW_MARKER: "<!-- dev-agent-cursor-review -->"
+          THEMIS_FOLLOWUP_DISPOSE_MARKER: "<!-- dev-agent-review-followups-disposed -->"
+          THEMIS_FOLLOWUP_SECTIONS: "Suggestions,High priority issues,Risks"
+        run: bash .themis-agent/scripts/check_review_followups_disposed.sh "${{ steps.pr.outputs.number }}"
+
+      - name: Merge PR
+        if: steps.pr.outputs.skip == 'false'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const owner = context.repo.owner;
+            const repo = context.repo.repo;
+            const pull_number = Number('${{ steps.pr.outputs.number }}');
+            const sha = '${{ steps.pr.outputs.sha }}';
             try {
               await github.rest.pulls.merge({
                 owner,
                 repo,
-                pull_number: pr.number,
+                pull_number,
                 merge_method: 'squash',
-                sha: run.head_sha,
+                sha,
               });
-              core.info(`Auto-merged PR #${pr.number} (squash) at ${run.head_sha}`);
+              core.info(`Auto-merged PR #${pull_number} (squash) at ${sha}`);
             } catch (err) {
               if (err.status === 405 || err.status === 409) {
-                core.info(`PR #${pr.number} already merged or not mergeable`);
+                core.info(`PR #${pull_number} already merged or not mergeable`);
                 return;
               }
               throw err;
