@@ -70,6 +70,10 @@ Concise; cite `file:line`. Do not restate the whole diff.
 After `review.md` is written, `scripts/check_review_gate.sh` parses `## Blocking issues`
 (or the LGTM single-line shortcut). Non-empty blockers **fail the PR**; suggestions alone do not.
 
+**Suggestions** (and optional High priority / Risks) must still be disposed before merge —
+fix in the PR or `bash scripts/file_review_followups.sh <PR> --from-comment` (same-repo
+backlog via themis-agent). `wait_github_pr_pipeline` + auto-merge enforce this.
+
 ## When gate fails
 
 Fix blockers on the PR branch, then re-run locally:

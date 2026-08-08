@@ -80,7 +80,10 @@ immediately.
 git fetch origin && git switch -c <type>/<slug> origin/main
 # … edit, bash tests/run_tests.sh, bash scripts/pre_merge_check.sh
 git push -u origin HEAD
-gh pr create …   # CI + Code Review → auto-merge when green
+gh pr create …
+# Engine GitHub PR: bash scripts/wait_github_pr_pipeline.sh <PR>
+# Suggestions/Risks: fix in PR or bash scripts/file_review_followups.sh <PR> --from-comment
+# Auto-merge only after follow-ups disposed (themis-agent FOLLOWUPS).
 ```
 
 **Forbidden:** `git push origin main`, `git push --force`, merging locally then pushing main.
