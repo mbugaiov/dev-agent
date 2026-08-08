@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Ensure mbugaiov/themis-agent is at .themis-agent (follow-up + isolation scripts).
 # Always derives ROOT from this script's location (ignores env ROOT=/ etc.).
-# Pins to THEMIS_AGENT_REF (default: known-good main SHA) and refreshes on each call.
+# Pins to THEMIS_AGENT_REF; skips network when already ready + at pin.
 set -euo pipefail
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 DEST="${THEMIS_AGENT_PATH:-$ROOT/.themis-agent}"
@@ -29,13 +29,10 @@ checkout_pin() {
 }
 
 if [[ -d "$DEST/.git" ]]; then
-  # Skip network when actions/checkout (or prior ensure) already at pin.
   if ready && at_pin; then
     :
-  elif checkout_pin; then
+  elif checkout_pin && ready && at_pin; then
     :
-  elif ready && at_pin; then
-    echo "ensure_themis_agent: pin refresh failed; keeping pinned checkout ${REF:0:12}" >&2
   else
     echo "ensure_themis_agent: refresh to ${REF:0:12} failed — recloning" >&2
     rm -rf "$DEST"
