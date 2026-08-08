@@ -35,10 +35,10 @@ Generic flow; **app repo** holds product code and CI. Read `projects/<slug>/proj
     - **GitHub Actions footgun:** merges performed with `GITHUB_TOKEN` (app
       `auto-merge` job / `gh pr merge` in Actions) **do not** trigger `push`
       workflows. If the app deploys STG on `push` to `main`, CI **must**
-      `workflow_dispatch` Deploy STG after bot merge (see pantheon
-      `pr.yml` + `docs/DEPLOYMENT.md`). `wait_main_deploy` may also
+      `workflow_dispatch` Deploy STG after bot merge (see that app’s deploy
+      docs / `projects/<slug>` overrides). `wait_main_deploy` may also
       self-dispatch once when no run exists for HEAD — do **not** hand off
-      on a stale `/api/build-id`.
+      on a stale STG `buildId`.
 11. **Handoff:**
     - **jira:** `preflight_jira_handoff.ts` → `post_jira_handoff.ts --transition`
     - **github_issues:** `npx tsx scripts/post_github_handoff.ts <slug> <KEY> --pr URL --stg-build SHA --main SHA`

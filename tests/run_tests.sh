@@ -85,7 +85,7 @@ grep -q 'THEMIS_FOLLOWUP_REPO="\$REPO"' scripts/wait_github_pr_pipeline.sh || no
 grep -q 'scripts/check_review_followups_disposed.sh' .github/workflows/auto-merge.yml || no "auto-merge uses engine dispose wrapper"
 grep -q 're-run this waiter\|wait_github_pr_pipeline.sh' scripts/wait_github_pr_pipeline.sh || no "wait documents re-run after dispose"
 have "scripts/wait_main_deploy.sh"
-# Pantheon (and any GHA STG app): document the GITHUB_TOKEN push-suppress footgun.
+# GHA STG apps: document the GITHUB_TOKEN push-suppress footgun.
 grep -q 'GITHUB_TOKEN' .cursor/skills/dev-mr-pipeline/SKILL.md \
   && grep -q 'workflow_dispatch' .cursor/skills/dev-mr-pipeline/SKILL.md \
   || no "dev-mr-pipeline missing GITHUB_TOKEN / workflow_dispatch STG note"
