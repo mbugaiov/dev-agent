@@ -82,11 +82,12 @@ while IFS= read -r f; do
   [[ -z "$f" ]] && continue
   base="$(basename "$f")"
   case "$base" in
+    *skill*.mdc|*skills*.mdc)
+      # Deny first — catches factory-skills.mdc etc. before factory-* allow
+      fail "tracked skill-wiring rule in app: $f — skills stay in the engine"
+      ;;
     code-review.mdc|factory-*.mdc)
       # allowed — labels/sentinels/CR for this product (content scan below)
-      ;;
-    *skill*.mdc|*skills*.mdc)
-      fail "tracked skill-wiring rule in app: $f — skills stay in the engine"
       ;;
     *)
       # Other product-local process rules OK if content scan passes

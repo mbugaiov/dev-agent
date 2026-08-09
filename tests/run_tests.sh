@@ -64,6 +64,17 @@ if bash scripts/check_app_client_hygiene.sh --app "$_hs" >/dev/null 2>&1; then
 else
   ok "hygiene FAIL on tracked stack skill"
 fi
+# skill-wiring rule name must fail even if prefixed with factory-
+mkdir -p "$_hs/.cursor/rules"
+echo "# bad" >"$_hs/.cursor/rules/factory-skills.mdc"
+git -C "$_hs" rm -qr --cached .cursor/skills/dotnet-webapi >/dev/null 2>&1 || true
+rm -rf "$_hs/.cursor/skills/dotnet-webapi"
+git -C "$_hs" add -A && git -C "$_hs" commit -q -m skill-rule
+if bash scripts/check_app_client_hygiene.sh --app "$_hs" >/dev/null 2>&1; then
+  no "hygiene should FAIL on factory-skills.mdc"
+else
+  ok "hygiene FAIL on factory-skills.mdc"
+fi
 rm -rf "$_hs"
 # Smoke: stack keyword match — host *.net must not imply .NET; _template refused
 _ss="$(mktemp -d)"
