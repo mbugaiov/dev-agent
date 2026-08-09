@@ -158,7 +158,7 @@ async function main() {
     return;
   }
 
-  // Jira — target must be issue KEY (e.g. RQ-123), not pr:
+  // Jira — target must be issue KEY (e.g. TST-123), not pr:
   if (target.startsWith("pr:")) {
     console.error(
       "AGENT_START_FAIL Jira tracker: use issue KEY (not pr:N). Comment on the Jira ticket; mention the MR URL in Doing.",

@@ -35,7 +35,7 @@ Use this exact heading shape:
 ```bash
 # GitHub Issues factories — issue number or pr:N
 bash scripts/post_agent_started.sh <slug> <N|pr:N> <Seat> "<Mode>" "<Doing>"
-# Jira factories — issue KEY (e.g. RQ-123); requires projects/<slug>/.secrets/jira.env
+# Jira factories — issue KEY (e.g. TST-123); requires projects/<slug>/.secrets/jira.env
 bash scripts/post_agent_started.sh <slug> <JIRA_KEY> <Seat> "<Mode>" "<Doing>"
 # Engine / explicit GitHub repo:
 bash scripts/post_agent_started.sh --repo owner/repo pr:<N> <Seat> "<Mode>" "<Doing>"
