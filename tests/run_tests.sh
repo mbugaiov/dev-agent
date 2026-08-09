@@ -39,7 +39,7 @@ have "scripts/verify_stack_skills.sh"
 have "docs/STACK-SKILLS.md"
 have "scripts/post_agent_started.sh"
 have ".cursor/rules/dev-agent-start.mdc"
-AGENT_START_DRY_RUN=1 bash scripts/post_agent_started.sh intown-suits 5 Hephaestus "pickup" "smoke" \
+AGENT_START_DRY_RUN=1 bash scripts/post_agent_started.sh --repo mbugaiov/dev-agent pr:1 Hephaestus "pickup" "smoke" \
   | grep -q '### Hephaestus started' \
   && ok "post_agent_started dry-run banner" \
   || no "post_agent_started must print ### Seat started"
