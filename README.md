@@ -36,7 +36,14 @@ Human summary:
    cp projects/myapp/bitbucket.env.example projects/myapp/.secrets/bitbucket.env
    ```
 
-3. **Verify engine (includes portability gate when git initialized):**
+3. **Stack skills** (from `project.yaml` → `stack.*` — see **`docs/STACK-SKILLS.md`**):
+
+   ```bash
+   bash scripts/sync_stack_skills.sh myapp --dry-run
+   bash scripts/verify_stack_skills.sh myapp --install
+   ```
+
+4. **Verify engine (includes portability gate when git initialized):**
 
    ```bash
    bash tests/run_tests.sh
@@ -44,7 +51,7 @@ Human summary:
    bash scripts/projects_isolation_check.sh
    ```
 
-4. **Arm the loop:**
+5. **Arm the loop:**
 
    ```bash
    DEV_LOOP_INTERVAL_SEC=300 bash scripts/arm_dev_loop.sh myapp
@@ -58,6 +65,7 @@ For **linking a live project**, see **`ENGINE-REVIEW.md`** — project data does
 |---|---|
 | `ARCHITECTURE.md` | **Layer model** — engine vs project vs app |
 | `SETUP.md` | **Agent runbook** — step-by-step setup through first factory run |
+| `docs/STACK-SKILLS.md` | **Stack skill catalog** — auto-install commands + upstream URLs |
 | `HOST_SETUP.md` | Machine deps (Node, npm) |
 | `AGENTS.md` | Loop spine + hard rules |
 | `PORTABILITY.md` | Engine vs projects; GitHub split |

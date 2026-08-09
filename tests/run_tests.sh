@@ -36,6 +36,11 @@ have ".cursor/rules/dev-engine.mdc"
 have ".cursor/rules/dev-stack-skills.mdc"
 have "scripts/sync_stack_skills.sh"
 have "scripts/verify_stack_skills.sh"
+have "docs/STACK-SKILLS.md"
+grep -q 'github.com/dotnet/skills' docs/STACK-SKILLS.md \
+  && grep -q 'sync_stack_skills.sh' docs/STACK-SKILLS.md \
+  && ok "STACK-SKILLS catalog has URLs + sync commands" \
+  || no "docs/STACK-SKILLS.md must list upstream URLs and sync commands"
 have "scripts/check_app_client_hygiene.sh"
 have ".cursor/rules/dev-client-repo-hygiene.mdc"
 # Smoke: clean+openspec OK; tracked stack skill FAIL

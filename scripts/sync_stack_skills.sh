@@ -36,14 +36,32 @@ CACHE="${DOTNET_SKILLS_CACHE:-${TMPDIR:-/tmp}/dotnet-skills-cache}"
 list_packs() {
   cat <<'EOF'
 Keyword match (case-insensitive on stack.* blob) → install action
+Full catalog: docs/STACK-SKILLS.md
 
-  asp.net|c#|dotnet|.net N   → github.com/dotnet/skills (plugins: web/test/msbuild/data)
-                               (.net only with "core" or digit — not *.net hostnames)
-  angular                    → npx skills add analogjs/angular-skills
-  ionic                      → npx skills add capawesome-team/skills --skill ionic-angular
-                               (+ ionic-app-development, ionic-expert when available)
-  sql server|mssql|t-sql     → npx skills add damusix/skills --skill mssql-server
-  supabase                   → npx skills add supabase/agent-skills --skill supabase
+  asp.net|c#|dotnet|.net N
+    → https://github.com/dotnet/skills  (git clone → .agents/skills/dotnet-*)
+      (.net only with "core" or digit — not *.net hostnames)
+
+  angular
+    → https://github.com/analogjs/angular-skills
+      npx --yes skills add analogjs/angular-skills
+
+  ionic
+    → https://github.com/capawesome-team/skills
+      npx --yes skills add capawesome-team/skills --skill ionic-angular
+      (+ ionic-app-development, ionic-expert)
+
+  sql server|mssql|t-sql|stored procedure
+    → https://github.com/damusix/skills  (skill: mssql-server)
+      npx --yes skills add damusix/skills --skill mssql-server
+
+  supabase
+    → https://github.com/supabase/agent-skills
+      npx --yes skills add supabase/agent-skills --skill supabase
+
+Auto for a project:
+  bash scripts/sync_stack_skills.sh <slug>
+  bash scripts/verify_stack_skills.sh <slug> --install
 
 Playwright / JWT security → prefer qa-agent (not this script).
 Product-specific overrides → projects/<slug>/.cursor/skills/ (gitignored).
