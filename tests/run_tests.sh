@@ -36,6 +36,8 @@ have ".cursor/rules/dev-engine.mdc"
 have ".cursor/rules/dev-stack-skills.mdc"
 have "scripts/sync_stack_skills.sh"
 have "scripts/verify_stack_skills.sh"
+have "scripts/check_app_client_hygiene.sh"
+have ".cursor/rules/dev-client-repo-hygiene.mdc"
 
 echo "== 4. Portability scripts =="
 have "SETUP.md"

@@ -28,13 +28,17 @@ factory; one tick = one backlog drain attempt.
 | Phase checklist (spec-first, test gate, archive) | `dev-phases` |
 | **Engine PR code review** (before merge on dev-agent repo) | `dev-code-review` |
 
-## Skills this engine orchestrates (host / app repo)
+## Skills this engine orchestrates
 
 | Phase | Skill / tool | Location |
 |---|---|---|
-| Spec-first changes | `openspec-propose`, `openspec-apply`, … | app repo `.cursor/skills/` or host |
-| Local test gate | `project.yaml` → `app.gate_command` | app repo (from project config) |
+| Stack packs (.NET/Angular/…) | `sync_stack_skills` / `verify_stack_skills` | **engine** `.agents/skills` + manifest |
+| Project overrides | `projects/<slug>/.cursor/skills` | engine project folder (gitignored) |
+| Spec-first changes | `openspec-propose`, `openspec-apply`, … | host / OpenSpec install — **not** vendor packs into app |
+| Local test gate | `project.yaml` → `app.gate_command` | app repo (product scripts only) |
 | MR push | `app.mr_push_command` | app repo |
+
+**Never** put skills, skill URLs, or factory rules in customer app repos — `dev-client-repo-hygiene.mdc`.
 
 ## The loop (every factory session)
 
@@ -42,8 +46,10 @@ factory; one tick = one backlog drain attempt.
 
 ```
 0. Config     → projects/<slug>/project.yaml + .secrets/
-1. Arm        → bash scripts/arm_dev_loop.sh <slug> (notify_on_output on watch patterns)
-2. Tick       → dev_factory_tick → **BACKLOG_WAKE_EXECUTE only** (execution-only) or DEV_FACTORY_IDLE
+1. Arm        → bash scripts/arm_dev_loop.sh <slug> — **detached** scheduler (new session)
+                + watch_dev_loop.sh (Cursor Shell); notify_on_output on
+                ^(BACKLOG_WAKE_EXECUTE|MR_SESSION_MERGED_STALE_BRANCH|MR_PR_BACKUP_) only
+2. Tick       → detached dev-loop → **BACKLOG_WAKE_EXECUTE only** (execution-only) or DEV_FACTORY_IDLE (log-only)
 3. Pick       → oldest impl-dev ticket (respect QA follow-on routing)
 4. Pickup     → pickup_jira_ticket.sh or pickup_github_ticket.sh → branch; OpenSpec;
                 **if ux-charter-first: Athena Mode B until UX_CHARTER_READY**;
@@ -56,6 +62,10 @@ factory; one tick = one backlog drain attempt.
 7. Handoff    → preflight → post_*_handoff → Validate/Testing → **on `QA_KICK_YES` + `QA_WAKE_EXECUTE`: wake Argus (`dev-qa-subagent`) + `ack_argus_kick.ts`**
 8. Drain      → re-run JQL; next ticket same session until DEV_FACTORY_IDLE
 ```
+
+If the Cursor watcher Shell is **aborted**, re-run `arm_dev_loop.sh` (idempotent) — the detached
+scheduler keeps ticking; verify `projects/<slug>/factory/loop.pid`. Do not treat IDLE/ARMED
+“Briefly inform…” turns as work — execute only on `BACKLOG_WAKE_EXECUTE`.
 
 For **active factory** (user says run/execute/arm loop — see `FACTORY_RUN_INTENT_PHRASES` in
 `lib/devFactoryExecution.ts`), status-only replies are forbidden. Drain **many tickets**

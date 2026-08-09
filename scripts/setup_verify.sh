@@ -115,6 +115,17 @@ if [[ -f "$YAML" ]] && grep -qE '^stack:' "$YAML" 2>/dev/null; then
   fi
 fi
 
+# Customer app must not contain skill/factory leakage.
+if hygiene_out="$(bash scripts/check_app_client_hygiene.sh "$SLUG" 2>&1)"; then
+  if echo "$hygiene_out" | grep -q '^CLIENT_HYGIENE_OK\|^CLIENT_HYGIENE_SKIP'; then
+    check_ok "client_hygiene"
+  else
+    check_fail "client_hygiene" "unexpected output"
+  fi
+else
+  check_fail "client_hygiene" "$(echo "$hygiene_out" | grep CLIENT_HYGIENE_FAIL | head -3 | tr '\n' ' ')"
+fi
+
 if [[ -n "$APP" && -d "$APP" ]]; then
   for script_key in wait_pr_pipeline wait_main_deploy; do
     rel="$(npx tsx scripts/resolve_app_script.ts "$SLUG" "$script_key" 2>/dev/null || true)"

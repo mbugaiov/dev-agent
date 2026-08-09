@@ -5,7 +5,8 @@ alwaysApply: true
 
 # Stack skills must be used (not only installed)
 
-Marketplace packs live under **`dev-agent/.agents/skills/`** (gitignored). They are useless unless the agent **Reads** them.
+Marketplace packs live under **engine** `.agents/skills/` (gitignored). They are useless unless the agent **Reads** them.
+**Never** put packs, skill URLs, or sync scripts in customer app repos — see `dev-client-repo-hygiene.mdc`.
 
 ## Before implementing product code for a slug
 

@@ -49,17 +49,21 @@ projects/<slug>/
   .cursor/rules/            optional app-specific MR workflow overrides
 ```
 
-The **application repo** holds product code, OpenSpec specs,
-CI scripts, and e2e tests. The dev-agent engine **invokes** gate/MR commands from
-`project.yaml` → `app.gate_command` / `app.mr_push_command`.
+The **application repo** holds **only** product code, OpenSpec product specs,
+CI scripts, and e2e tests. It must **not** contain agent skills, skill marketplace
+URLs, skill sync scripts, or factory playbooks (rule `dev-client-repo-hygiene.mdc`).
+Optional client-safe engineering notes: `docs/CODE_STANDARDS.md` (no engine paths).
 
-**Stack skills (marketplace packs):** not committed. When `project.yaml` → `stack.*`
-names a technology, install fresh packs into the engine with
-`bash scripts/sync_stack_skills.sh <slug>` (gitignored under `.agents/`).
-**Usage gate:** `bash scripts/verify_stack_skills.sh <slug>` writes
-`projects/<slug>/factory/stack-skills.manifest`; agents **must Read** those
-`SKILL.md` files before stack implement (rule `dev-stack-skills.mdc`).
-Project-only / conflicting skills stay under `projects/<slug>/` (also gitignored).
+The engine **invokes** gate/MR commands from `project.yaml` → `app.gate_command` /
+`app.mr_push_command`.
+
+**Stack skills:** owned entirely by the engine. When `project.yaml` → `stack.*`
+names a technology, install with `bash scripts/sync_stack_skills.sh <slug>` and
+prove with `bash scripts/verify_stack_skills.sh <slug>` (manifest under
+`projects/<slug>/factory/`). Agents Read those `SKILL.md` paths — never copy into
+the app. Project-only overrides: `projects/<slug>/.cursor/{skills,rules}/` (gitignored).
+
+**Hygiene gate:** `bash scripts/check_app_client_hygiene.sh <slug>` (also in `setup_verify`).
 
 ## Dev factory loop vs QA loop
 

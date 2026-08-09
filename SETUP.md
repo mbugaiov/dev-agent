@@ -204,7 +204,11 @@ bash scripts/verify_stack_skills.sh <SLUG> --install  # sync + verify
 # (rule: .cursor/rules/dev-stack-skills.mdc; mr-pipeline step 3b).
 ```
 
-`setup_verify.sh` checks `STACK_SKILLS_OK`.
+`setup_verify.sh` checks `STACK_SKILLS_OK` and **`CLIENT_HYGIENE_OK`**
+(`check_app_client_hygiene.sh` — app must not contain skills / skill URLs / factory packs).
+
+Customer apps may keep plain `docs/CODE_STANDARDS.md` for product review. All skill
+management stays in this engine (`dev-client-repo-hygiene.mdc`).
 
 ## 5. Secrets — Jira and Bitbucket
 

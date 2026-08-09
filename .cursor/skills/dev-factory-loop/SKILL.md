@@ -71,7 +71,10 @@ Follow skill **`dev-mr-pipeline`** (project overrides in `projects/<slug>/` if p
    On `UX_KICK_YES` (phase charter), wake Athena Mode B (**`dev-ux-subagent`**) — **do not implement UI**
    until the tracker has `UX_CHARTER_READY`. Then implement from the charter.
 4. **Stack skills gate:** `bash scripts/verify_stack_skills.sh <slug>` (or `--install`);  
-   Read all paths in `projects/<slug>/factory/stack-skills.manifest` before coding stack areas
+   Read all paths in `projects/<slug>/factory/stack-skills.manifest` before coding stack areas  
+   (packs live only in the engine — never copy into the app)
+4b. **Client hygiene gate:** `bash scripts/check_app_client_hygiene.sh <slug>` — app must not
+   track skills, skill URLs, factory rules, or engine skill paths (`dev-client-repo-hygiene.mdc`)
 5. Implement feature behaviour
 6. **UX polish when required** — `should_kick_ux.ts` (default after-implement) → Athena Mode A on the **same branch**
 7. `app.gate_command` → `app.mr_push_command`
