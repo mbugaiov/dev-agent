@@ -28,13 +28,17 @@ factory; one tick = one backlog drain attempt.
 | Phase checklist (spec-first, test gate, archive) | `dev-phases` |
 | **Engine PR code review** (before merge on dev-agent repo) | `dev-code-review` |
 
-## Skills this engine orchestrates (host / app repo)
+## Skills this engine orchestrates
 
 | Phase | Skill / tool | Location |
 |---|---|---|
-| Spec-first changes | `openspec-propose`, `openspec-apply`, … | app repo `.cursor/skills/` or host |
-| Local test gate | `project.yaml` → `app.gate_command` | app repo (from project config) |
+| Stack packs (.NET/Angular/…) | `sync_stack_skills` / `verify_stack_skills` | **engine** `.agents/skills` + manifest |
+| Project overrides | `projects/<slug>/.cursor/skills` | engine project folder (gitignored) |
+| Spec-first changes | `openspec-*` skills | **app** `.cursor/skills/openspec-*` (allowed) or host — not our stack packs |
+| Local test gate | `project.yaml` → `app.gate_command` | app repo (product scripts only) |
 | MR push | `app.mr_push_command` | app repo |
+
+**Never** put skills, skill URLs, or factory rules in customer app repos — `dev-client-repo-hygiene.mdc`.
 
 ## The loop (every factory session)
 
@@ -47,6 +51,7 @@ factory; one tick = one backlog drain attempt.
 3. Pick       → oldest impl-dev ticket (respect QA follow-on routing)
 4. Pickup     → pickup_jira_ticket.sh or pickup_github_ticket.sh → branch; OpenSpec;
                 **if ux-charter-first: Athena Mode B until UX_CHARTER_READY**;
+                verify_stack_skills + Read manifest; check_app_client_hygiene;
                 implement; **UX polish if should_kick_ux** (same branch); app gate command
 5. Ship       → mr:push → wait_pr_pipeline → merge
 6. STG        → wait_main_deploy + check_stg_build (buildId gate).

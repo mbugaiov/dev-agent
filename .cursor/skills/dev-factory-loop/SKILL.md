@@ -63,14 +63,19 @@ Follow skill **`dev-mr-pipeline`** (project overrides in `projects/<slug>/` if p
 3. **If label `ux-charter-first`:** run `should_kick_ux.ts … --when before-implement --ticket KEY`.
    On `UX_KICK_YES` (phase charter), wake Athena Mode B (**`dev-ux-subagent`**) — **do not implement UI**
    until the tracker has `UX_CHARTER_READY`. Then implement from the charter.
-4. Implement feature behaviour
-5. **UX polish when required** — `should_kick_ux.ts` (default after-implement) → Athena Mode A on the **same branch**
-6. `app.gate_command` → `app.mr_push_command`
-7. Merge → STG buildId → handoff (`post_jira_handoff.ts` or `post_github_handoff.ts`) → Validate/Testing
-7b. **On `QA_KICK_YES`:** handoff **hard-kicks** Argus (`QA_WAKE_EXECUTE` + qa/dev pending latches).
+4. **Stack skills gate:** `bash scripts/verify_stack_skills.sh <slug>` (or `--install`);  
+   Read all paths in `projects/<slug>/factory/stack-skills.manifest` before coding stack areas  
+   (packs live only in the engine — never copy into the app)
+4b. **Client hygiene gate:** `bash scripts/check_app_client_hygiene.sh <slug>` — app must not
+   track skills, skill URLs, factory rules, or engine skill paths (`dev-client-repo-hygiene.mdc`)
+5. Implement feature behaviour
+6. **UX polish when required** — `should_kick_ux.ts` (default after-implement) → Athena Mode A on the **same branch**
+7. `app.gate_command` → `app.mr_push_command`
+8. Merge → STG buildId → handoff (`post_jira_handoff.ts` or `post_github_handoff.ts`) → Validate/Testing
+8b. **On `QA_KICK_YES`:** handoff **hard-kicks** Argus (`QA_WAKE_EXECUTE` + qa/dev pending latches).
    Wake Argus now (`dev-qa-subagent`) — do **not** rely on `arm_qa_loop` alone; then
    `npx tsx scripts/ack_argus_kick.ts`
-8. Re-query backlog → next ticket or IDLE
+9. Re-query backlog → next ticket or IDLE
 
 ## QA RETURN
 

@@ -10,7 +10,18 @@
 projects/*
 !projects/_template/
 
+# Stack / marketplace skills — install on demand from upstream via
+# scripts/sync_stack_skills.sh <slug> (never commit packs into engine git)
+.agents/
+.cursor/skills/**
+!.cursor/skills/dev-*/
+!.cursor/skills/dev-*/**
+
 projects/*/factory/runs/*.jsonl
+# Detached loop runtime (scheduler pid + log)
+projects/*/factory/loop.pid
+projects/*/factory/loop.out
+projects/*/factory/loop.interval
 review.md
 
 # Per-session dev factory execute latch (runtime state)

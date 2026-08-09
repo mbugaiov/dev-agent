@@ -180,6 +180,37 @@ test -d "$APP_ROOT" && echo "APP_ROOT_OK $APP_ROOT"
 
 ---
 
+## 4b. Stack skills (install on demand — do not commit packs)
+
+After `stack:` in `project.yaml` names the technologies, pull **fresh** marketplace
+skills into the engine (gitignored under `.agents/`):
+
+```bash
+bash scripts/sync_stack_skills.sh <SLUG>
+bash scripts/sync_stack_skills.sh <SLUG> --dry-run   # preview matches
+bash scripts/sync_stack_skills.sh --list-packs
+```
+
+Re-run anytime to refresh from upstream skill repos. Project-only overrides go under
+`projects/<SLUG>/.cursor/skills/` (also gitignored). Never vendor packs into the app repo.
+
+**Prove they will be used** (install alone is not enough — agents must Read them):
+
+```bash
+bash scripts/verify_stack_skills.sh <SLUG>            # fail if packs missing
+bash scripts/verify_stack_skills.sh <SLUG> --install  # sync + verify
+# Writes projects/<SLUG>/factory/stack-skills.manifest
+# Agents MUST Read every SKILL.md in that manifest before stack implement
+# (rule: .cursor/rules/dev-stack-skills.mdc; mr-pipeline step 3b).
+```
+
+`setup_verify.sh` checks `STACK_SKILLS_OK` and **`CLIENT_HYGIENE_OK`**
+(`check_app_client_hygiene.sh` — app must not contain skills / skill URLs / factory packs).
+
+Customer apps may keep plain `docs/CODE_STANDARDS.md` (and optionally a thin
+`.cursor/rules/code-review.mdc` pointing at it). All skill management stays in
+this engine (`dev-client-repo-hygiene.mdc`).
+
 ## 5. Secrets — Jira and Bitbucket
 
 ### 5a. Jira (required for factory loop)

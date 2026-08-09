@@ -65,5 +65,7 @@ else
 fi
 
 echo "Created dev factory project: projects/$SLUG"
-echo "  Next: edit project.yaml (app.repo_path, git, stg)"
+echo "  Next: edit project.yaml (app.repo_path, git, stg, stack:)"
 echo "  Secrets: projects/$SLUG/.secrets/jira.env + bitbucket.env"
+echo "  Stack skills (fresh from upstream into engine .agents/):"
+echo "    bash scripts/sync_stack_skills.sh $SLUG"

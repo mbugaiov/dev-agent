@@ -23,6 +23,17 @@ Generic flow; **app repo** holds product code and CI. Read `projects/<slug>/proj
    `npx tsx scripts/should_kick_ux.ts <slug> --labels <labels> --surfaces "<surfaces>" --when before-implement --ticket <KEY>`.
    If phase `charter` / `UX_KICK_YES`: notify `--mode charter`, wake Athena Mode B, **block UI implement**
    until comment `UX_CHARTER_READY`. Then implement from that charter.
+3b. **Stack skills (MUST before implement):**  
+    `bash scripts/verify_stack_skills.sh <slug>`  
+    On fail: `bash scripts/verify_stack_skills.sh <slug> --install`.  
+    Then **Read every** `SKILL.md` listed in `projects/<slug>/factory/stack-skills.manifest`  
+    and apply them for stack work (.NET / Angular / Ionic / MSSQL / Supabase).  
+    Do not implement those areas without Reading the matched skills. Rule: `dev-stack-skills.mdc`.  
+    Skills stay in the engine — never vendor packs or skill URLs into the app.
+3c. **Client hygiene (MUST):** `bash scripts/check_app_client_hygiene.sh <slug>`  
+    Fail if the app tracks skill packs, skill URLs/docs, factory rules, or engine skill paths.  
+    Allowed in app: product code + optional `docs/CODE_STANDARDS.md` (+ thin `code-review.mdc`).  
+    Rule: `dev-client-repo-hygiene.mdc` (all factory projects).
 4. **Implement** feature behaviour on that branch
 5. **UX polish (when required):** `npx tsx scripts/should_kick_ux.ts <slug> --labels <labels> --surfaces "<surfaces>" --diff`
    (default after-implement). If `UX_KICK_YES`, wake Athena Mode A on the **same feature branch**
