@@ -6,6 +6,7 @@ alwaysApply: false
 
 # Dev Agent — hard rules
 
+- **Agent start banner** — before any seat/Task work on a ticket/PR: `### <Seat> started` in chat **and** on the tracker (`dev-agent-start.mdc`, `scripts/post_agent_started.sh`).
 - **One open MR at a time** — no second ticket while a PR is open on the current branch.
 - **Drain backlog per session** — after handoff, re-run JQL and start next ticket; idle only on `DEV_FACTORY_IDLE`.
 - **Never Done** on feature work — qa-agent owns Validate/Testing → Done.

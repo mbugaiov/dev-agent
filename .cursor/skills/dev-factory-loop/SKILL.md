@@ -53,8 +53,9 @@ Follow skill **`dev-mr-pipeline`** (project overrides in `projects/<slug>/` if p
 
 0. Pickup + scope comment (`pickup_jira_ticket.sh` or `pickup_github_ticket.sh`) —
    posts `### Hephaestus started`. Every later seat/sub-agent (Hermes / Athena /
-   Argus / Task) must also post `### <Seat> started` on the ticket **and** in chat
-   before work (Pantheon `FACTORY.md` → Agent start).
+   Argus / Themis / Task) must also post `### <Seat> started` on the ticket **and**
+   in chat **before** work — `bash scripts/post_agent_started.sh` / rule `dev-agent-start.mdc`
+   (all factory projects, not only Pantheon).
 1. Branch off `app.git.default_branch` in **app repo** (`project.yaml` → `app.repo_path`)
 2. OpenSpec spec-first (when enabled) — after BA gate when `ba-spec-first`
 2b. **If label `ba-spec-first`:** run `should_kick_ba.ts … --ticket KEY`.

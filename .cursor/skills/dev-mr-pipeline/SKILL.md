@@ -9,7 +9,11 @@ Generic flow; **app repo** holds product code and CI. Read `projects/<slug>/proj
 
 ## Steps
 
-0. **Pickup** (from `tracker.provider`):
+0. **Agent start (mandatory on every seat switch):** before work, chat + tracker
+   `### <Seat> started` — helper `bash scripts/post_agent_started.sh <slug> <N|pr:N> <Seat> "<Mode>" "<Doing>"`
+   (rule `dev-agent-start.mdc`). Pickup scripts post Hephaestus; Hermes/Athena/Argus/Themis
+   must post their own banner as soon as they take the ticket or PR.
+0b. **Pickup** (from `tracker.provider`):
    - **jira:** `bash scripts/pickup_jira_ticket.sh <slug> <KEY> --scope "<plan>" --points <n>` — transition, assign, estimate, scope comment (`jira.pickup`).
    - **github_issues:** `bash scripts/pickup_github_ticket.sh <slug> <KEY> --scope "<plan>"` — ensure pickup label, scope comment (no story points).
 1. **Branch:** `git checkout -B <prefix>/<KEY>-<slug> origin/<default_branch>` in app repo

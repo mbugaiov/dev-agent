@@ -37,6 +37,12 @@ have ".cursor/rules/dev-stack-skills.mdc"
 have "scripts/sync_stack_skills.sh"
 have "scripts/verify_stack_skills.sh"
 have "docs/STACK-SKILLS.md"
+have "scripts/post_agent_started.sh"
+have ".cursor/rules/dev-agent-start.mdc"
+AGENT_START_DRY_RUN=1 bash scripts/post_agent_started.sh intown-suits 5 Hephaestus "pickup" "smoke" \
+  | grep -q '### Hephaestus started' \
+  && ok "post_agent_started dry-run banner" \
+  || no "post_agent_started must print ### Seat started"
 grep -q 'github.com/dotnet/skills' docs/STACK-SKILLS.md \
   && grep -q 'sync_stack_skills.sh' docs/STACK-SKILLS.md \
   && ok "STACK-SKILLS catalog has URLs + sync commands" \
