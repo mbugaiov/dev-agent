@@ -10,7 +10,8 @@
 projects/*
 !projects/_template/
 
-# Stack / marketplace skills — local sync only (never commit into engine git)
+# Stack / marketplace skills — install on demand from upstream via
+# scripts/sync_stack_skills.sh <slug> (never commit packs into engine git)
 .agents/
 .cursor/skills/**
 !.cursor/skills/dev-*/

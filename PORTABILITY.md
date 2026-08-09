@@ -53,6 +53,11 @@ The **application repo** holds product code, OpenSpec specs,
 CI scripts, and e2e tests. The dev-agent engine **invokes** gate/MR commands from
 `project.yaml` → `app.gate_command` / `app.mr_push_command`.
 
+**Stack skills (marketplace packs):** not committed. When `project.yaml` → `stack.*`
+names a technology, install fresh packs into the engine with
+`bash scripts/sync_stack_skills.sh <slug>` (gitignored under `.agents/`).
+Project-only / conflicting skills stay under `projects/<slug>/` (also gitignored).
+
 ## Dev factory loop vs QA loop
 
 | Concern | Dev agent (this repo) | QA agent (`qa-agent`) |
