@@ -182,13 +182,15 @@ test -d "$APP_ROOT" && echo "APP_ROOT_OK $APP_ROOT"
 
 ## 4b. Stack skills (install on demand — do not commit packs)
 
+**Catalog (commands + upstream links):** [`docs/STACK-SKILLS.md`](docs/STACK-SKILLS.md).
+
 After `stack:` in `project.yaml` names the technologies, pull **fresh** marketplace
 skills into the engine (gitignored under `.agents/`):
 
 ```bash
 bash scripts/sync_stack_skills.sh <SLUG>
 bash scripts/sync_stack_skills.sh <SLUG> --dry-run   # preview matches
-bash scripts/sync_stack_skills.sh --list-packs
+bash scripts/sync_stack_skills.sh --list-packs       # full keyword → URL map
 ```
 
 Re-run anytime to refresh from upstream skill repos. Project-only overrides go under

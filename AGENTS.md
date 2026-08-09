@@ -38,6 +38,20 @@ factory; one tick = one backlog drain attempt.
 | Local test gate | `project.yaml` → `app.gate_command` | app repo (product scripts only) |
 | MR push | `app.mr_push_command` | app repo |
 
+**Stack skill auto-install** (engine owns links + commands — full catalog **`docs/STACK-SKILLS.md`**):
+
+```bash
+bash scripts/sync_stack_skills.sh --list-packs          # keyword → upstream URLs
+bash scripts/sync_stack_skills.sh <slug> --dry-run
+bash scripts/verify_stack_skills.sh <slug> --install    # sync + manifest
+```
+
+Upstream map (also in `--list-packs`): [dotnet/skills](https://github.com/dotnet/skills),
+[analogjs/angular-skills](https://github.com/analogjs/angular-skills),
+[capawesome-team/skills](https://github.com/capawesome-team/skills),
+[damusix/skills](https://github.com/damusix/skills),
+[supabase/agent-skills](https://github.com/supabase/agent-skills).
+
 **Never** put skill packs or skill URLs in customer app repos. Product process rules
 (`.cursor/rules/factory-*.mdc`, `code-review.mdc`) **belong in the app** — `dev-client-repo-hygiene.mdc`.
 
