@@ -194,6 +194,18 @@ bash scripts/sync_stack_skills.sh --list-packs
 Re-run anytime to refresh from upstream skill repos. Project-only overrides go under
 `projects/<SLUG>/.cursor/skills/` (also gitignored). Never vendor packs into the app repo.
 
+**Prove they will be used** (install alone is not enough — agents must Read them):
+
+```bash
+bash scripts/verify_stack_skills.sh <SLUG>            # fail if packs missing
+bash scripts/verify_stack_skills.sh <SLUG> --install  # sync + verify
+# Writes projects/<SLUG>/factory/stack-skills.manifest
+# Hephaestus MUST Read every SKILL.md in that manifest before stack implement
+# (rule: .cursor/rules/dev-stack-skills.mdc; mr-pipeline step 3b).
+```
+
+`setup_verify.sh` checks `STACK_SKILLS_OK`.
+
 ## 5. Secrets — Jira and Bitbucket
 
 ### 5a. Jira (required for factory loop)

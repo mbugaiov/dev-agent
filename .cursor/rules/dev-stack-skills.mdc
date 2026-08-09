@@ -1,0 +1,30 @@
+---
+description: MUST use engine stack skills from project.yaml — install/verify before implement; Read manifest SKILL.md paths.
+alwaysApply: true
+---
+
+# Stack skills must be used (not only installed)
+
+Marketplace packs live under **`dev-agent/.agents/skills/`** (gitignored). They are useless unless the agent **Reads** them.
+
+## Before implementing product code for a slug
+
+1. `bash scripts/verify_stack_skills.sh <slug>`  
+   - On `STACK_SKILLS_FAIL`: `bash scripts/verify_stack_skills.sh <slug> --install`
+2. Open `projects/<slug>/factory/stack-skills.manifest`
+3. **Read** every `SKILL.md` path listed (absolute paths under `.agents/skills/` and optional `projects/<slug>/.cursor/skills/`)
+4. Follow those skills for the matching stack (ASP.NET, Angular/Ionic, MSSQL SPs, Supabase, …)
+
+## Forbidden
+
+- Implementing .NET / Angular / Ionic / SQL / Supabase behaviour while ignoring the manifest
+- Vendoring packs into the **app** repo
+- Assuming packs are in context without Reading the files (Cursor may not auto-load `.agents/skills` when the workspace root is the app)
+
+## Factory skills vs stack skills
+
+| Kind | Path | Auto-loaded when workspace is `dev-agent` |
+|------|------|---------------------------------------------|
+| Factory (`dev-*`) | `.cursor/skills/dev-*` | Yes |
+| Stack packs | `.agents/skills/*` | **Not reliable** — use manifest + Read |
+| Project overrides | `projects/<slug>/.cursor/skills/` | Read via manifest |

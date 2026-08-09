@@ -101,6 +101,20 @@ if [[ -f "$YAML" ]]; then
   fi
 fi
 
+# Stack marketplace skills must be present under engine .agents/ (install-on-demand).
+if [[ -f "$YAML" ]] && grep -qE '^stack:' "$YAML" 2>/dev/null; then
+  if stack_out="$(bash scripts/verify_stack_skills.sh "$SLUG" 2>&1)"; then
+    if echo "$stack_out" | grep -q '^STACK_SKILLS_OK'; then
+      check_ok "stack_skills"
+    else
+      check_fail "stack_skills" "unexpected verify output"
+    fi
+  else
+    check_fail "stack_skills" \
+      "missing packs — run: bash scripts/verify_stack_skills.sh $SLUG --install"
+  fi
+fi
+
 if [[ -n "$APP" && -d "$APP" ]]; then
   for script_key in wait_pr_pipeline wait_main_deploy; do
     rel="$(npx tsx scripts/resolve_app_script.ts "$SLUG" "$script_key" 2>/dev/null || true)"

@@ -33,6 +33,9 @@ have "scripts/pre_merge_check.sh"
 have "scripts/check_review_gate.sh"
 have ".cursor/skills/dev-phases/SKILL.md"
 have ".cursor/rules/dev-engine.mdc"
+have ".cursor/rules/dev-stack-skills.mdc"
+have "scripts/sync_stack_skills.sh"
+have "scripts/verify_stack_skills.sh"
 
 echo "== 4. Portability scripts =="
 have "SETUP.md"
@@ -96,10 +99,21 @@ have "scripts/test_tick_notify.ts"
 have "scripts/test_tick_notify.sh"
 have "scripts/notify_ux_kick.ts"
 have "scripts/arm_dev_loop.sh"
+have "scripts/watch_dev_loop.sh"
 grep -q 'exact trailing slug' scripts/arm_dev_loop.sh \
   && grep -q 'pgrep -f "scripts/dev-loop.sh"' scripts/arm_dev_loop.sh \
   && ok "arm_dev_loop slug-scoped kill" \
   || no "arm_dev_loop must kill only target slug"
+grep -q 'start_new_session' scripts/arm_dev_loop.sh \
+  && grep -q 'watch_dev_loop.sh' scripts/arm_dev_loop.sh \
+  && grep -q '\-\-foreground' scripts/arm_dev_loop.sh \
+  && ok "arm_dev_loop detached + watch + foreground" \
+  || no "arm_dev_loop must detach scheduler (start_new_session) and exec watch_dev_loop"
+grep -q 'BACKLOG_WAKE_EXECUTE' scripts/watch_dev_loop.sh \
+  && grep -q 'tail -n 0 -F' scripts/watch_dev_loop.sh \
+  && ! grep -qE 'notify_on_output on .*DEV_FACTORY_IDLE' scripts/watch_dev_loop.sh \
+  && ok "watch_dev_loop execute/PR notify only" \
+  || no "watch_dev_loop must tail log with execute/PR notify only"
 have "scripts/validate_execution_only_policy.ts"
 have "lib/secretsEnvLint.ts"
 have "lib/devFactoryExecutionOnly.ts"

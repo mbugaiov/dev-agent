@@ -56,6 +56,9 @@ CI scripts, and e2e tests. The dev-agent engine **invokes** gate/MR commands fro
 **Stack skills (marketplace packs):** not committed. When `project.yaml` → `stack.*`
 names a technology, install fresh packs into the engine with
 `bash scripts/sync_stack_skills.sh <slug>` (gitignored under `.agents/`).
+**Usage gate:** `bash scripts/verify_stack_skills.sh <slug>` writes
+`projects/<slug>/factory/stack-skills.manifest`; agents **must Read** those
+`SKILL.md` files before stack implement (rule `dev-stack-skills.mdc`).
 Project-only / conflicting skills stay under `projects/<slug>/` (also gitignored).
 
 ## Dev factory loop vs QA loop
