@@ -26,29 +26,22 @@ Human exceptions: `projects/<slug>/docs/HUMAN-EXCEPTIONS.md`.
 **Active factory:** User phrases in `FACTORY_RUN_INTENT_PHRASES` (`lib/devFactoryExecution.ts`)
 → arm + tick + drain in **same turn**. See `.cursor/rules/dev-factory-active.mdc`.
 
-1. **Arm:** `bash scripts/arm_dev_loop.sh <slug>` — **detached** by default: scheduler in a new
-   session (`start_new_session`) → `projects/<slug>/factory/loop.{pid,out}`, then `exec`
-   **`watch_dev_loop.sh`** so the Cursor Shell is only the log tailer. Slug-scoped; multiple
-   factories coexist. Use `--foreground` only for debug (scheduler dies if Cursor aborts the Shell).
-2. **Tick:** detached `dev-loop.sh` → `dev_factory_tick.sh <slug>` → **`BACKLOG_WAKE_EXECUTE`**
-   (execution-only) or `DEV_FACTORY_IDLE` (**log-only** — do not `notify_on_output` IDLE)
-3. **Watch patterns:** `AGENT_NOTIFY_WATCH_PATTERN` in `lib/devFactoryLoopWiring.ts` —
-   **`notify_on_output`** on `^(BACKLOG_WAKE_EXECUTE|MR_SESSION_MERGED_STALE_BRANCH|MR_PR_BACKUP_)`
-   only (no `LOOP_ARMED` / `DEV_FACTORY_IDLE` — those cause status-only “Briefly inform…” turns)
-4. **Watcher abort:** If Cursor aborts the watcher Shell, re-run `arm_dev_loop.sh` (idempotent).
-   Check `loop.pid` — the detached scheduler keeps ticking; do not assume the factory died.
-5. **Stop hook:** `.cursor/hooks.json` — auto-followup if pending execute unconsumed
-6. **Policy guard:** `scripts/validate_execution_only_policy.ts` — CI blocks inform-only `BACKLOG_WAKE` regressions
-7. **Notify smoke:** `bash scripts/test_tick_notify.sh <slug>` — prove Teams delivery after editing `.secrets/jira.env`
+1. **Arm:** `bash scripts/arm_dev_loop.sh <slug>` — **slug-scoped** (kills only that slug’s
+   `dev-loop.sh`; multiple `<slug>` factories can run side by side)
+2. **Tick:** `scripts/dev-loop.sh` → `dev_factory_tick.sh <slug>` → **`BACKLOG_WAKE_EXECUTE`** (execution-only) or `DEV_FACTORY_IDLE`
+3. **Watch patterns:** `lib/devFactoryLoopWiring.ts` — **`notify_on_output`** required on `^BACKLOG_WAKE_EXECUTE` only (no inform-only wake)
+4. **Stop hook:** `.cursor/hooks.json` — auto-followup if pending execute unconsumed
+5. **Policy guard:** `scripts/validate_execution_only_policy.ts` — CI blocks inform-only `BACKLOG_WAKE` regressions
+6. **Notify smoke:** `bash scripts/test_tick_notify.sh <slug>` — prove Teams delivery after editing `.secrets/jira.env`
 
-A detached scheduler without a watcher still ticks **silently** (log + optional Teams) but will not wake the agent.
+A plain background loop ticks **silently** without watchers.
 
 ## Tick policy (execution-only)
 
 | Signal | Action |
 |--------|--------|
 | `BACKLOG_WAKE_EXECUTE` | Start oldest ticket **now** — branch + OpenSpec + implement; drain queue same session |
-| `DEV_FACTORY_IDLE` | Log-only — wait for next tick; do **not** answer with a status-only “Briefly inform” turn |
+| `DEV_FACTORY_IDLE` | Wait for next tick |
 
 There is **no** separate `BACKLOG_WAKE` inform line — every backlog tick is an execute contract.
 Status-only replies on execute wakes are forbidden. Do not stop after one ticket — drain until `DEV_FACTORY_IDLE`.

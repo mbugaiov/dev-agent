@@ -5,7 +5,7 @@ alwaysApply: true
 
 # Client app repo hygiene (all factory projects)
 
-Applies to **every** product repo delivered via Hephaestus / sibling agents — not only Intown.
+Applies to **every** product repo delivered via this engine / sibling agents.
 
 ## Ownership
 
@@ -15,16 +15,17 @@ Applies to **every** product repo delivered via Hephaestus / sibling agents — 
 | Stack marketplace packs | Engine `.agents/skills` via `sync_stack_skills.sh` + `verify_stack_skills.sh` | **Never** |
 | Project-only / conflicting skills & rules | `projects/<slug>/.cursor/{skills,rules}/` (gitignored) | **Never** |
 | Skill install / verify scripts | Engine `scripts/` only | **Never** in app |
-| Links to skills.sh / skill GitHub packs / `dev-agent` skill paths | Engine docs only | **Never** in app |
+| Links to skills.sh / skill GitHub packs / engine skill paths | Engine docs only | **Never** in app |
 | Product code, OpenSpec product specs, CI, deploy | App repo | Yes |
-| Product engineering standards (SP-only, secrets, ACL) | App as `docs/CODE_STANDARDS.md` (plain product language) | Yes if needed for CI/review |
+| Product engineering standards | Prefer `docs/CODE_STANDARDS.md` | Yes if needed for CI/review |
+| Thin product CR pointer | Optional `.cursor/rules/code-review.mdc` → CODE_STANDARDS only | Yes (no skill URLs) |
 
 ## Absolute forbidden in app repos (tracked files)
 
 - `.cursor/skills/`, `.agents/skills/`
 - `docs/SKILLS*.md`, skill install runbooks, `scripts/sync_*skills*`
-- Factory seat names wired as process docs that expose the agent factory (Hermes/Athena/Hephaestus skill maps) — keep those under engine / `projects/<slug>/`
-- `.cursor/rules/*` that only exist for factory gates (`factory-ba-ux`, stack install, etc.)
+- Factory seat playbooks / prep docs that expose the agent factory
+- `.cursor/rules/factory-*` and any rule that wires stack-skill install
 - References like `bash ../dev-agent/scripts/sync_stack_skills.sh` or marketplace skill URLs
 
 ## How agents attach stack skills
@@ -37,7 +38,7 @@ Applies to **every** product repo delivered via Hephaestus / sibling agents — 
 ## What the client may receive
 
 - Source, tests, OpenSpec **product** specs, GitHub Actions / deploy scripts
-- Optional `docs/CODE_STANDARDS.md` (engineering constraints of the product — no skill marketplace links, no engine paths)
-- **Not** our skill catalog, install scripts, factory loop docs, or Pantheon seat playbooks
+- Optional `docs/CODE_STANDARDS.md` (+ optional thin `code-review.mdc`) — **no** skill marketplace links, **no** engine skill paths
+- **Not** our skill catalog, install scripts, factory loop docs, or seat playbooks
 
 If unsure whether a file belongs in the app: **keep it in the engine or `projects/<slug>/`**.

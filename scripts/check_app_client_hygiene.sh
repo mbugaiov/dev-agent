@@ -24,32 +24,55 @@ fail() {
 
 cd "$APP"
 
-# Tracked-only checks when git available
-tracked() {
-  if [[ -d .git ]] || [[ -f .git ]]; then
-    git ls-files "$@" 2>/dev/null || true
-  else
-    # fallback: filesystem
-    find "$@" -type f 2>/dev/null || true
-  fi
-}
-
-if [[ -n "$(tracked '.cursor/skills' '.agents/skills' 2>/dev/null | head -1)" ]] \
-  || [[ -d .cursor/skills && -n "$(find .cursor/skills -type f 2>/dev/null | head -1)" && -n "$(git ls-files '.cursor/skills/**' 2>/dev/null | head -1)" ]]; then
-  if git ls-files '.cursor/skills/**' '.agents/**' 2>/dev/null | grep -q .; then
-    fail "tracked .cursor/skills or .agents in app — move to engine"
-  fi
+if [[ -d .git ]] || [[ -f .git ]]; then
+  :
+else
+  echo "CLIENT_HYGIENE_SKIP {\"slug\":\"$SLUG\",\"reason\":\"app is not a git checkout\"}"
+  exit 0
 fi
 
+# Tracked skill packs
+if git ls-files '.cursor/skills/**' '.agents/**' 2>/dev/null | grep -q .; then
+  fail "tracked .cursor/skills or .agents in app — move to engine"
+fi
+
+# Skill / factory docs (portable globs)
 while IFS= read -r f; do
   [[ -z "$f" ]] && continue
   fail "tracked skill/factory doc: $f"
 done < <(git ls-files \
-  'docs/SKILLS.md' 'docs/SKILLS-INSTALL.md' 'docs/runbooks/DOTNET-SKILLS.md' \
-  'docs/AGENT-PREP.md' 'docs/PRE-START-STATUS.md' \
-  'scripts/sync_dotnet_skills.sh' 'scripts/sync_stack_skills.sh' \
-  '.cursor/rules/**' \
+  'docs/SKILLS.md' 'docs/SKILLS-*.md' 'docs/**/SKILLS*.md' \
+  'docs/**/*SKILLS*.md' \
+  'scripts/sync_*skills*' 'scripts/sync_*_skills*' \
   2>/dev/null || true)
+
+# Also catch common install/runbook names under docs/
+while IFS= read -r f; do
+  [[ -z "$f" ]] && continue
+  base="$(basename "$f")"
+  case "$base" in
+    SKILLS.md|SKILLS-INSTALL.md|*SKILLS*.md)
+      fail "tracked skill doc: $f"
+      ;;
+  esac
+done < <(git ls-files 'docs/**/*.md' 2>/dev/null || true)
+
+# .cursor/rules — allow only product CR pointer; ban factory / skill wiring
+while IFS= read -r f; do
+  [[ -z "$f" ]] && continue
+  base="$(basename "$f")"
+  case "$base" in
+    code-review.mdc)
+      # allowed — must not leak skill/engine paths (content scan below)
+      ;;
+    factory-*.mdc|*skill*.mdc|*skills*.mdc)
+      fail "tracked factory/skill rule in app: $f — move to projects/<slug>/.cursor/rules"
+      ;;
+    *)
+      fail "tracked app .cursor/rules/$base — keep factory rules in engine; product standards in docs/CODE_STANDARDS.md (optional code-review.mdc only)"
+      ;;
+  esac
+done < <(git ls-files '.cursor/rules/**' 2>/dev/null || true)
 
 # Content leaks in tracked markdown / rules / AGENTS
 while IFS= read -r f; do

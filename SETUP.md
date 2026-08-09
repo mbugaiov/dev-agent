@@ -200,15 +200,16 @@ Re-run anytime to refresh from upstream skill repos. Project-only overrides go u
 bash scripts/verify_stack_skills.sh <SLUG>            # fail if packs missing
 bash scripts/verify_stack_skills.sh <SLUG> --install  # sync + verify
 # Writes projects/<SLUG>/factory/stack-skills.manifest
-# Hephaestus MUST Read every SKILL.md in that manifest before stack implement
+# Agents MUST Read every SKILL.md in that manifest before stack implement
 # (rule: .cursor/rules/dev-stack-skills.mdc; mr-pipeline step 3b).
 ```
 
 `setup_verify.sh` checks `STACK_SKILLS_OK` and **`CLIENT_HYGIENE_OK`**
 (`check_app_client_hygiene.sh` — app must not contain skills / skill URLs / factory packs).
 
-Customer apps may keep plain `docs/CODE_STANDARDS.md` for product review. All skill
-management stays in this engine (`dev-client-repo-hygiene.mdc`).
+Customer apps may keep plain `docs/CODE_STANDARDS.md` (and optionally a thin
+`.cursor/rules/code-review.mdc` pointing at it). All skill management stays in
+this engine (`dev-client-repo-hygiene.mdc`).
 
 ## 5. Secrets — Jira and Bitbucket
 
@@ -418,13 +419,13 @@ Every backlog tick emits **`BACKLOG_WAKE_EXECUTE` only** — there is no separat
 
 1. Run tick now (§10b).
 2. If backlog > 0: start ticket in `APP_ROOT` immediately — **no status-only reply**.
-3. Launch loop in background with `notify_on_output` on `AGENT_NOTIFY_WATCH_PATTERN` from `lib/devFactoryLoopWiring.ts` (detached scheduler + `watch_dev_loop.sh`):
+3. Launch loop in background with `notify_on_output` on patterns from `lib/devFactoryLoopWiring.ts`:
 
 ```bash
 DEV_LOOP_INTERVAL_SEC=300 bash scripts/arm_dev_loop.sh <SLUG>
 ```
 
-Watch pattern (regex): `^(BACKLOG_WAKE_EXECUTE|MR_SESSION_MERGED_STALE_BRANCH|MR_PR_BACKUP_)` — execute/PR only. Do **not** notify on `DEV_FACTORY_IDLE` or `LOOP_ARMED`. Scheduler PID/log: `projects/<SLUG>/factory/loop.{pid,out}`.
+Watch patterns (regex): `buildCombinedWatchPattern(loop.purpose)` — includes `BACKLOG_WAKE_EXECUTE`, `DEV_FACTORY_IDLE`, `LOOP_ARMED`, `MR_PR_BACKUP_`, `AGENT_LOOP_TICK_<purpose>` (execution-only — no `BACKLOG_WAKE`).
 
 ### 10d. Per-ticket command reference
 

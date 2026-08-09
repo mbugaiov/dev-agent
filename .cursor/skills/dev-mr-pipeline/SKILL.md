@@ -31,7 +31,8 @@ Generic flow; **app repo** holds product code and CI. Read `projects/<slug>/proj
     Do not implement those areas without Reading the matched skills. Rule: `dev-stack-skills.mdc`.  
     Skills stay in the engine — never vendor packs or skill URLs into the app.
 3c. **Client hygiene (MUST):** `bash scripts/check_app_client_hygiene.sh <slug>`  
-    Fail if the app tracks skills / skill install docs / factory `.cursor/rules` / engine skill paths.  
+    Fail if the app tracks skill packs, skill URLs/docs, factory rules, or engine skill paths.  
+    Allowed in app: product code + optional `docs/CODE_STANDARDS.md` (+ thin `code-review.mdc`).  
     Rule: `dev-client-repo-hygiene.mdc` (all factory projects).
 4. **Implement** feature behaviour on that branch
 5. **UX polish (when required):** `npx tsx scripts/should_kick_ux.ts <slug> --labels <labels> --surfaces "<surfaces>" --diff`

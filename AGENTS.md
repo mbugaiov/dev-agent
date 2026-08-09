@@ -46,10 +46,8 @@ factory; one tick = one backlog drain attempt.
 
 ```
 0. Config     → projects/<slug>/project.yaml + .secrets/
-1. Arm        → bash scripts/arm_dev_loop.sh <slug> — **detached** scheduler (new session)
-                + watch_dev_loop.sh (Cursor Shell); notify_on_output on
-                ^(BACKLOG_WAKE_EXECUTE|MR_SESSION_MERGED_STALE_BRANCH|MR_PR_BACKUP_) only
-2. Tick       → detached dev-loop → **BACKLOG_WAKE_EXECUTE only** (execution-only) or DEV_FACTORY_IDLE (log-only)
+1. Arm        → bash scripts/arm_dev_loop.sh <slug> (notify_on_output on watch patterns)
+2. Tick       → dev_factory_tick → **BACKLOG_WAKE_EXECUTE only** (execution-only) or DEV_FACTORY_IDLE
 3. Pick       → oldest impl-dev ticket (respect QA follow-on routing)
 4. Pickup     → pickup_jira_ticket.sh or pickup_github_ticket.sh → branch; OpenSpec;
                 **if ux-charter-first: Athena Mode B until UX_CHARTER_READY**;
@@ -62,10 +60,6 @@ factory; one tick = one backlog drain attempt.
 7. Handoff    → preflight → post_*_handoff → Validate/Testing → **on `QA_KICK_YES` + `QA_WAKE_EXECUTE`: wake Argus (`dev-qa-subagent`) + `ack_argus_kick.ts`**
 8. Drain      → re-run JQL; next ticket same session until DEV_FACTORY_IDLE
 ```
-
-If the Cursor watcher Shell is **aborted**, re-run `arm_dev_loop.sh` (idempotent) — the detached
-scheduler keeps ticking; verify `projects/<slug>/factory/loop.pid`. Do not treat IDLE/ARMED
-“Briefly inform…” turns as work — execute only on `BACKLOG_WAKE_EXECUTE`.
 
 For **active factory** (user says run/execute/arm loop — see `FACTORY_RUN_INTENT_PHRASES` in
 `lib/devFactoryExecution.ts`), status-only replies are forbidden. Drain **many tickets**
