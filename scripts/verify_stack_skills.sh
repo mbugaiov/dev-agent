@@ -78,12 +78,6 @@ if need 'supabase'; then
   EXPECTED+=("supabase/SKILL.md")
 fi
 
-if [[ ${#EXPECTED[@]} -eq 0 ]]; then
-  echo "STACK_SKILLS_OK {\"slug\":\"$SLUG\",\"packs\":0,\"note\":\"no stack packs matched\"}"
-  : > "$MANIFEST"
-  exit 0
-fi
-
 MISSING=0
 : > "$MANIFEST"
 {
@@ -105,7 +99,7 @@ for rel in "${EXPECTED[@]}"; do
   fi
 done
 
-# Optional product overrides (engine-relative)
+# Project overrides always scanned (even when no marketplace packs matched)
 PROJ_SKILLS_REL="projects/$SLUG/.cursor/skills"
 if [[ -d "$ROOT/$PROJ_SKILLS_REL" ]]; then
   while IFS= read -r -d '' f; do
@@ -126,5 +120,9 @@ if [[ "$MISSING" -ne 0 ]]; then
 fi
 
 COUNT="$(grep -cE 'SKILL\.md$' "$MANIFEST" || true)"
-echo "STACK_SKILLS_OK {\"slug\":\"$SLUG\",\"packs\":$COUNT,\"manifest\":\"projects/$SLUG/factory/stack-skills.manifest\"}"
+NOTE=""
+if [[ ${#EXPECTED[@]} -eq 0 ]]; then
+  NOTE=',"note":"no marketplace packs matched"'
+fi
+echo "STACK_SKILLS_OK {\"slug\":\"$SLUG\",\"packs\":$COUNT,\"manifest\":\"projects/$SLUG/factory/stack-skills.manifest\"$NOTE}"
 echo "STACK_SKILLS_USE Read every SKILL.md listed in projects/$SLUG/factory/stack-skills.manifest (engine-root relative) before stack-related implement."
