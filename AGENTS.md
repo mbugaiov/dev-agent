@@ -38,7 +38,8 @@ factory; one tick = one backlog drain attempt.
 | Local test gate | `project.yaml` → `app.gate_command` | app repo (product scripts only) |
 | MR push | `app.mr_push_command` | app repo |
 
-**Never** put skills, skill URLs, or factory rules in customer app repos — `dev-client-repo-hygiene.mdc`.
+**Never** put skill packs or skill URLs in customer app repos. Product process rules
+(`.cursor/rules/factory-*.mdc`, `code-review.mdc`) **belong in the app** — `dev-client-repo-hygiene.mdc`.
 
 ## The loop (every factory session)
 

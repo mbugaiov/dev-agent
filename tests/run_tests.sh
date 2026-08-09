@@ -47,10 +47,14 @@ mkdir -p "$_hs/.cursor/skills/openspec-propose" "$_hs/docs"
 echo "# o" >"$_hs/.cursor/skills/openspec-propose/SKILL.md"
 echo "# std" >"$_hs/docs/CODE_STANDARDS.md"
 git -C "$_hs" add -A && git -C "$_hs" commit -q -m init
+mkdir -p "$_hs/.cursor/rules"
+echo "# gate" >"$_hs/.cursor/rules/factory-ba-ux.mdc"
+echo "# cr" >"$_hs/.cursor/rules/code-review.mdc"
+git -C "$_hs" add -A && git -C "$_hs" commit -q -m rules
 if bash scripts/check_app_client_hygiene.sh --app "$_hs" | grep -q CLIENT_HYGIENE_OK; then
-  ok "hygiene OK for openspec-only app"
+  ok "hygiene OK for openspec + product process rules"
 else
-  no "hygiene should OK openspec-only app"
+  no "hygiene should OK openspec + factory-*.mdc / code-review.mdc"
 fi
 mkdir -p "$_hs/.cursor/skills/dotnet-webapi"
 echo "# leak" >"$_hs/.cursor/skills/dotnet-webapi/SKILL.md"

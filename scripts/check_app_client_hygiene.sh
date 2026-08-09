@@ -77,19 +77,19 @@ while IFS= read -r f; do
   esac
 done < <(git ls-files 'docs/**/*.md' 2>/dev/null || true)
 
-# .cursor/rules — allow only product CR pointer; ban factory / skill wiring
+# .cursor/rules — product process/CR gates OK; ban skill-wiring rules only
 while IFS= read -r f; do
   [[ -z "$f" ]] && continue
   base="$(basename "$f")"
   case "$base" in
-    code-review.mdc)
-      # allowed — must not leak skill/engine paths (content scan below)
+    code-review.mdc|factory-*.mdc)
+      # allowed — labels/sentinels/CR for this product (content scan below)
       ;;
-    factory-*.mdc|*skill*.mdc|*skills*.mdc)
-      fail "tracked factory/skill rule in app: $f — move to projects/<slug>/.cursor/rules"
+    *skill*.mdc|*skills*.mdc)
+      fail "tracked skill-wiring rule in app: $f — skills stay in the engine"
       ;;
     *)
-      fail "tracked app .cursor/rules/$base — keep factory rules in engine; product standards in docs/CODE_STANDARDS.md (optional code-review.mdc only)"
+      # Other product-local process rules OK if content scan passes
       ;;
   esac
 done < <(git ls-files '.cursor/rules/**' 2>/dev/null || true)
