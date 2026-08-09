@@ -10,7 +10,17 @@
 projects/*
 !projects/_template/
 
+# Stack / marketplace skills — local sync only (never commit into engine git)
+.agents/
+.cursor/skills/**
+!.cursor/skills/dev-*/
+!.cursor/skills/dev-*/**
+
 projects/*/factory/runs/*.jsonl
+# Detached loop runtime (scheduler pid + log)
+projects/*/factory/loop.pid
+projects/*/factory/loop.out
+projects/*/factory/loop.interval
 review.md
 
 # Per-session dev factory execute latch (runtime state)
