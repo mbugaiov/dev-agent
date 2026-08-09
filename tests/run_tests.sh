@@ -61,6 +61,26 @@ else
   ok "hygiene FAIL on tracked stack skill"
 fi
 rm -rf "$_hs"
+# Smoke: stack keyword match — host *.net must not imply .NET; _template refused
+_ss="$(mktemp -d)"
+mkdir -p "$_ss/projects/stack-host/factory" "$_ss/scripts"
+cp scripts/verify_stack_skills.sh "$_ss/scripts/"
+cat >"$_ss/projects/stack-host/project.yaml" <<'YAML'
+slug: stack-host
+stack:
+  hosting: azurewebsites.net cdn.example.net
+YAML
+if ! (cd "$_ss" && bash scripts/verify_stack_skills.sh stack-host 2>&1 | grep -q '"packs":0'); then
+  no "host-only *.net stack must match zero marketplace packs"
+else
+  ok "host-only *.net does not pull .NET packs"
+fi
+if bash scripts/verify_stack_skills.sh _template >/dev/null 2>&1; then
+  no "verify_stack_skills must refuse _template"
+else
+  ok "verify_stack_skills refuses _template"
+fi
+rm -rf "$_ss"
 
 echo "== 4. Portability scripts =="
 have "SETUP.md"

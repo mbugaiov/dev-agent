@@ -31,7 +31,6 @@ for arg in "$@"; do
 done
 
 AGENTS_SKILLS="$ROOT/.agents/skills"
-CURSOR_SKILLS="$ROOT/.cursor/skills"
 CACHE="${DOTNET_SKILLS_CACHE:-${TMPDIR:-/tmp}/dotnet-skills-cache}"
 
 list_packs() {
@@ -97,7 +96,7 @@ run() {
 install_dotnet() {
   local plugins=(dotnet dotnet-aspnetcore dotnet-test dotnet-msbuild dotnet-data)
   if [[ "$DRY" -eq 1 ]]; then
-    echo "DRY: vendor https://github.com/dotnet/skills → .agents/skills + .cursor/skills/dotnet-*"
+    echo "DRY: vendor https://github.com/dotnet/skills → .agents/skills/dotnet-* only"
     return 0
   fi
   if [[ ! -d "$CACHE/.git" ]]; then
@@ -106,7 +105,8 @@ install_dotnet() {
   else
     git -C "$CACHE" pull --ff-only || true
   fi
-  mkdir -p "$AGENTS_SKILLS" "$CURSOR_SKILLS"
+  # Only .agents/skills — do not dual-write .cursor/skills (auto-loads across all slugs).
+  mkdir -p "$AGENTS_SKILLS"
   for plug in "${plugins[@]}"; do
     local src="$CACHE/plugins/$plug/skills"
     [[ -d "$src" ]] || continue
@@ -114,9 +114,8 @@ install_dotnet() {
       local name target
       name=$(basename "$skilldir")
       if [[ "$name" == dotnet-* ]]; then target="$name"; else target="dotnet-$name"; fi
-      rm -rf "$AGENTS_SKILLS/$target" "$CURSOR_SKILLS/$target"
+      rm -rf "$AGENTS_SKILLS/$target"
       cp -R "$skilldir" "$AGENTS_SKILLS/$target"
-      cp -R "$skilldir" "$CURSOR_SKILLS/$target"
       echo "  $plug/$name"
     done
   done

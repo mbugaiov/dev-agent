@@ -89,16 +89,18 @@ MISSING=0
   echo
 } >> "$MANIFEST"
 
-for rel in "${EXPECTED[@]}"; do
-  eng_rel=".agents/skills/$rel"
-  if [[ -f "$ROOT/$eng_rel" ]]; then
-    echo "$eng_rel" >> "$MANIFEST"
-    echo "STACK_SKILL_OK $rel"
-  else
-    echo "STACK_SKILL_MISSING $rel" >&2
-    MISSING=1
-  fi
-done
+if ((${#EXPECTED[@]} > 0)); then
+  for rel in "${EXPECTED[@]}"; do
+    eng_rel=".agents/skills/$rel"
+    if [[ -f "$ROOT/$eng_rel" ]]; then
+      echo "$eng_rel" >> "$MANIFEST"
+      echo "STACK_SKILL_OK $rel"
+    else
+      echo "STACK_SKILL_MISSING $rel" >&2
+      MISSING=1
+    fi
+  done
+fi
 
 # Project overrides always scanned (even when no marketplace packs matched)
 PROJ_SKILLS_REL="projects/$SLUG/.cursor/skills"
@@ -120,7 +122,7 @@ if [[ "$MISSING" -ne 0 ]]; then
   exit 1
 fi
 
-COUNT="$(grep -cE 'SKILL\.md$' "$MANIFEST" || true)"
+COUNT="$(grep -cE '^[^#[:space:]].*SKILL\.md$' "$MANIFEST" || true)"
 NOTE=""
 if [[ ${#EXPECTED[@]} -eq 0 ]]; then
   NOTE=',"note":"no marketplace packs matched"'

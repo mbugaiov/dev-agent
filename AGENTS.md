@@ -51,6 +51,7 @@ factory; one tick = one backlog drain attempt.
 3. Pick       → oldest impl-dev ticket (respect QA follow-on routing)
 4. Pickup     → pickup_jira_ticket.sh or pickup_github_ticket.sh → branch; OpenSpec;
                 **if ux-charter-first: Athena Mode B until UX_CHARTER_READY**;
+                verify_stack_skills + Read manifest; check_app_client_hygiene;
                 implement; **UX polish if should_kick_ux** (same branch); app gate command
 5. Ship       → mr:push → wait_pr_pipeline → merge
 6. STG        → wait_main_deploy + check_stg_build (buildId gate).
