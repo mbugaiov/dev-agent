@@ -13,7 +13,7 @@ Marketplace packs live under **engine** `.agents/skills/` (gitignored). They are
 1. `bash scripts/verify_stack_skills.sh <slug>`  
    - On `STACK_SKILLS_FAIL`: `bash scripts/verify_stack_skills.sh <slug> --install`
 2. Open `projects/<slug>/factory/stack-skills.manifest`
-3. **Read** every `SKILL.md` path listed (absolute paths under `.agents/skills/` and optional `projects/<slug>/.cursor/skills/`)
+3. **Read** every `SKILL.md` path listed (paths are **relative to the engine repo root**, e.g. `.agents/skills/...` and optional `projects/<slug>/.cursor/skills/...`)
 4. Follow those skills for the matching stack (ASP.NET, Angular/Ionic, MSSQL SPs, Supabase, …)
 
 ## Forbidden
