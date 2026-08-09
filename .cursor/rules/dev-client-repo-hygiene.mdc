@@ -17,12 +17,13 @@ Applies to **every** product repo delivered via this engine / sibling agents.
 | Skill install / verify scripts | Engine `scripts/` only | **Never** in app |
 | Links to skills.sh / skill GitHub packs / engine skill paths | Engine docs only | **Never** in app |
 | Product code, OpenSpec product specs, CI, deploy | App repo | Yes |
+| OpenSpec workflow skills (`openspec-*`) | App `.cursor/skills/openspec-*` or host install | Yes (product tooling only) |
 | Product engineering standards | Prefer `docs/CODE_STANDARDS.md` | Yes if needed for CI/review |
 | Thin product CR pointer | Optional `.cursor/rules/code-review.mdc` → CODE_STANDARDS only | Yes (no skill URLs) |
 
 ## Absolute forbidden in app repos (tracked files)
 
-- `.cursor/skills/`, `.agents/skills/`
+- `.cursor/skills/*` **except** `openspec-*`; any `.agents/skills/`
 - `docs/SKILLS*.md`, skill install runbooks, `scripts/sync_*skills*`
 - Factory seat playbooks / prep docs that expose the agent factory
 - `.cursor/rules/factory-*` and any rule that wires stack-skill install

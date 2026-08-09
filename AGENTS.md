@@ -34,7 +34,7 @@ factory; one tick = one backlog drain attempt.
 |---|---|---|
 | Stack packs (.NET/Angular/…) | `sync_stack_skills` / `verify_stack_skills` | **engine** `.agents/skills` + manifest |
 | Project overrides | `projects/<slug>/.cursor/skills` | engine project folder (gitignored) |
-| Spec-first changes | `openspec-propose`, `openspec-apply`, … | host / OpenSpec install — **not** vendor packs into app |
+| Spec-first changes | `openspec-*` skills | **app** `.cursor/skills/openspec-*` (allowed) or host — not our stack packs |
 | Local test gate | `project.yaml` → `app.gate_command` | app repo (product scripts only) |
 | MR push | `app.mr_push_command` | app repo |
 

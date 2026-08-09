@@ -38,6 +38,29 @@ have "scripts/sync_stack_skills.sh"
 have "scripts/verify_stack_skills.sh"
 have "scripts/check_app_client_hygiene.sh"
 have ".cursor/rules/dev-client-repo-hygiene.mdc"
+# Smoke: clean+openspec OK; tracked stack skill FAIL
+_hs="$(mktemp -d)"
+git -C "$_hs" init -q
+git -C "$_hs" config user.email "t@example.com"
+git -C "$_hs" config user.name "t"
+mkdir -p "$_hs/.cursor/skills/openspec-propose" "$_hs/docs"
+echo "# o" >"$_hs/.cursor/skills/openspec-propose/SKILL.md"
+echo "# std" >"$_hs/docs/CODE_STANDARDS.md"
+git -C "$_hs" add -A && git -C "$_hs" commit -q -m init
+if bash scripts/check_app_client_hygiene.sh --app "$_hs" | grep -q CLIENT_HYGIENE_OK; then
+  ok "hygiene OK for openspec-only app"
+else
+  no "hygiene should OK openspec-only app"
+fi
+mkdir -p "$_hs/.cursor/skills/dotnet-webapi"
+echo "# leak" >"$_hs/.cursor/skills/dotnet-webapi/SKILL.md"
+git -C "$_hs" add -A && git -C "$_hs" commit -q -m leak
+if bash scripts/check_app_client_hygiene.sh --app "$_hs" >/dev/null 2>&1; then
+  no "hygiene should FAIL on tracked stack skill"
+else
+  ok "hygiene FAIL on tracked stack skill"
+fi
+rm -rf "$_hs"
 
 echo "== 4. Portability scripts =="
 have "SETUP.md"

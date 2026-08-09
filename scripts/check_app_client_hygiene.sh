@@ -1,19 +1,32 @@
 #!/usr/bin/env bash
 # Fail if the app repo contains agent-skill / factory leakage (client-facing hygiene).
-# Usage: bash scripts/check_app_client_hygiene.sh <slug>
+# Usage:
+#   bash scripts/check_app_client_hygiene.sh <slug>
+#   bash scripts/check_app_client_hygiene.sh --app <absolute-or-relative-app-path>
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
-SLUG="${1:-}"
-if [[ -z "$SLUG" ]]; then
-  echo "Usage: $0 <slug>" >&2
-  exit 2
-fi
-
-APP="$(npx tsx "$ROOT/scripts/resolve_app_root.ts" "$SLUG" 2>/dev/null || true)"
-if [[ -z "$APP" || ! -d "$APP" ]]; then
-  echo "CLIENT_HYGIENE_SKIP {\"slug\":\"$SLUG\",\"reason\":\"app root unresolved\"}"
-  exit 0
+SLUG=""
+APP=""
+if [[ "${1:-}" == "--app" ]]; then
+  APP="${2:-}"
+  SLUG="direct-app"
+  if [[ -z "$APP" ]]; then
+    echo "Usage: $0 --app <app-path>" >&2
+    exit 2
+  fi
+  APP="$(cd "$APP" && pwd)"
+else
+  SLUG="${1:-}"
+  if [[ -z "$SLUG" ]]; then
+    echo "Usage: $0 <slug> | $0 --app <app-path>" >&2
+    exit 2
+  fi
+  APP="$(npx tsx "$ROOT/scripts/resolve_app_root.ts" "$SLUG" 2>/dev/null || true)"
+  if [[ -z "$APP" || ! -d "$APP" ]]; then
+    echo "CLIENT_HYGIENE_SKIP {\"slug\":\"$SLUG\",\"reason\":\"app root unresolved\"}"
+    exit 0
+  fi
 fi
 
 FAIL=0
@@ -31,10 +44,17 @@ else
   exit 0
 fi
 
-# Tracked skill packs
-if git ls-files '.cursor/skills/**' '.agents/**' 2>/dev/null | grep -q .; then
-  fail "tracked .cursor/skills or .agents in app — move to engine"
-fi
+# Tracked skill packs — OpenSpec workflow skills may live in the app (product tooling).
+# Everything else under .cursor/skills or .agents is factory/stack leakage.
+while IFS= read -r f; do
+  [[ -z "$f" ]] && continue
+  # paths like .cursor/skills/<name>/...
+  name="$(echo "$f" | sed -n 's|^\.cursor/skills/\([^/]*\)/.*|\1|p')"
+  if [[ -n "$name" && "$name" == openspec-* ]]; then
+    continue
+  fi
+  fail "tracked non-OpenSpec skill/pack in app: $f — move stack/factory packs to engine"
+done < <(git ls-files '.cursor/skills/**' '.agents/**' 2>/dev/null || true)
 
 # Skill / factory docs (portable globs)
 while IFS= read -r f; do
@@ -78,7 +98,7 @@ done < <(git ls-files '.cursor/rules/**' 2>/dev/null || true)
 while IFS= read -r f; do
   [[ -z "$f" ]] && continue
   if git grep -n -E \
-    'sync_stack_skills|skills\.sh/|analogjs/angular-skills|github\.com/dotnet/skills|dev-agent/\.agents|dev-agent/\.cursor/skills|bash \.\./dev-agent/scripts/sync' \
+    'sync_stack_skills|skills\.sh/|analogjs/angular-skills|github\.com/dotnet/skills|/\.agents/skills|/\.cursor/skills/dev-|bash \.\./[^[:space:]]+/scripts/sync_stack_skills' \
     -- "$f" >/dev/null 2>&1; then
     fail "skill/engine path leak in $f"
   fi
