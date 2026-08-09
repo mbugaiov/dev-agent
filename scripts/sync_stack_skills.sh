@@ -38,7 +38,8 @@ list_packs() {
   cat <<'EOF'
 Keyword match (case-insensitive on stack.* blob) → install action
 
-  asp.net|c#|.net|dotnet     → github.com/dotnet/skills (plugins: web/test/msbuild/data)
+  asp.net|c#|dotnet|.net N   → github.com/dotnet/skills (plugins: web/test/msbuild/data)
+                               (.net only with "core" or digit — not *.net hostnames)
   angular                    → npx skills add analogjs/angular-skills
   ionic                      → npx skills add capawesome-team/skills --skill ionic-angular
                                (+ ionic-app-development, ionic-expert when available)
@@ -136,7 +137,8 @@ install_npx_skill() {
 }
 
 PLANNED=0
-if need 'asp\.net|c#|\.net|dotnet'; then
+# Avoid bare `\.net` — it matches hostnames like azurewebsites.net
+if need 'asp\.net|c#|dotnet|\.net[[:space:]]+(core|[0-9])'; then
   PLANNED=1
   echo "==> .NET stack"
   install_dotnet

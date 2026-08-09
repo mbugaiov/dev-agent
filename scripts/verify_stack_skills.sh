@@ -60,7 +60,8 @@ mkdir -p "$MANIFEST_DIR"
 
 # Expected primary SKILL.md paths (name → relative under .agents/skills)
 EXPECTED=()
-if need 'asp\.net|c#|\.net|dotnet'; then
+# Avoid bare `\.net` — it matches hostnames like azurewebsites.net
+if need 'asp\.net|c#|dotnet|\.net[[:space:]]+(core|[0-9])'; then
   EXPECTED+=("dotnet-webapi/SKILL.md")
   EXPECTED+=("dotnet-run-tests/SKILL.md")
 fi
