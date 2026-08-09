@@ -33,6 +33,8 @@ Use this exact heading shape:
 
 ```bash
 bash scripts/post_agent_started.sh <slug> <issue-number|pr:N> <Seat> "<Mode>" "<Doing>"
+# Engine / non-project PRs:
+bash scripts/post_agent_started.sh --repo owner/repo pr:<N> <Seat> "<Mode>" "<Doing>"
 ```
 
 `pickup_github_ticket` / `pickup_jira_ticket` already post `### Hephaestus started`.
