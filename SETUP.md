@@ -180,6 +180,20 @@ test -d "$APP_ROOT" && echo "APP_ROOT_OK $APP_ROOT"
 
 ---
 
+## 4b. Stack skills (install on demand — do not commit packs)
+
+After `stack:` in `project.yaml` names the technologies, pull **fresh** marketplace
+skills into the engine (gitignored under `.agents/`):
+
+```bash
+bash scripts/sync_stack_skills.sh <SLUG>
+bash scripts/sync_stack_skills.sh <SLUG> --dry-run   # preview matches
+bash scripts/sync_stack_skills.sh --list-packs
+```
+
+Re-run anytime to refresh from upstream skill repos. Project-only overrides go under
+`projects/<SLUG>/.cursor/skills/` (also gitignored). Never vendor packs into the app repo.
+
 ## 5. Secrets — Jira and Bitbucket
 
 ### 5a. Jira (required for factory loop)
@@ -388,13 +402,13 @@ Every backlog tick emits **`BACKLOG_WAKE_EXECUTE` only** — there is no separat
 
 1. Run tick now (§10b).
 2. If backlog > 0: start ticket in `APP_ROOT` immediately — **no status-only reply**.
-3. Launch loop in background with `notify_on_output` on patterns from `lib/devFactoryLoopWiring.ts`:
+3. Launch loop in background with `notify_on_output` on `AGENT_NOTIFY_WATCH_PATTERN` from `lib/devFactoryLoopWiring.ts` (detached scheduler + `watch_dev_loop.sh`):
 
 ```bash
 DEV_LOOP_INTERVAL_SEC=300 bash scripts/arm_dev_loop.sh <SLUG>
 ```
 
-Watch patterns (regex): `buildCombinedWatchPattern(loop.purpose)` — includes `BACKLOG_WAKE_EXECUTE`, `DEV_FACTORY_IDLE`, `LOOP_ARMED`, `MR_PR_BACKUP_`, `AGENT_LOOP_TICK_<purpose>` (execution-only — no `BACKLOG_WAKE`).
+Watch pattern (regex): `^(BACKLOG_WAKE_EXECUTE|MR_SESSION_MERGED_STALE_BRANCH|MR_PR_BACKUP_)` — execute/PR only. Do **not** notify on `DEV_FACTORY_IDLE` or `LOOP_ARMED`. Scheduler PID/log: `projects/<SLUG>/factory/loop.{pid,out}`.
 
 ### 10d. Per-ticket command reference
 
