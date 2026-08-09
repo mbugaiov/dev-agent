@@ -67,9 +67,9 @@ npx tsx scripts/notify_ux_kick.ts <slug> \
 
 Then use the **Task** tool (`subagent_type: generalPurpose`). Prompt must include:
 
-**Start banner (mandatory):** Athena posts `### Athena started` on the issue **and**
-in chat before Mode B/A work (`**Ticket**` / `**Mode:** Mode B charter|Mode A polish` /
-`**Doing:** …`). See Pantheon `FACTORY.md` → Agent start.
+**Start banner (mandatory):** before Mode B/A work —
+`bash scripts/post_agent_started.sh <slug> <KEY|N> Athena "Mode B charter|Mode A polish" "<Doing>"`
+(tracker-aware; rule `dev-agent-start.mdc`).
 
 ### Mode B — charter (`ux-charter-first`, before implement)
 

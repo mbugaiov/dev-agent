@@ -1,0 +1,51 @@
+---
+description: ABSOLUTE — every seat/Task posts ### <Seat> started on the ticket AND in chat before work (all factory projects).
+alwaysApply: true
+---
+
+# Agent start banner (mandatory — all projects)
+
+Whenever **any** seat or Cursor **Task** sub-agent begins work on a ticket or PR,
+announce it in **both** places **before** doing the work:
+
+1. **Cursor chat** — first lines of that turn
+2. **Tracker** — comment on the ticket: GitHub Issues/PR **or** Jira (per `tracker.provider`);
+   also on the **PR** when work is PR-scoped (`github_issues`)
+
+Use this exact heading shape:
+
+```markdown
+### <Seat> started
+**Ticket:** <slug>#N   (or Jira KEY)
+**Mode:** <short mode>
+**Doing:** <one-line plan>
+```
+
+| Seat | Heading |
+|------|---------|
+| Hermes | `### Hermes started` |
+| Athena | `### Athena started` |
+| Hephaestus | `### Hephaestus started` |
+| Themis | `### Themis started` |
+| Argus | `### Argus started` |
+| Other Task | `### <Name> started` |
+
+**Helper (GitHub Issues / PRs):**
+
+```bash
+# GitHub Issues factories — issue number or pr:N
+bash scripts/post_agent_started.sh <slug> <N|pr:N> <Seat> "<Mode>" "<Doing>"
+# Jira factories — issue KEY (e.g. TST-123); requires projects/<slug>/.secrets/jira.env
+bash scripts/post_agent_started.sh <slug> <JIRA_KEY> <Seat> "<Mode>" "<Doing>"
+# Engine / explicit GitHub repo:
+bash scripts/post_agent_started.sh --repo owner/repo pr:<N> <Seat> "<Mode>" "<Doing>"
+```
+
+`pickup_github_ticket` / `pickup_jira_ticket` already post `### Hephaestus started`.
+BA / UX / QA kicks must post their own seat banner via the helper (tracker-aware).
+
+**Forbidden:** silent seat switches; implementing / reviewing / closing with no start banner;
+status-only “working on it” without the `### … started` heading.
+
+Applies to **every** factory slug (not only Pantheon). Product app rules may repeat this;
+the engine rule is authoritative.
