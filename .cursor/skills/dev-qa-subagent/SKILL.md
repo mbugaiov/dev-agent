@@ -39,8 +39,8 @@ Use the **Task** tool (`subagent_type: generalPurpose` or explore+shell as neede
 Prompt must include:
 
 0. **Start banner (mandatory):** before scope/smoke —
-   `bash scripts/post_agent_started.sh <slug> <N> Argus "STG retest" "<Doing>"`
-   (rule `dev-agent-start.mdc`).
+   `bash scripts/post_agent_started.sh <slug> <KEY|N> Argus "STG retest" "<Doing>"`
+   (GitHub Issues or Jira per project; rule `dev-agent-start.mdc`).
 1. Role: **Argus / QA** — skill **`qa-loop`** in **`qa-agent`** checkout
    (`../qa-agent` or `QA_AGENT_ROOT`). Project slug **`<slug>`** only.
 2. Sentinel: **`QA_WAKE_EXECUTE`** / **`BACKLOG_WAKE_EXECUTE`** (or `QA_LOOP_ARMED` execute contract) —

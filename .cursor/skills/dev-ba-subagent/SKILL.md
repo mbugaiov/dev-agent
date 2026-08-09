@@ -27,8 +27,9 @@ npx tsx scripts/should_kick_ba.ts <slug> --labels <labels> --ticket <KEY>
 ## Hermes contract (remind in kick prompt)
 
 - **Before work:** post issue comment + chat banner via
-  `bash scripts/post_agent_started.sh <slug> <N> Hermes "BA spec" "<Doing>"`
-  (rule `dev-agent-start.mdc` — all projects)
+  `bash scripts/post_agent_started.sh <slug> <KEY|N> Hermes "BA spec" "<Doing>"`
+  (GitHub Issues: numeric id; Jira: issue key — helper resolves `tracker.provider`.
+  Rule `dev-agent-start.mdc`)
 - Run Elicit → Model → Challenge → Specify → Validate → Publish
 - **No human approve**
 - Lint `validators/lint-requirements.ts` PASS

@@ -9,7 +9,8 @@ Whenever **any** seat or Cursor **Task** sub-agent begins work on a ticket or PR
 announce it in **both** places **before** doing the work:
 
 1. **Cursor chat** — first lines of that turn
-2. **Tracker** — GitHub issue / Jira comment (and on the **PR** when work is PR-scoped)
+2. **Tracker** — comment on the ticket: GitHub Issues/PR **or** Jira (per `tracker.provider`);
+   also on the **PR** when work is PR-scoped (`github_issues`)
 
 Use this exact heading shape:
 
@@ -32,13 +33,16 @@ Use this exact heading shape:
 **Helper (GitHub Issues / PRs):**
 
 ```bash
-bash scripts/post_agent_started.sh <slug> <issue-number|pr:N> <Seat> "<Mode>" "<Doing>"
-# Engine / non-project PRs:
+# GitHub Issues factories — issue number or pr:N
+bash scripts/post_agent_started.sh <slug> <N|pr:N> <Seat> "<Mode>" "<Doing>"
+# Jira factories — issue KEY (e.g. RQ-123); requires projects/<slug>/.secrets/jira.env
+bash scripts/post_agent_started.sh <slug> <JIRA_KEY> <Seat> "<Mode>" "<Doing>"
+# Engine / explicit GitHub repo:
 bash scripts/post_agent_started.sh --repo owner/repo pr:<N> <Seat> "<Mode>" "<Doing>"
 ```
 
 `pickup_github_ticket` / `pickup_jira_ticket` already post `### Hephaestus started`.
-BA / UX / QA kicks must post their own seat banner via the helper or equivalent.
+BA / UX / QA kicks must post their own seat banner via the helper (tracker-aware).
 
 **Forbidden:** silent seat switches; implementing / reviewing / closing with no start banner;
 status-only “working on it” without the `### … started` heading.
