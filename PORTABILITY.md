@@ -52,7 +52,8 @@ projects/<slug>/
 The **application repo** holds **only** product code, OpenSpec product specs,
 CI scripts, and e2e tests. It must **not** contain agent skills, skill marketplace
 URLs, skill sync scripts, or factory playbooks (rule `dev-client-repo-hygiene.mdc`).
-Optional client-safe engineering notes: `docs/CODE_STANDARDS.md` (no engine paths).
+Client-safe product process: app `.cursor/rules/factory-*.mdc` + `code-review.mdc`
+and `docs/CODE_STANDARDS.md` (no skill URLs / engine skill paths).
 
 The engine **invokes** gate/MR commands from `project.yaml` → `app.gate_command` /
 `app.mr_push_command`.

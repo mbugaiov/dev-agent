@@ -47,10 +47,14 @@ mkdir -p "$_hs/.cursor/skills/openspec-propose" "$_hs/docs"
 echo "# o" >"$_hs/.cursor/skills/openspec-propose/SKILL.md"
 echo "# std" >"$_hs/docs/CODE_STANDARDS.md"
 git -C "$_hs" add -A && git -C "$_hs" commit -q -m init
+mkdir -p "$_hs/.cursor/rules"
+echo "# gate" >"$_hs/.cursor/rules/factory-ba-ux.mdc"
+echo "# cr" >"$_hs/.cursor/rules/code-review.mdc"
+git -C "$_hs" add -A && git -C "$_hs" commit -q -m rules
 if bash scripts/check_app_client_hygiene.sh --app "$_hs" | grep -q CLIENT_HYGIENE_OK; then
-  ok "hygiene OK for openspec-only app"
+  ok "hygiene OK for openspec + product process rules"
 else
-  no "hygiene should OK openspec-only app"
+  no "hygiene should OK openspec + factory-*.mdc / code-review.mdc"
 fi
 mkdir -p "$_hs/.cursor/skills/dotnet-webapi"
 echo "# leak" >"$_hs/.cursor/skills/dotnet-webapi/SKILL.md"
@@ -59,6 +63,17 @@ if bash scripts/check_app_client_hygiene.sh --app "$_hs" >/dev/null 2>&1; then
   no "hygiene should FAIL on tracked stack skill"
 else
   ok "hygiene FAIL on tracked stack skill"
+fi
+# skill-wiring rule name must fail even if prefixed with factory-
+mkdir -p "$_hs/.cursor/rules"
+echo "# bad" >"$_hs/.cursor/rules/factory-skills.mdc"
+git -C "$_hs" rm -qr --cached .cursor/skills/dotnet-webapi >/dev/null 2>&1 || true
+rm -rf "$_hs/.cursor/skills/dotnet-webapi"
+git -C "$_hs" add -A && git -C "$_hs" commit -q -m skill-rule
+if bash scripts/check_app_client_hygiene.sh --app "$_hs" >/dev/null 2>&1; then
+  no "hygiene should FAIL on factory-skills.mdc"
+else
+  ok "hygiene FAIL on factory-skills.mdc"
 fi
 rm -rf "$_hs"
 # Smoke: stack keyword match — host *.net must not imply .NET; _template refused

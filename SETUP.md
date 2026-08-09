@@ -207,9 +207,10 @@ bash scripts/verify_stack_skills.sh <SLUG> --install  # sync + verify
 `setup_verify.sh` checks `STACK_SKILLS_OK` and **`CLIENT_HYGIENE_OK`**
 (`check_app_client_hygiene.sh` — app must not contain skills / skill URLs / factory packs).
 
-Customer apps may keep plain `docs/CODE_STANDARDS.md` (and optionally a thin
-`.cursor/rules/code-review.mdc` pointing at it). All skill management stays in
-this engine (`dev-client-repo-hygiene.mdc`).
+Customer apps keep product process rules in-repo (`.cursor/rules/factory-*.mdc`,
+`code-review.mdc`) plus `docs/CODE_STANDARDS.md` so gates apply when the app is
+the Cursor workspace. Skill packs / skill URLs stay in this engine only
+(`dev-client-repo-hygiene.mdc`).
 
 ## 5. Secrets — Jira and Bitbucket
 

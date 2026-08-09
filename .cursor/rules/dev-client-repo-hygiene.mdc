@@ -1,5 +1,5 @@
 ---
-description: ABSOLUTE — customer app repos never ship agent skills, skill URLs, or factory rules; stack skills owned only by the engine.
+description: ABSOLUTE — customer apps never ship stack/factory skill packs or skill URLs; product process rules (labels/gates) may stay in the app.
 alwaysApply: true
 ---
 
@@ -13,21 +13,34 @@ Applies to **every** product repo delivered via this engine / sibling agents.
 |-------|----------------|------------------|
 | Factory skills (`dev-*`, BA/UX/QA kicks) | Engine (`.cursor/skills/`) | **Never** |
 | Stack marketplace packs | Engine `.agents/skills` via `sync_stack_skills.sh` + `verify_stack_skills.sh` | **Never** |
-| Project-only / conflicting skills & rules | `projects/<slug>/.cursor/{skills,rules}/` (gitignored) | **Never** |
+| Project-only / conflicting **skills** | `projects/<slug>/.cursor/skills/` (gitignored) | **Never** |
 | Skill install / verify scripts | Engine `scripts/` only | **Never** in app |
 | Links to skills.sh / skill GitHub packs / engine skill paths | Engine docs only | **Never** in app |
+| **Product process rules** (labels, BA/UX sentinels, Themis, CR) | App `.cursor/rules/` (e.g. `factory-*.mdc`, `code-review.mdc`) | **Yes — required for enforcement in the app workspace** |
 | Product code, OpenSpec product specs, CI, deploy | App repo | Yes |
-| OpenSpec workflow skills (`openspec-*`) | App `.cursor/skills/openspec-*` or host install | Yes (product tooling only) |
-| Product engineering standards | Prefer `docs/CODE_STANDARDS.md` | Yes if needed for CI/review |
-| Thin product CR pointer | Optional `.cursor/rules/code-review.mdc` → CODE_STANDARDS only | Yes (no skill URLs) |
+| OpenSpec workflow skills (`openspec-*`) | App `.cursor/skills/openspec-*` or host | Yes (product tooling) |
+| Product engineering standards | `docs/CODE_STANDARDS.md` (+ `code-review.mdc`) | Yes |
+
+## Why product rules stay in the app
+
+Agents often open the **app** as the Cursor workspace. Rules only under
+`projects/<slug>/` in the engine are **not** auto-loaded there. Label gates
+(`ba-spec-first`, `ux-charter-first`, `BA_SPEC_READY`, …) must live in the app
+so they are visible and enforceable. Skills still attach from the engine via
+manifest + Read.
 
 ## Absolute forbidden in app repos (tracked files)
 
 - `.cursor/skills/*` **except** `openspec-*`; any `.agents/skills/`
 - `docs/SKILLS*.md`, skill install runbooks, `scripts/sync_*skills*`
-- Factory seat playbooks / prep docs that expose the agent factory
-- `.cursor/rules/factory-*` and any rule that wires stack-skill install
-- References like `bash ../dev-agent/scripts/sync_stack_skills.sh` or marketplace skill URLs
+- Rules that wire stack-skill install (`*skill*.mdc`) or link marketplace skill URLs
+- Seat playbooks / AGENT-PREP that expose internal engine skill maps (keep under `projects/<slug>/docs` if needed)
+
+## Allowed in app `.cursor/rules/`
+
+- `code-review.mdc` — product engineering constraints
+- `factory-*.mdc` — **this product’s** delivery gates (labels, sentinels, review)
+- Other product-local process rules that do **not** reference skill packs / engine skill paths
 
 ## How agents attach stack skills
 
@@ -35,11 +48,13 @@ Applies to **every** product repo delivered via this engine / sibling agents.
 2. Engine: `bash scripts/verify_stack_skills.sh <slug> [--install]`
 3. **Read** every path in `projects/<slug>/factory/stack-skills.manifest`
 4. Implement in the **app** working tree — never copy packs into the app
+5. Obey app `.cursor/rules/factory-*.mdc` + `code-review.mdc` while implementing
 
 ## What the client may receive
 
-- Source, tests, OpenSpec **product** specs, GitHub Actions / deploy scripts
-- Optional `docs/CODE_STANDARDS.md` (+ optional thin `code-review.mdc`) — **no** skill marketplace links, **no** engine skill paths
-- **Not** our skill catalog, install scripts, factory loop docs, or seat playbooks
+- Source, tests, OpenSpec **product** specs, CI/deploy
+- Product process rules + CODE_STANDARDS (how *this* product is built)
+- **Not** our skill catalog, install scripts, or marketplace skill URLs
 
-If unsure whether a file belongs in the app: **keep it in the engine or `projects/<slug>/`**.
+If unsure about a **skill** file: keep it in the engine.  
+If unsure about a **process gate** for this product: prefer the **app** `.cursor/rules/`.
