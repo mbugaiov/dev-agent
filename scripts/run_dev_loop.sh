@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Canonical factory arm for Cursor sessions (default for pantheon and all slugs).
+# Canonical factory arm for Cursor sessions (all slugs).
 #
 # 1) Detaches scheduler (setsid) via arm_dev_loop.sh → factory/loop.{pid,out}
 # 2) Prints LOOP_WATCH_ATTACH_REQUIRED — agent MUST same-turn background:

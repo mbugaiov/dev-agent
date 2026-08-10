@@ -5,7 +5,7 @@ alwaysApply: true
 
 # Factory loop arm (detach + Cursor watcher)
 
-When the user asks to **run / arm / nohup** a factory loop (including **pantheon**), or when
+When the user asks to **run / arm / nohup** a factory loop for any `<slug>`, or when
 re-arming after a dead loop:
 
 ## Default (same turn — both required)
@@ -34,5 +34,5 @@ Detached scheduler alone only appends `loop.out`. Without the watcher +
 - Relying on Cursor-bound `nohup` in the agent Shell as the scheduler (use arm’s setsid detach)
 - Treating idle ticks as “loop broken” when the watcher is simply missing
 
-Pantheon default interval: `projects/pantheon/project.yaml` → `loop.interval_sec_default` (3600).
+Default interval: `projects/<slug>/project.yaml` → `loop.interval_sec_default`.
 Override with `DEV_LOOP_INTERVAL_SEC` only when the user asks.
