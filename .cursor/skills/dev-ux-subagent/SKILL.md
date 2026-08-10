@@ -78,21 +78,27 @@ Then use the **Task** tool (`subagent_type: generalPurpose`). Prompt must includ
    `ux-visual-direction`, **`ux-pencil`** (when DESIGN.md / ticket requires `.pen`
    compositions), `ux-browser-review`, `ux-jira`. Read **ux-agent**
    `docs/UX-PIPELINE.md` (path under `ux_kick.ux_agent_path`).
-2. **Branch lock:** stay on current app branch; prefer **no product code commits**
-   unless the ticket explicitly asks for a pilot implement.
+2. **Branch lock:** stay on current app branch. Prefer **no product app code commits**
+   unless the ticket explicitly asks for a pilot implement. **Exception (required when
+   Pencil is in scope):** commit + **push** the product `.pen` and design README on this
+   feature branch before `UX_CHARTER_READY`.
 3. **DESIGN.md:** if it marks prior direction failed / not accepted, propose **new**
    directions — do not polish the failed look. If DESIGN.md locks a Pencil board,
    complete that board’s PRD screens via `ux-pencil` (no human board pick). If
    direction is open, explore Pencil boards and wait for human pick before freeze.
 4. Deliverable: architect + chosen visual direction + **Pencil screen set when required**
-   + freeze; baseline screenshots for first-viewport redesigns; post tracker comment
-   with exact sentinel **`UX_CHARTER_READY`**
+   + freeze; baseline screenshots for first-viewport redesigns; **commit + push** the
+   product `.pen` (and design README) on **this feature branch**; then post tracker
+   comment with exact sentinel **`UX_CHARTER_READY`**
    (`gh issue comment` when `tracker.provider=github_issues`, else Jira); write run folder
    under ux-agent `projects/<slug>/runs/…`.
-   **Do not** post `UX_CHARTER_READY` on Pencil-required tickets until frames exist.
+   **Do not** post `UX_CHARTER_READY` on Pencil-required tickets until frames exist **on
+   the remote branch** (not only in the Pencil editor or a local-only commit).
 5. Do **not** add/remove `impl-dev`. Leave `ux-charter-first` on the ticket.
 6. Return: path to `run.md` + Pencil board/frame map + summary for Hephaestus implement
-   (match compositions, not tokens-only).
+   (match compositions, not tokens-only). Hephaestus MUST refuse implement if cited
+   frame ids are missing from the **remote** committed `.pen` on the branch.
+
 ### Mode A — polish (after implement)
 
 1. Role: **Athena / UX** — `ux-loop` Mode A, `ux-phases`, `ux-browser-review`,
@@ -124,6 +130,8 @@ Do **not** file a separate UX-only child for the in-branch pass.
 
 - Skipping charter kick when `ux-charter-first` is present and charter is not ready
 - Implementing UI before `UX_CHARTER_READY` on a `ux-charter-first` ticket
+- Implementing composition tickets when cited `.pen` frames are not on the remote branch
+- Filing / kicking `impl-dev` that points at Pencil frame ids not yet committed
 - Skipping polish kick when `needs-ux-pass` / `impl-ux` is present after implement
 - Asking Athena to “just Impeccable” a failed redesign without Mode B architect
 - Nested redesign that opens a second app MR while this ticket's MR is open
