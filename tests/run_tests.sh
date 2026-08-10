@@ -137,12 +137,12 @@ have "scripts/check_review_followups_disposed.sh"
 have "scripts/file_review_followups.sh"
 have "scripts/review_followups.py"
 grep -q 'Require Themis Suggestions' .github/workflows/auto-merge.yml || no "auto-merge gates followups"
-grep -q 'de1665cf52dab33f8095efc2b4062815220a69f1' scripts/ensure_themis_agent.sh || no "ensure pins themis SHA"
-grep -q 'de1665cf52dab33f8095efc2b4062815220a69f1' .github/workflows/auto-merge.yml || no "auto-merge pins themis SHA"
-grep -q 'de1665cf52dab33f8095efc2b4062815220a69f1' .github/workflows/code-review.yml || no "code-review pins themis SHA"
+grep -q '3250607f3700d0c2cb73f226435e4b69afd2e118' scripts/ensure_themis_agent.sh || no "ensure pins themis SHA"
+grep -q '3250607f3700d0c2cb73f226435e4b69afd2e118' .github/workflows/auto-merge.yml || no "auto-merge pins themis SHA"
+grep -q '3250607f3700d0c2cb73f226435e4b69afd2e118' .github/workflows/code-review.yml || no "code-review pins themis SHA"
 ENS_ROOT=$(ROOT=/ bash scripts/ensure_themis_agent.sh)
 ENGINE_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
-PIN_SHA=de1665cf52dab33f8095efc2b4062815220a69f1
+PIN_SHA=3250607f3700d0c2cb73f226435e4b69afd2e118
 ENS_HEAD=$(git -C "$ENS_ROOT" rev-parse HEAD 2>/dev/null || true)
 if [[ "$ENS_ROOT" == "$ENGINE_ROOT/.themis-agent" \
   && "$ENS_ROOT" != "/.themis-agent" \
@@ -171,10 +171,19 @@ have "scripts/test_tick_notify.ts"
 have "scripts/test_tick_notify.sh"
 have "scripts/notify_ux_kick.ts"
 have "scripts/arm_dev_loop.sh"
+have "scripts/run_dev_loop.sh"
+have "scripts/watch_dev_loop.sh"
 grep -q 'exact trailing slug' scripts/arm_dev_loop.sh \
   && grep -q 'pgrep -f "scripts/dev-loop.sh"' scripts/arm_dev_loop.sh \
-  && ok "arm_dev_loop slug-scoped kill" \
-  || no "arm_dev_loop must kill only target slug"
+  && grep -q 'setsid' scripts/arm_dev_loop.sh \
+  && grep -q 'loop.pid' scripts/arm_dev_loop.sh \
+  && grep -q 'LOOP_WATCH_ATTACH_REQUIRED' scripts/arm_dev_loop.sh \
+  && ok "arm_dev_loop slug-scoped kill + setsid detach + watch attach contract" \
+  || no "arm_dev_loop must kill only target slug, detach via setsid, and require watcher"
+grep -q 'watch_dev_loop.sh' scripts/run_dev_loop.sh \
+  && grep -q 'LOOP_WATCH_ATTACH_REQUIRED' scripts/run_dev_loop.sh \
+  && ok "run_dev_loop requires Cursor watcher" \
+  || no "run_dev_loop.sh must require watch_dev_loop attach"
 have "scripts/validate_execution_only_policy.ts"
 have "lib/secretsEnvLint.ts"
 have "lib/devFactoryExecutionOnly.ts"

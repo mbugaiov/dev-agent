@@ -1,0 +1,38 @@
+---
+description: MUST — factory arm = detached scheduler + Cursor watch_dev_loop same turn (never scheduler-only).
+alwaysApply: true
+---
+
+# Factory loop arm (detach + Cursor watcher)
+
+When the user asks to **run / arm / nohup** a factory loop (including **pantheon**), or when
+re-arming after a dead loop:
+
+## Default (same turn — both required)
+
+1. **Detach scheduler:** `bash scripts/run_dev_loop.sh <slug>`  
+   (or `bash scripts/arm_dev_loop.sh <slug>` — same detach). Writes
+   `projects/<slug>/factory/loop.pid` + `loop.out` under a new session.
+2. **Attach Cursor watcher immediately:** background Shell (`block_until_ms: 0`):
+   ```bash
+   bash scripts/watch_dev_loop.sh <slug>
+   ```
+   with `notify_on_output` on:
+   `^(BACKLOG_WAKE_EXECUTE|MR_SESSION_MERGED_STALE_BRANCH|MR_PR_BACKUP_)`
+
+Look for sentinels `LOOP_DETACHED` and `LOOP_WATCH_ATTACH_REQUIRED` — arm is **incomplete**
+until the watcher Shell is running.
+
+## Why
+
+Detached scheduler alone only appends `loop.out`. Without the watcher +
+`notify_on_output`, `BACKLOG_WAKE_EXECUTE` is silent and tickets never start.
+
+## Forbidden
+
+- Ending the turn after `LOOP_ARMED` / `LOOP_DETACHED` without attaching `watch_dev_loop.sh`
+- Relying on Cursor-bound `nohup` in the agent Shell as the scheduler (use arm’s setsid detach)
+- Treating idle ticks as “loop broken” when the watcher is simply missing
+
+Pantheon default interval: `projects/pantheon/project.yaml` → `loop.interval_sec_default` (3600).
+Override with `DEV_LOOP_INTERVAL_SEC` only when the user asks.

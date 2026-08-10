@@ -27,8 +27,11 @@ export const PR_PIPELINE_WATCH_PATTERN: LoopWatchPattern = {
 
 export const LOOP_ARM_SENTINEL = "LOOP_ARMED" as const;
 export const LOOP_ARM_SCRIPT = "scripts/arm_dev_loop.sh" as const;
+export const LOOP_RUN_SCRIPT = "scripts/run_dev_loop.sh" as const;
+export const LOOP_WATCH_SCRIPT = "scripts/watch_dev_loop.sh" as const;
 export const LOOP_SCHEDULER_SCRIPT = "scripts/dev-loop.sh" as const;
 export const LOOP_UNARMED_SENTINEL = "LOOP_UNARMED_REFUSED" as const;
+export const LOOP_WATCH_ATTACH_REQUIRED = "LOOP_WATCH_ATTACH_REQUIRED" as const;
 
 /** Build combined watch regex; optional loop purpose adds AGENT_LOOP_TICK_<purpose>. */
 export function buildCombinedWatchPattern(loopPurpose?: string): string {
@@ -72,10 +75,12 @@ export function buildSessionEndChecklist(input: {
   }
   if (!input.loopArmed) {
     steps.push(
-      `Re-arm dev loop: bash ${LOOP_ARM_SCRIPT} <slug> in background with notify_on_output`,
+      `Re-arm: bash ${LOOP_RUN_SCRIPT} <slug> then SAME TURN background ${LOOP_WATCH_SCRIPT} <slug> with notify_on_output`,
     );
   } else {
-    steps.push("Dev loop armed with notify_on_output watchers");
+    steps.push(
+      `Confirm ${LOOP_WATCH_SCRIPT} watcher Shell is attached with notify_on_output (scheduler alone is silent)`,
+    );
   }
   return steps;
 }
@@ -102,7 +107,7 @@ export function sessionEndAllowed(input: {
   if (!input.loopArmed) {
     return {
       ok: false,
-      reason: `Dev loop not armed — run bash ${LOOP_ARM_SCRIPT} <slug> with notify_on_output`,
+      reason: `Dev loop not armed — run bash ${LOOP_RUN_SCRIPT} <slug> then attach ${LOOP_WATCH_SCRIPT} with notify_on_output`,
     };
   }
   return { ok: true };
@@ -135,7 +140,7 @@ export function buildLoopArmPayload(
     prWatcher: PR_PIPELINE_WATCH_PATTERN,
     combinedWatchPattern: buildCombinedWatchPattern(loopPurpose),
     instructions:
-      "Launch arm_dev_loop.sh <slug> in background Shell with notify_on_output on each watcher pattern.",
+      "Default: bash scripts/run_dev_loop.sh <slug> (setsid detach → loop.pid/out) THEN same turn background bash scripts/watch_dev_loop.sh <slug> with notify_on_output on ^(BACKLOG_WAKE_EXECUTE|MR_SESSION_MERGED_STALE_BRANCH|MR_PR_BACKUP_). Arm without watcher = silent ticks; tickets will not execute. Foreground debug: DEV_LOOP_FOREGROUND=1.",
   };
 }
 
@@ -155,6 +160,7 @@ export function loopWiringDocsValid(...corpora: string[]): boolean {
     "execution-only",
     "status-only",
     LOOP_ARM_SCRIPT.toLowerCase(),
+    LOOP_WATCH_SCRIPT.toLowerCase(),
     "silently",
     "do not stop after one ticket",
     "re-run",
