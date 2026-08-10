@@ -40,10 +40,10 @@ have "docs/STACK-SKILLS.md"
 have "scripts/post_agent_started.sh"
 have "scripts/post_agent_started.ts"
 have ".cursor/rules/dev-agent-start.mdc"
-AGENT_START_DRY_RUN=1 bash scripts/post_agent_started.sh --repo example/dev-agent pr:1 Hephaestus "pickup" "smoke" \
-  | grep -q '### Hephaestus started' \
+AGENT_START_OUT=$(AGENT_START_DRY_RUN=1 bash scripts/post_agent_started.sh --repo example/dev-agent pr:1 Hephaestus "pickup" "smoke" 2>&1 || true)
+grep -q '### Hephaestus started' <<<"$AGENT_START_OUT" \
   && ok "post_agent_started dry-run banner" \
-  || no "post_agent_started must print ### Seat started"
+  || no "post_agent_started must print ### Hephaestus started (got: $AGENT_START_OUT)"
 grep -q 'github.com/dotnet/skills' docs/STACK-SKILLS.md \
   && grep -q 'sync_stack_skills.sh' docs/STACK-SKILLS.md \
   && ok "STACK-SKILLS catalog has URLs + sync commands" \
