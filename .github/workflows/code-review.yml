@@ -31,8 +31,7 @@ jobs:
           path: |
             ~/.local/bin
             ~/.local/share/cursor-agent
-            ~/.cursor
-          key: cursor-cli-${{ runner.os }}-v1
+          key: cursor-cli-${{ runner.os }}-v2
       - name: Install Cursor CLI
         run: |
           if [[ "${{ steps.cache-cursor.outputs.cache-hit }}" == "true" ]] && command -v cursor-agent >/dev/null 2>&1; then
@@ -140,8 +139,7 @@ jobs:
           path: |
             ~/.local/bin
             ~/.local/share/cursor-agent
-            ~/.cursor
-          key: cursor-cli-${{ runner.os }}-v1
+          key: cursor-cli-${{ runner.os }}-v2
       - name: Install Cursor CLI
         run: |
           if [[ "${{ steps.cache-cursor.outputs.cache-hit }}" == "true" ]] && command -v cursor-agent >/dev/null 2>&1; then
