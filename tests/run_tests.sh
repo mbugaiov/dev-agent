@@ -40,10 +40,10 @@ have "docs/STACK-SKILLS.md"
 have "scripts/post_agent_started.sh"
 have "scripts/post_agent_started.ts"
 have ".cursor/rules/dev-agent-start.mdc"
-AGENT_START_DRY_RUN=1 bash scripts/post_agent_started.sh --repo example/dev-agent pr:1 Hephaestus "pickup" "smoke" \
-  | grep -q '### Hephaestus started' \
+AGENT_START_OUT=$(AGENT_START_DRY_RUN=1 bash scripts/post_agent_started.sh --repo example/dev-agent pr:1 Hephaestus "pickup" "smoke" 2>&1 || true)
+grep -q '### Hephaestus started' <<<"$AGENT_START_OUT" \
   && ok "post_agent_started dry-run banner" \
-  || no "post_agent_started must print ### Seat started"
+  || no "post_agent_started must print ### Hephaestus started (got: $AGENT_START_OUT)"
 grep -q 'github.com/dotnet/skills' docs/STACK-SKILLS.md \
   && grep -q 'sync_stack_skills.sh' docs/STACK-SKILLS.md \
   && ok "STACK-SKILLS catalog has URLs + sync commands" \
@@ -137,12 +137,12 @@ have "scripts/check_review_followups_disposed.sh"
 have "scripts/file_review_followups.sh"
 have "scripts/review_followups.py"
 grep -q 'Require Themis Suggestions' .github/workflows/auto-merge.yml || no "auto-merge gates followups"
-grep -q 'de1665cf52dab33f8095efc2b4062815220a69f1' scripts/ensure_themis_agent.sh || no "ensure pins themis SHA"
-grep -q 'de1665cf52dab33f8095efc2b4062815220a69f1' .github/workflows/auto-merge.yml || no "auto-merge pins themis SHA"
-grep -q 'de1665cf52dab33f8095efc2b4062815220a69f1' .github/workflows/code-review.yml || no "code-review pins themis SHA"
+grep -q '3250607f3700d0c2cb73f226435e4b69afd2e118' scripts/ensure_themis_agent.sh || no "ensure pins themis SHA"
+grep -q '3250607f3700d0c2cb73f226435e4b69afd2e118' .github/workflows/auto-merge.yml || no "auto-merge pins themis SHA"
+grep -q '3250607f3700d0c2cb73f226435e4b69afd2e118' .github/workflows/code-review.yml || no "code-review pins themis SHA"
 ENS_ROOT=$(ROOT=/ bash scripts/ensure_themis_agent.sh)
 ENGINE_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
-PIN_SHA=de1665cf52dab33f8095efc2b4062815220a69f1
+PIN_SHA=3250607f3700d0c2cb73f226435e4b69afd2e118
 ENS_HEAD=$(git -C "$ENS_ROOT" rev-parse HEAD 2>/dev/null || true)
 if [[ "$ENS_ROOT" == "$ENGINE_ROOT/.themis-agent" \
   && "$ENS_ROOT" != "/.themis-agent" \
@@ -171,10 +171,24 @@ have "scripts/test_tick_notify.ts"
 have "scripts/test_tick_notify.sh"
 have "scripts/notify_ux_kick.ts"
 have "scripts/arm_dev_loop.sh"
+have "scripts/run_dev_loop.sh"
+have "scripts/watch_dev_loop.sh"
 grep -q 'exact trailing slug' scripts/arm_dev_loop.sh \
   && grep -q 'pgrep -f "scripts/dev-loop.sh"' scripts/arm_dev_loop.sh \
-  && ok "arm_dev_loop slug-scoped kill" \
-  || no "arm_dev_loop must kill only target slug"
+  && grep -q 'setsid' scripts/arm_dev_loop.sh \
+  && grep -q 'loop.pid' scripts/arm_dev_loop.sh \
+  && grep -q 'LOOP_WATCH_ATTACH_REQUIRED' scripts/arm_dev_loop.sh \
+  && ok "arm_dev_loop slug-scoped kill + setsid detach + watch attach contract" \
+  || no "arm_dev_loop must kill only target slug, detach via setsid, and require watcher"
+grep -q 'watch_dev_loop.sh' scripts/run_dev_loop.sh \
+  && grep -q 'LOOP_WATCH_ATTACH_REQUIRED' scripts/run_dev_loop.sh \
+  && ok "run_dev_loop requires Cursor watcher" \
+  || no "run_dev_loop.sh must require watch_dev_loop attach"
+grep -q 'tail -n 200' scripts/watch_dev_loop.sh \
+  && grep -q 'grep -E "\$WATCH_PATTERN"' scripts/watch_dev_loop.sh \
+  && grep -q 'tail -n 0 -F' scripts/watch_dev_loop.sh \
+  && ok "watch_dev_loop replays recent wakes before follow" \
+  || no "watch_dev_loop must replay matching lines then tail -F"
 have "scripts/validate_execution_only_policy.ts"
 have "lib/secretsEnvLint.ts"
 have "lib/devFactoryExecutionOnly.ts"

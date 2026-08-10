@@ -17,7 +17,8 @@ jobs:
     if: >
       github.event.workflow_run.conclusion == 'success' &&
       github.event.workflow_run.event == 'pull_request'
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-slim
+    timeout-minutes: 15
     steps:
       - name: Resolve PR
         id: pr
@@ -101,7 +102,7 @@ jobs:
         with:
           repository: mbugaiov/themis-agent
           # Keep in sync with THEMIS_AGENT_REF in scripts/ensure_themis_agent.sh
-          ref: de1665cf52dab33f8095efc2b4062815220a69f1
+          ref: 3250607f3700d0c2cb73f226435e4b69afd2e118
           path: .themis-agent
 
       - name: Require Themis Suggestions/Risks disposed

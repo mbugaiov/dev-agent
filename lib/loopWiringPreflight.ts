@@ -100,6 +100,15 @@ export function runLoopWiringPreflight(input: {
   if (!input.armScript.includes("BACKLOG_WAKE_EXECUTE")) {
     return { ok: false, reason: "arm_dev_loop.sh must mention BACKLOG_WAKE_EXECUTE" };
   }
+  if (!input.armScript.includes("LOOP_WATCH_ATTACH_REQUIRED")) {
+    return {
+      ok: false,
+      reason: "arm_dev_loop.sh must emit LOOP_WATCH_ATTACH_REQUIRED after detach",
+    };
+  }
+  if (!input.armScript.includes("watch_dev_loop.sh")) {
+    return { ok: false, reason: "arm_dev_loop.sh must instruct watch_dev_loop.sh attach" };
+  }
   const armPolicy = validateArmScriptContent(input.armScript);
   if (!armPolicy.ok) {
     return { ok: false, reason: armPolicy.violations[0]?.reason ?? "arm script policy failed" };

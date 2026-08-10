@@ -24,10 +24,25 @@ jobs:
 
       - run: npm ci
 
+      - name: Cache Cursor CLI
+        id: cache-cursor
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.local/bin
+            ~/.local/share/cursor-agent
+          key: cursor-cli-${{ runner.os }}-v2
       - name: Install Cursor CLI
         run: |
-          curl https://cursor.com/install -fsS | bash
-          echo "$HOME/.cursor/bin" >> $GITHUB_PATH
+          if [[ "${{ steps.cache-cursor.outputs.cache-hit }}" == "true" ]] && command -v cursor-agent >/dev/null 2>&1; then
+            echo "cursor-agent ready (cache)"
+            exit 0
+          fi
+          curl -fsSL https://cursor.com/install | bash
+      - name: Add Cursor CLI to PATH
+        run: |
+          echo "$HOME/.cursor/bin" >> "$GITHUB_PATH"
+          echo "$HOME/.local/bin" >> "$GITHUB_PATH"
 
       - name: Run Cursor code review
         env:
@@ -115,11 +130,25 @@ jobs:
         with:
           repository: mbugaiov/themis-agent
           # Keep in sync with THEMIS_AGENT_REF in scripts/ensure_themis_agent.sh
-          ref: de1665cf52dab33f8095efc2b4062815220a69f1
+          ref: 3250607f3700d0c2cb73f226435e4b69afd2e118
           path: .themis-agent
+      - name: Cache Cursor CLI
+        id: cache-cursor
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.local/bin
+            ~/.local/share/cursor-agent
+          key: cursor-cli-${{ runner.os }}-v2
       - name: Install Cursor CLI
         run: |
+          if [[ "${{ steps.cache-cursor.outputs.cache-hit }}" == "true" ]] && command -v cursor-agent >/dev/null 2>&1; then
+            echo "cursor-agent ready (cache)"
+            exit 0
+          fi
           curl -fsSL https://cursor.com/install | bash
+      - name: Add Cursor CLI to PATH
+        run: |
           echo "$HOME/.cursor/bin" >> "$GITHUB_PATH"
           echo "$HOME/.local/bin" >> "$GITHUB_PATH"
       - name: isolation (Themis)

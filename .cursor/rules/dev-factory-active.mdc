@@ -13,12 +13,13 @@ When the user message matches **any** phrase in `FACTORY_RUN_INTENT_PHRASES`
 
 ## MUST (same turn)
 
-1. **Arm** `bash scripts/arm_dev_loop.sh <slug>` with `notify_on_output` on patterns from
-   `lib/devFactoryLoopWiring.ts`.
+1. **Arm** `bash scripts/run_dev_loop.sh <slug>` (detached setsid) then **same turn** attach
+   `bash scripts/watch_dev_loop.sh <slug>` with `notify_on_output` on execute/PR patterns
+   (`LOOP_WATCH_ATTACH_REQUIRED`). Scheduler alone is incomplete.
 2. **Tick now** — `bash scripts/dev_factory_tick.sh <slug>`.
 3. **If backlog non-empty:** start oldest ticket immediately in app repo.
 4. **If open MR:** `wait_pr_pipeline.sh` first.
-5. **Re-arm** before ending turn.
+5. **Confirm** `projects/<slug>/factory/loop.pid` alive **and** watcher Shell attached before ending turn.
 
 ## FORBIDDEN
 

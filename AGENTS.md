@@ -61,7 +61,7 @@ Upstream map (also in `--list-packs`): [dotnet/skills](https://github.com/dotnet
 
 ```
 0. Config     → projects/<slug>/project.yaml + .secrets/
-1. Arm        → bash scripts/arm_dev_loop.sh <slug> (notify_on_output on watch patterns)
+1. Arm        → bash scripts/run_dev_loop.sh <slug> (= scripts/arm_dev_loop.sh setsid detach → factory/loop.pid) THEN same-turn scripts/watch_dev_loop.sh + notify_on_output
 2. Tick       → dev_factory_tick → **BACKLOG_WAKE_EXECUTE only** (execution-only) or DEV_FACTORY_IDLE
 3. Pick       → oldest impl-dev ticket (respect QA follow-on routing)
 4. Pickup     → pickup_jira_ticket.sh or pickup_github_ticket.sh → branch; OpenSpec;

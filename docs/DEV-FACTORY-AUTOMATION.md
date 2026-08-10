@@ -3,11 +3,16 @@
 ## Arm the loop
 
 ```bash
-DEV_LOOP_INTERVAL_SEC=300 bash scripts/arm_dev_loop.sh <slug>
+# Default: detached scheduler + Cursor watch attach contract
+bash scripts/run_dev_loop.sh <slug>
+# SAME TURN — background Shell with notify_on_output:
+bash scripts/watch_dev_loop.sh <slug>
+# Optional override: DEV_LOOP_INTERVAL_SEC=300 bash scripts/run_dev_loop.sh <slug>
 ```
 
-Launch in a background Cursor Shell with `notify_on_output` on watch patterns from
-`lib/devFactoryLoopWiring.ts` (see `LOOP_ARMED` JSON output).
+Arm detaches the scheduler (`loop.pid` / `loop.out`). **Mandatory same turn:** attach
+`watch_dev_loop.sh` with `notify_on_output` on execute/PR patterns (see
+`LOOP_WATCH_ATTACH_REQUIRED`). Without the watcher, `BACKLOG_WAKE_EXECUTE` is silent.
 
 ## Tick output
 

@@ -26,15 +26,22 @@ Human exceptions: `projects/<slug>/docs/HUMAN-EXCEPTIONS.md`.
 **Active factory:** User phrases in `FACTORY_RUN_INTENT_PHRASES` (`lib/devFactoryExecution.ts`)
 → arm + tick + drain in **same turn**. See `.cursor/rules/dev-factory-active.mdc`.
 
-1. **Arm:** `bash scripts/arm_dev_loop.sh <slug>` — **slug-scoped** (kills only that slug’s
-   `dev-loop.sh`; multiple `<slug>` factories can run side by side)
-2. **Tick:** `scripts/dev-loop.sh` → `dev_factory_tick.sh <slug>` → **`BACKLOG_WAKE_EXECUTE`** (execution-only) or `DEV_FACTORY_IDLE`
-3. **Watch patterns:** `lib/devFactoryLoopWiring.ts` — **`notify_on_output`** required on `^BACKLOG_WAKE_EXECUTE` only (no inform-only wake)
-4. **Stop hook:** `.cursor/hooks.json` — auto-followup if pending execute unconsumed
-5. **Policy guard:** `scripts/validate_execution_only_policy.ts` — CI blocks inform-only `BACKLOG_WAKE` regressions
-6. **Notify smoke:** `bash scripts/test_tick_notify.sh <slug>` — prove Teams delivery after editing `.secrets/jira.env`
+1. **Arm (default):** `bash scripts/run_dev_loop.sh <slug>` (wraps **`arm_dev_loop.sh`**) —
+   **detached setsid** (`projects/<slug>/factory/loop.pid` + `loop.out`).
+   Slug-scoped; multiple factories can coexist. Foreground debug:
+   `DEV_LOOP_FOREGROUND=1 bash scripts/arm_dev_loop.sh <slug>`
+2. **Watch (Cursor) — mandatory same turn:** background Shell
+   `bash scripts/watch_dev_loop.sh <slug>` with **`notify_on_output`** on
+   `^(BACKLOG_WAKE_EXECUTE|MR_SESSION_MERGED_STALE_BRANCH|MR_PR_BACKUP_)`.
+   Sentinel `LOOP_WATCH_ATTACH_REQUIRED` means arm is incomplete until this runs.
+   Watcher may die later; scheduler keeps ticking — re-attach watch only.
+3. **Tick:** `scripts/dev-loop.sh` → `dev_factory_tick.sh <slug>` → **`BACKLOG_WAKE_EXECUTE`** (execution-only) or `DEV_FACTORY_IDLE`
+4. **Watch patterns:** `lib/devFactoryLoopWiring.ts` — **`notify_on_output`** required on `^BACKLOG_WAKE_EXECUTE` only (no inform-only wake)
+5. **Stop hook:** `.cursor/hooks.json` — auto-followup if pending execute unconsumed
+6. **Policy guard:** `scripts/validate_execution_only_policy.ts` — CI blocks inform-only `BACKLOG_WAKE` regressions
+7. **Notify smoke:** `bash scripts/test_tick_notify.sh <slug>` — prove Teams delivery after editing `.secrets/jira.env`
 
-A plain background loop ticks **silently** without watchers.
+Scheduler-only (no watcher) ticks **silently** — tickets will not execute. Never end a turn after `LOOP_DETACHED` without attaching the watcher.
 
 ## Tick policy (execution-only)
 
