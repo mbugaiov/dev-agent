@@ -10,7 +10,8 @@ UX. Work lands on the **same feature branch** Hephaestus already opened — not 
 separate UX pilot branch and not a second Jira epic.
 
 Athena pipeline (in **ux-agent** repo: `docs/UX-PIPELINE.md`, not this repo):
-architect → DESIGN.md → visual direction → browser → UI rules → a11y → **Impeccable last**.
+architect → DESIGN.md → visual direction → **Pencil screens (`ux-pencil`) when required**
+→ browser → UI rules → a11y → **Impeccable last**.
 
 ## Two phases
 
@@ -74,19 +75,24 @@ Then use the **Task** tool (`subagent_type: generalPurpose`). Prompt must includ
 ### Mode B — charter (`ux-charter-first`, before implement)
 
 1. Role: **Athena / UX** — skills `ux-loop` Mode B, `ux-phases`, `ux-architect`,
-   `ux-visual-direction`, `ux-browser-review`, `ux-jira`. Read **ux-agent**
+   `ux-visual-direction`, **`ux-pencil`** (when DESIGN.md / ticket requires `.pen`
+   compositions), `ux-browser-review`, `ux-jira`. Read **ux-agent**
    `docs/UX-PIPELINE.md` (path under `ux_kick.ux_agent_path`).
 2. **Branch lock:** stay on current app branch; prefer **no product code commits**
    unless the ticket explicitly asks for a pilot implement.
 3. **DESIGN.md:** if it marks prior direction failed / not accepted, propose **new**
-   directions — do not polish the failed look.
-4. Deliverable: architect + chosen visual direction + freeze; baseline screenshots for
-   first-viewport redesigns; post tracker comment with exact sentinel **`UX_CHARTER_READY`**
+   directions — do not polish the failed look. If DESIGN.md locks a Pencil board,
+   complete that board’s PRD screens via `ux-pencil` (no human board pick). If
+   direction is open, explore Pencil boards and wait for human pick before freeze.
+4. Deliverable: architect + chosen visual direction + **Pencil screen set when required**
+   + freeze; baseline screenshots for first-viewport redesigns; post tracker comment
+   with exact sentinel **`UX_CHARTER_READY`**
    (`gh issue comment` when `tracker.provider=github_issues`, else Jira); write run folder
    under ux-agent `projects/<slug>/runs/…`.
+   **Do not** post `UX_CHARTER_READY` on Pencil-required tickets until frames exist.
 5. Do **not** add/remove `impl-dev`. Leave `ux-charter-first` on the ticket.
-6. Return: path to `run.md` + summary for Hephaestus implement.
-
+6. Return: path to `run.md` + Pencil board/frame map + summary for Hephaestus implement
+   (match compositions, not tokens-only).
 ### Mode A — polish (after implement)
 
 1. Role: **Athena / UX** — `ux-loop` Mode A, `ux-phases`, `ux-browser-review`,
