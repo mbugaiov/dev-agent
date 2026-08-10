@@ -184,6 +184,11 @@ grep -q 'watch_dev_loop.sh' scripts/run_dev_loop.sh \
   && grep -q 'LOOP_WATCH_ATTACH_REQUIRED' scripts/run_dev_loop.sh \
   && ok "run_dev_loop requires Cursor watcher" \
   || no "run_dev_loop.sh must require watch_dev_loop attach"
+grep -q 'tail -n 200' scripts/watch_dev_loop.sh \
+  && grep -q 'grep -E "\$WATCH_PATTERN"' scripts/watch_dev_loop.sh \
+  && grep -q 'tail -n 0 -F' scripts/watch_dev_loop.sh \
+  && ok "watch_dev_loop replays recent wakes before follow" \
+  || no "watch_dev_loop must replay matching lines then tail -F"
 have "scripts/validate_execution_only_policy.ts"
 have "lib/secretsEnvLint.ts"
 have "lib/devFactoryExecutionOnly.ts"
