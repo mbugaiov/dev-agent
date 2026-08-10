@@ -42,4 +42,8 @@ printf 'LOOP_WATCH_ATTACHED {"slug":"%s","log":"%s","scheduler":"%s","notifyPatt
 printf 'LOOP_ARM_AGENT_INSTRUCTIONS This Shell is the log watcher (not the scheduler). Arm once with arm_dev_loop.sh (nohup default); attach this watcher with notify_on_output on %s. On BACKLOG_WAKE_EXECUTE: start oldest ticket NOW — no status-only replies; drain backlog until idle. If this watcher Shell is aborted, re-run watch_dev_loop.sh only (detached scheduler keeps ticking — verify projects/%s/factory/loop.pid).\n' \
   "$WATCH_PATTERN" "$SLUG"
 
+# Scheduler emit_tick runs immediately on detach; this watcher often attaches seconds later.
+# Replay recent matching lines so notify_on_output still sees the first wake (tail -n 0 alone misses it).
+# Bound to recent log so a late re-attach does not dump the entire history.
+tail -n 200 "$LOG" 2>/dev/null | grep -E "$WATCH_PATTERN" || true
 exec tail -n 0 -F "$LOG"
