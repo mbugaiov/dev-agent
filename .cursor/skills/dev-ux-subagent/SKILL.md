@@ -85,15 +85,17 @@ Then use the **Task** tool (`subagent_type: generalPurpose`). Prompt must includ
    complete that board’s PRD screens via `ux-pencil` (no human board pick). If
    direction is open, explore Pencil boards and wait for human pick before freeze.
 4. Deliverable: architect + chosen visual direction + **Pencil screen set when required**
-   + freeze; baseline screenshots for first-viewport redesigns; post tracker comment
-   with exact sentinel **`UX_CHARTER_READY`**
+   + freeze; baseline screenshots for first-viewport redesigns; **commit + push** the
+   product `.pen` (and design README) on **this feature branch**; then post tracker
+   comment with exact sentinel **`UX_CHARTER_READY`**
    (`gh issue comment` when `tracker.provider=github_issues`, else Jira); write run folder
    under ux-agent `projects/<slug>/runs/…`.
-   **Do not** post `UX_CHARTER_READY` on Pencil-required tickets until frames exist.
+   **Do not** post `UX_CHARTER_READY` on Pencil-required tickets until frames exist **in
+   git on the branch** (not only in the Pencil editor).
 5. Do **not** add/remove `impl-dev`. Leave `ux-charter-first` on the ticket.
 6. Return: path to `run.md` + Pencil board/frame map + summary for Hephaestus implement
-   (match compositions, not tokens-only).
-### Mode A — polish (after implement)
+   (match compositions, not tokens-only). Hephaestus MUST refuse implement if cited
+   frame ids are missing from the committed `.pen` on the branch.### Mode A — polish (after implement)
 
 1. Role: **Athena / UX** — `ux-loop` Mode A, `ux-phases`, `ux-browser-review`,
    `ux-ui-rules-review`, `ux-a11y-review`, `ux-impeccable` (**last**), `ux-jira`.
@@ -124,6 +126,8 @@ Do **not** file a separate UX-only child for the in-branch pass.
 
 - Skipping charter kick when `ux-charter-first` is present and charter is not ready
 - Implementing UI before `UX_CHARTER_READY` on a `ux-charter-first` ticket
+- Implementing composition tickets when cited `.pen` frames are not on the remote branch
+- Filing / kicking `impl-dev` that points at Pencil frame ids not yet committed
 - Skipping polish kick when `needs-ux-pass` / `impl-ux` is present after implement
 - Asking Athena to “just Impeccable” a failed redesign without Mode B architect
 - Nested redesign that opens a second app MR while this ticket's MR is open
