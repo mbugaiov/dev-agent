@@ -16,7 +16,7 @@ import {
   storyPointFieldIds,
   type JiraIssuePickupFields,
 } from "../lib/jiraPickup.ts";
-import { jiraFetch, plainTextToAdf } from "../lib/jiraClient.ts";
+import { jiraFetch, markdownToAdf } from "../lib/jiraClient.ts";
 import type { ProjectConfig } from "../lib/projectConfig.ts";
 import { loadProjectConfig } from "../lib/loadProject.ts";
 
@@ -189,11 +189,11 @@ async function main() {
       "**Mode:** pickup / implement",
       `**Doing:** ${args.scope}`,
       "",
-      `_pickup_jira_ticket · ${new Date().toISOString()}_`,
+      `*pickup_jira_ticket · ${new Date().toISOString()}*`,
     ].join("\n");
     const commentRes = await jiraFetch(`/rest/api/3/issue/${args.key}/comment`, {
       method: "POST",
-      body: JSON.stringify({ body: plainTextToAdf(scopeBody) }),
+      body: JSON.stringify({ body: markdownToAdf(scopeBody) }),
     });
     if (!commentRes.ok) {
       console.error(

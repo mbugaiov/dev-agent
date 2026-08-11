@@ -11,7 +11,7 @@
 import { execFileSync } from "node:child_process";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
-import { jiraFetch, plainTextToAdf } from "../lib/jiraClient.ts";
+import { jiraFetch, markdownToAdf } from "../lib/jiraClient.ts";
 import { loadProjectConfig } from "../lib/loadProject.ts";
 import { resolveTrackerProvider } from "../lib/projectConfig.ts";
 
@@ -175,7 +175,7 @@ async function main() {
   }
   const commentRes = await jiraFetch(`/rest/api/3/issue/${target}/comment`, {
     method: "POST",
-    body: JSON.stringify({ body: plainTextToAdf(body) }),
+    body: JSON.stringify({ body: markdownToAdf(body) }),
   });
   if (!commentRes.ok) {
     console.error(
