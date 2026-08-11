@@ -31,7 +31,7 @@ import {
 } from "../lib/argusKickPending.ts";
 import {
   jiraFetch,
-  plainTextToAdf,
+  markdownToAdf,
   validateTestingTransitionId,
 } from "../lib/jiraClient.ts";
 import { loadProjectConfig } from "../lib/loadProject.ts";
@@ -223,7 +223,7 @@ async function main() {
 
   const commentRes = await jiraFetch(`/rest/api/3/issue/${args.key}/comment`, {
     method: "POST",
-    body: JSON.stringify({ body: plainTextToAdf(body) }),
+    body: JSON.stringify({ body: markdownToAdf(body) }),
   });
   if (!commentRes.ok) {
     console.error("Jira comment failed:", commentRes.status, await commentRes.text());

@@ -46,11 +46,15 @@ function textNode(text: string, marks?: AdfMark[]): AdfNode {
   return node;
 }
 
-/** Inline subset: **bold**, *italic*, _italic_, `code`, [label](url). */
+/** Inline subset: **bold**, *italic*, _italic_, `code`, [label](url).
+
+ * Underscore italics use CommonMark-ish word boundaries so snake_case
+ * tokens (e.g. fix_login_flow, VERDICT_REVIEW_PASS) are not emphasis.
+ */
 function parseInline(text: string): AdfNode[] {
   if (!text) return [textNode("")];
   const pattern =
-    /(\*\*[^*]+\*\*|\*[^*]+\*|_[^_]+_|`[^`]+`|\[[^\]]+\]\([^)]+\))/g;
+    /(\*\*[^*]+\*\*|\*[^*]+\*|(?<![A-Za-z0-9_])_[^_]+_(?![A-Za-z0-9_])|`[^`]+`|\[[^\]]+\]\([^)]+\))/g;
   const parts = text.split(pattern);
   const nodes: AdfNode[] = [];
   for (const part of parts) {
@@ -59,7 +63,8 @@ function parseInline(text: string): AdfNode[] {
       nodes.push(textNode(part.slice(2, -2), [{ type: "strong" }]));
     } else if (part.startsWith("*") && part.endsWith("*")) {
       nodes.push(textNode(part.slice(1, -1), [{ type: "em" }]));
-    } else if (part.startsWith("_") && part.endsWith("_")) {
+    } else if (part.startsWith("_") && part.endsWith("_") && part.length >= 3) {
+      // Only captured when word-bounded by the regex above.
       nodes.push(textNode(part.slice(1, -1), [{ type: "em" }]));
     } else if (part.startsWith("`") && part.endsWith("`")) {
       nodes.push(textNode(part.slice(1, -1), [{ type: "code" }]));
