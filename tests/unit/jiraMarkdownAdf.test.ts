@@ -7,7 +7,7 @@ describe("markdownToAdf", () => {
       [
         "### Argus started",
         "",
-        "**Ticket:** RQ-2052",
+        "**Ticket:** TST-123",
         "**Mode:** QA validate",
         "",
         "`post_agent_started · test`",
