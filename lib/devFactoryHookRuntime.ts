@@ -81,13 +81,15 @@ export function resolveHookSlug(input: {
   pending: PendingExecuteState | null;
   envSlug?: string;
 }): string {
-  const fromEnv = input.envSlug?.trim() ?? "";
-  if (fromEnv) return fromEnv;
+  // Latch wins — ambient DEV_AGENT_SLUG must not override another factory's pending work.
   const fromPending = input.pending?.slug?.trim() ?? "";
   if (fromPending) return fromPending;
   const oldest = input.pending?.oldest?.trim() ?? "";
-  if (oldest) return inferSlugFromTicketKey(input.engineRoot, oldest);
-  return "";
+  if (oldest) {
+    const inferred = inferSlugFromTicketKey(input.engineRoot, oldest);
+    if (inferred) return inferred;
+  }
+  return input.envSlug?.trim() ?? "";
 }
 
 function readJsonFile<T>(path: string): T | null {

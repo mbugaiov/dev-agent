@@ -196,11 +196,19 @@ grep -q 'resolveDevFactoryEngineRoot' scripts/dev_factory_stop_hook.ts \
   && ! grep -q 'if (!slug) {' scripts/dev_factory_stop_hook.ts \
   && ok "stop hook does not no-op without DEV_AGENT_SLUG" \
   || no "stop hook must resolve engine/slug without env"
-WS_HOOKS="$ROOT/../.cursor/hooks.json"
-if [[ -f "$WS_HOOKS" ]] && grep -q 'dev-factory-drain-stop' "$WS_HOOKS"; then
-  ok "workspace-root hooks.json registers drain stop hook"
+ENGINE_HOOKS="$ROOT/.cursor/hooks.json"
+if [[ -f "$ENGINE_HOOKS" ]] && grep -q 'dev-factory-drain-stop' "$ENGINE_HOOKS"; then
+  ok "engine .cursor/hooks.json registers drain stop hook"
 else
-  no "workspace .cursor/hooks.json must register dev-factory-drain-stop"
+  no "engine .cursor/hooks.json must register dev-factory-drain-stop"
+fi
+WS_HOOKS="$ROOT/../.cursor/hooks.json"
+if [[ -f "$WS_HOOKS" ]]; then
+  if grep -q 'dev-factory-drain-stop' "$WS_HOOKS"; then
+    ok "workspace-root hooks.json registers drain stop hook"
+  else
+    echo "  (warn: parent workspace hooks.json missing drain stop — optional host install)"
+  fi
 fi
 have "scripts/validate_execution_only_policy.ts"
 have "lib/secretsEnvLint.ts"

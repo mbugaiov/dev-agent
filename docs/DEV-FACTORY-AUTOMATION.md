@@ -31,7 +31,7 @@ The engine never hardcodes epic keys, git hosts, or app paths.
 ## Hooks
 
 Cursor only loads **workspace-root** `.cursor/hooks.json`. When this engine lives
-in a parent folder (e.g. `personal/dev-agent`), install hooks at the workspace:
+in a parent folder (e.g. `<workspace>/dev-agent`), install hooks at the workspace:
 
 - `<workspace>/.cursor/hooks.json` → `.cursor/hooks/dev-factory-drain-stop.sh`
   + `dev-factory-session-start.sh` (cd into `dev-agent/`, run the TS hooks)

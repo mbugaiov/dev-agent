@@ -136,7 +136,7 @@ describe("devFactoryHookRuntime", () => {
     expect(inferSlugFromTicketKey(root, "other#9")).toBe("other");
   });
 
-  it("HK-04 resolveHookSlug prefers env then pending.slug then ticket infer", () => {
+  it("HK-04 resolveHookSlug prefers latch slug then ticket infer then env", () => {
     const root = fakeEngine({
       projects: [{ slug: "selftest", pattern: "TST-\\\\d+" }],
     });
@@ -146,19 +146,19 @@ describe("devFactoryHookRuntime", () => {
         pending: { ...pending, slug: "selftest" },
         envSlug: "other",
       }),
-    ).toBe("other");
-    expect(
-      resolveHookSlug({
-        engineRoot: root,
-        pending: { ...pending, slug: "selftest" },
-        envSlug: "",
-      }),
     ).toBe("selftest");
     expect(
       resolveHookSlug({
         engineRoot: root,
         pending: { ...pending, slug: undefined, oldest: "TST-105" },
-        envSlug: "",
+        envSlug: "other",
+      }),
+    ).toBe("selftest");
+    expect(
+      resolveHookSlug({
+        engineRoot: root,
+        pending: null,
+        envSlug: "selftest",
       }),
     ).toBe("selftest");
   });

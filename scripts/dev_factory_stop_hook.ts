@@ -2,7 +2,7 @@
  * Cursor stop hook — force drain when BACKLOG_WAKE_EXECUTE ended without starting work,
  * or when Argus kick after handoff was not acknowledged.
  *
- * Must work from the workspace root (personal/) without DEV_AGENT_SLUG.
+ * Must work from the workspace root (`<workspace>/`) without DEV_AGENT_SLUG.
  */
 import { execSync } from "node:child_process";
 import { existsSync, readFileSync } from "node:fs";
