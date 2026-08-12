@@ -1,4 +1,5 @@
 {
+  "version": 1,
   "hooks": {
     "sessionStart": [
       {
@@ -7,7 +8,8 @@
     ],
     "stop": [
       {
-        "command": ".cursor/hooks/dev-factory-drain-stop.sh"
+        "command": ".cursor/hooks/dev-factory-drain-stop.sh",
+        "loop_limit": 5
       }
     ]
   }

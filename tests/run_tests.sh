@@ -189,6 +189,19 @@ grep -q 'tail -n 200' scripts/watch_dev_loop.sh \
   && grep -q 'tail -n 0 -F' scripts/watch_dev_loop.sh \
   && ok "watch_dev_loop replays recent wakes before follow" \
   || no "watch_dev_loop must replay matching lines then tail -F"
+have "lib/devFactoryHookRuntime.ts"
+have "scripts/dev_factory_stop_hook.ts"
+have "scripts/dev_factory_session_start_hook.ts"
+grep -q 'resolveDevFactoryEngineRoot' scripts/dev_factory_stop_hook.ts \
+  && ! grep -q 'if (!slug) {' scripts/dev_factory_stop_hook.ts \
+  && ok "stop hook does not no-op without DEV_AGENT_SLUG" \
+  || no "stop hook must resolve engine/slug without env"
+WS_HOOKS="$ROOT/../.cursor/hooks.json"
+if [[ -f "$WS_HOOKS" ]] && grep -q 'dev-factory-drain-stop' "$WS_HOOKS"; then
+  ok "workspace-root hooks.json registers drain stop hook"
+else
+  no "workspace .cursor/hooks.json must register dev-factory-drain-stop"
+fi
 have "scripts/validate_execution_only_policy.ts"
 have "lib/secretsEnvLint.ts"
 have "lib/devFactoryExecutionOnly.ts"

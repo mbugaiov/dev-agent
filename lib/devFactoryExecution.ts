@@ -82,6 +82,8 @@ export type PendingExecuteState = {
   issuedAt: string;
   consumed: boolean;
   executePrompt: string;
+  /** Factory slug — stop/session hooks must not require DEV_AGENT_SLUG. */
+  slug?: string;
 };
 
 export type BacklogWakeExecution = {
@@ -184,6 +186,7 @@ export function buildPendingExecuteState(
   payload: BacklogWakePayload,
   branchPrefixes: readonly string[],
   tracker: "jira" | "github_issues" = "jira",
+  slug?: string,
 ): PendingExecuteState {
   const execution = buildBacklogWakeExecution(payload, branchPrefixes, tracker);
   return {
@@ -193,6 +196,7 @@ export function buildPendingExecuteState(
     issuedAt: new Date().toISOString(),
     consumed: false,
     executePrompt: formatExecutePrompt(execution),
+    ...(slug ? { slug } : {}),
   };
 }
 
