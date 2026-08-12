@@ -62,6 +62,7 @@ async function writePendingExecute(
     payload,
     config.git.branch_prefixes,
     resolveTrackerProvider(config),
+    slug,
   );
   if (
     existing?.consumed &&

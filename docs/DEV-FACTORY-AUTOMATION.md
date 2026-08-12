@@ -30,8 +30,20 @@ The engine never hardcodes epic keys, git hosts, or app paths.
 
 ## Hooks
 
-`.cursor/hooks.json` registers stop + sessionStart hooks that enforce the execute
-contract when `.cursor/dev-factory-pending-execute.json` is pending.
+Cursor only loads **workspace-root** `.cursor/hooks.json`. When this engine lives
+in a parent folder (e.g. `<workspace>/dev-agent`), install hooks at the workspace:
+
+- `<workspace>/.cursor/hooks.json` → `.cursor/hooks/dev-factory-drain-stop.sh`
+  + `dev-factory-session-start.sh` (cd into `dev-agent/`, run the TS hooks)
+- Engine copy: `dev-agent/.cursor/hooks.json` (used if the engine itself is the workspace)
+
+Stop + sessionStart enforce the execute contract when
+`dev-agent/.cursor/dev-factory-pending-execute.json` is pending. They **must not**
+require `DEV_AGENT_SLUG` — slug comes from the latch, then
+`git.ticket_key_pattern` match against `projects/*/project.yaml`.
+
+`stop` only runs when a turn ends. `sessionStart` only runs on a new chat.
+Neither replaces `notify_on_output`; they recover when notify is silent.
 
 ## Shell watcher policy (no monitor mode)
 

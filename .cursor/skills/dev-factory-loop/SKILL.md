@@ -37,7 +37,9 @@ Human exceptions: `projects/<slug>/docs/HUMAN-EXCEPTIONS.md`.
    Watcher may die later; scheduler keeps ticking — re-attach watch only.
 3. **Tick:** `scripts/dev-loop.sh` → `dev_factory_tick.sh <slug>` → **`BACKLOG_WAKE_EXECUTE`** (execution-only) or `DEV_FACTORY_IDLE`
 4. **Watch patterns:** `lib/devFactoryLoopWiring.ts` — **`notify_on_output`** required on `^BACKLOG_WAKE_EXECUTE` only (no inform-only wake)
-5. **Stop hook:** `.cursor/hooks.json` — auto-followup if pending execute unconsumed
+5. **Stop / sessionStart hooks:** workspace-root `.cursor/hooks.json` (not only
+   `dev-agent/.cursor/`) — auto-followup if pending execute unconsumed. Hooks
+   resolve the engine from the parent workspace and do **not** need `DEV_AGENT_SLUG`.
 6. **Policy guard:** `scripts/validate_execution_only_policy.ts` — CI blocks inform-only `BACKLOG_WAKE` regressions
 7. **Notify smoke:** `bash scripts/test_tick_notify.sh <slug>` — prove Teams delivery after editing `.secrets/jira.env`
 

@@ -25,6 +25,7 @@ export const LOOP_WIRING_PREFLIGHT_PATHS = [
   "scripts/dev_factory_tick.ts",
   "scripts/dev_factory_stop_hook.ts",
   "scripts/dev_factory_session_start_hook.ts",
+  "lib/devFactoryHookRuntime.ts",
   "scripts/print_loop_armed.ts",
   "scripts/dev-loop.sh",
   ".cursor/hooks.json",

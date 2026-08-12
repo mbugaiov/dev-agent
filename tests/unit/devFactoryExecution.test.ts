@@ -58,10 +58,11 @@ describe("devFactoryExecution", () => {
   });
 
   it("EX-04 pending execute state captures oldest ticket", () => {
-    const pending = buildPendingExecuteState(payload, branches);
+    const pending = buildPendingExecuteState(payload, branches, "jira", "acme");
     expect(pending.oldest).toBe("TST-105");
     expect(pending.count).toBe(2);
     expect(pending.consumed).toBe(false);
+    expect(pending.slug).toBe("acme");
   });
 
   it("EX-05 detects status-only agent replies", () => {

@@ -1,20 +1,18 @@
 /**
  * Cursor stop hook — force drain when BACKLOG_WAKE_EXECUTE ended without starting work,
  * or when Argus kick after handoff was not acknowledged.
+ *
+ * Must work from the workspace root (`<workspace>/`) without DEV_AGENT_SLUG.
  */
 import { execSync } from "node:child_process";
 import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import {
-  PENDING_EXECUTE_PATH,
-  shouldForceDrainFollowup,
-  type PendingExecuteState,
-} from "../lib/devFactoryExecution.ts";
-import {
-  PENDING_ARGUS_KICK_PATH,
-  shouldForceArgusKickFollowup,
-  type PendingArgusKickState,
-} from "../lib/argusKickPending.ts";
+  decideDevFactoryStopHook,
+  readPendingExecute,
+  resolveDevFactoryEngineRoot,
+  resolveHookSlug,
+} from "../lib/devFactoryHookRuntime.ts";
 import { loadProjectConfig, resolveAppRoot } from "../lib/loadProject.ts";
 
 type StopHookInput = {
@@ -32,26 +30,6 @@ function readStdin(): StopHookInput {
   }
 }
 
-function readPending(root: string): PendingExecuteState | null {
-  const path = join(root, PENDING_EXECUTE_PATH);
-  if (!existsSync(path)) return null;
-  try {
-    return JSON.parse(readFileSync(path, "utf8")) as PendingExecuteState;
-  } catch {
-    return null;
-  }
-}
-
-function readArgusPending(root: string): PendingArgusKickState | null {
-  const path = join(root, PENDING_ARGUS_KICK_PATH);
-  if (!existsSync(path)) return null;
-  try {
-    return JSON.parse(readFileSync(path, "utf8")) as PendingArgusKickState;
-  } catch {
-    return null;
-  }
-}
-
 function gitBranch(cwd: string): string {
   try {
     return execSync("git rev-parse --abbrev-ref HEAD", {
@@ -65,7 +43,8 @@ function gitBranch(cwd: string): string {
 
 function hasWorkingTreeChanges(cwd: string): boolean {
   try {
-    const out = execSync("git status --porcelain", {
+    // Untracked leftovers (.themis-agent/, docs) must not block latch recovery.
+    const out = execSync("git status --porcelain --untracked-files=no", {
       cwd,
       encoding: "utf8",
     }).trim();
@@ -92,55 +71,46 @@ function hasOpenPr(appRoot: string): boolean {
 
 function main() {
   const input = readStdin();
-  if (input.status !== "completed") {
+  const engineRoot = resolveDevFactoryEngineRoot(process.cwd());
+  if (!engineRoot) {
     console.log("{}");
     return;
   }
 
-  const engineRoot = process.cwd();
-  const loopCount = input.loop_count ?? 0;
-
-  // Prefer forcing Argus wake after handoff — ticket already left impl-dev.
-  const argusDecision = shouldForceArgusKickFollowup({
-    pending: readArgusPending(engineRoot),
-    loopCount,
-  });
-  if (argusDecision.force) {
-    console.log(JSON.stringify({ followup_message: argusDecision.message }));
-    return;
-  }
-
-  const slug = process.env.DEV_AGENT_SLUG ?? "";
-  if (!slug) {
-    console.log("{}");
-    return;
-  }
-
-  let config;
-  try {
-    config = loadProjectConfig(engineRoot, slug);
-  } catch {
-    console.log("{}");
-    return;
-  }
-
-  const appRoot = resolveAppRoot(engineRoot, config);
-  const gitCwd = existsSync(join(appRoot, ".git")) ? appRoot : engineRoot;
-
-  const decision = shouldForceDrainFollowup({
-    pending: readPending(engineRoot),
-    currentBranch: gitBranch(gitCwd),
-    hasWorkingTreeChanges: hasWorkingTreeChanges(gitCwd),
-    hasOpenPr: hasOpenPr(appRoot),
-    loopCount,
-    git: config.git,
+  const pending = readPendingExecute(engineRoot);
+  const slug = resolveHookSlug({
+    engineRoot,
+    pending,
+    envSlug: process.env.DEV_AGENT_SLUG,
   });
 
-  if (decision.force) {
-    console.log(JSON.stringify({ followup_message: decision.message }));
-  } else {
-    console.log("{}");
+  let currentBranch = "";
+  let workingTree = false;
+  let openPr = false;
+  if (slug) {
+    try {
+      const config = loadProjectConfig(engineRoot, slug);
+      const appRoot = resolveAppRoot(engineRoot, config);
+      const gitCwd = existsSync(join(appRoot, ".git")) ? appRoot : engineRoot;
+      currentBranch = gitBranch(gitCwd);
+      workingTree = hasWorkingTreeChanges(gitCwd);
+      openPr = hasOpenPr(appRoot);
+    } catch {
+      /* decideDevFactoryStopHook still forces from the latch */
+    }
   }
+
+  const decision = decideDevFactoryStopHook({
+    engineRoot,
+    status: input.status ?? "completed",
+    loopCount: input.loop_count ?? 0,
+    envSlug: process.env.DEV_AGENT_SLUG,
+    currentBranch,
+    hasWorkingTreeChanges: workingTree,
+    hasOpenPr: openPr,
+    pending,
+  });
+  console.log(JSON.stringify(decision));
 }
 
 main();
