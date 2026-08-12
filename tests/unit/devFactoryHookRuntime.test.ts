@@ -34,7 +34,7 @@ function writeProjectYaml(root: string, slug: string, pattern: string): void {
       `name: "Fixture ${slug}"`,
       `slug: "${slug}"`,
       "dev_factory:",
-      '  epic_key: "TST-1"',
+      '  epic_key: "<EPIC-KEY>"',
       '  pickup_label: "impl-dev"',
       "  excluded_labels: []",
       "  excluded_issue_keys: []",
