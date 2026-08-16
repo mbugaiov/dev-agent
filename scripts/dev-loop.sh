@@ -37,16 +37,39 @@ cleanup_exit() {
 
 emit_tick() {
   export DEV_FACTORY_NEXT_WAKE_EPOCH="$(( $(date +%s) + INTERVAL ))"
-  local out
-  out="$(bash "$ROOT/scripts/dev_factory_tick.sh" "$SLUG" 2>&1)" || true
+  local out tick_rc mrs_out mrs_rc
+  set +e
+  out="$(bash "$ROOT/scripts/dev_factory_tick.sh" "$SLUG" 2>&1)"
+  tick_rc=$?
+  set -e
   printf '%s\n' "$out"
+  if [[ "$tick_rc" -ne 0 ]]; then
+    printf 'TICK_FAILED {"slug":"%s","exit":%s}\n' "$SLUG" "$tick_rc"
+    # Oneshot: fail closed — do not treat a crashed tick as idle drain.
+    if [[ "$EXIT_ON_IDLE" == "1" ]]; then
+      printf 'LOOP_HOLD_TICK_FAILED {"slug":"%s","reason":"tick_nonzero_exit"}\n' "$SLUG"
+      SAW_WORK=1
+      return 0
+    fi
+  fi
   if echo "$out" | grep -q '^BACKLOG_WAKE_EXECUTE'; then
     SAW_WORK=1
   fi
   if [[ "$EXIT_ON_IDLE" == "1" ]] && echo "$out" | grep -q '^DEV_FACTORY_IDLE'; then
     # Oneshot = drain to the end: tickets AND open MRs (CI fix → merge).
-    if bash "$ROOT/scripts/project_has_open_mrs.sh" "$SLUG" >/dev/null 2>&1; then
+    # project_has_open_mrs.sh: 0 = open MRs, 1 = none, 2 = probe error (hold).
+    set +e
+    mrs_out="$(bash "$ROOT/scripts/project_has_open_mrs.sh" "$SLUG" 2>&1)"
+    mrs_rc=$?
+    set -e
+    if [[ -n "$mrs_out" ]]; then
+      printf '%s\n' "$mrs_out"
+    fi
+    if [[ "$mrs_rc" -eq 0 ]]; then
       printf 'LOOP_HOLD_OPEN_MR {"slug":"%s","reason":"open_pr_or_mr_remaining"}\n' "$SLUG"
+      SAW_WORK=1
+    elif [[ "$mrs_rc" -eq 2 ]]; then
+      printf 'LOOP_HOLD_OPEN_MR_PROBE_ERROR {"slug":"%s","reason":"open_mr_probe_failed"}\n' "$SLUG"
       SAW_WORK=1
     else
       printf 'LOOP_EXIT_IDLE {"slug":"%s","sawWork":%s,"openMrs":0}\n' "$SLUG" "$SAW_WORK"
