@@ -158,12 +158,17 @@ export function decideDevFactoryStopHook(
   });
 
   if (!slug) {
-    return {
-      followup_message:
-        `${pending.executePrompt} ` +
-        `You ended the turn without starting ${pending.oldest}. ` +
-        `Begin implementation immediately — no status summary.`,
-    };
+    // Still honor loop/dirty/open-PR suppressions when slug inference fails.
+    const decision = shouldForceDrainFollowup({
+      pending,
+      currentBranch: input.currentBranch ?? "",
+      hasWorkingTreeChanges: input.hasWorkingTreeChanges ?? false,
+      hasOpenPr: input.hasOpenPr ?? false,
+      loopCount,
+      // No project git config — never treat branch as "already on ticket".
+      git: { branch_prefixes: ["__none__/"], ticket_key_pattern: "NEVER-MATCH-\\d+" },
+    });
+    return decision.force ? { followup_message: decision.message } : {};
   }
 
   try {
@@ -178,12 +183,16 @@ export function decideDevFactoryStopHook(
     });
     return decision.force ? { followup_message: decision.message } : {};
   } catch {
-    return {
-      followup_message:
-        `${pending.executePrompt} ` +
-        `You ended the turn without starting ${pending.oldest}. ` +
-        `Begin implementation immediately — no status summary.`,
-    };
+    // Broken project.yaml: still suppress on loop/dirty/open-PR, don't nudge mid-implement.
+    const decision = shouldForceDrainFollowup({
+      pending,
+      currentBranch: input.currentBranch ?? "",
+      hasWorkingTreeChanges: input.hasWorkingTreeChanges ?? false,
+      hasOpenPr: input.hasOpenPr ?? false,
+      loopCount,
+      git: { branch_prefixes: ["__none__/"], ticket_key_pattern: "NEVER-MATCH-\\d+" },
+    });
+    return decision.force ? { followup_message: decision.message } : {};
   }
 }
 
