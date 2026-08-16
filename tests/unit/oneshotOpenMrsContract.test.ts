@@ -41,9 +41,10 @@ describe("oneshot open-MR probe contract", () => {
     expect(loop).toMatch(/mrs_rc.*-eq 0/);
     expect(loop).toMatch(/mrs_rc.*-eq 2/);
     // Must not collapse exit 1 and 2 into a single else that exits idle.
-    expect(loop).not.toMatch(
-      /project_has_open_mrs\.sh" "\$SLUG" >/dev/null 2>&1; then/,
+    expect(loop).not.toContain(
+      'project_has_open_mrs.sh" "$SLUG" >/dev/null 2>&1',
     );
+    expect(loop).toContain("mrs_rc");
   });
 
   it("dev-loop oneshot holds when the factory tick fails", () => {
