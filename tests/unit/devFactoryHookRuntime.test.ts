@@ -245,4 +245,45 @@ describe("devFactoryHookRuntime", () => {
     });
     expect(res.followup_message).toContain("ZZ-1");
   });
+
+  it("HK-10 no-slug / yaml-miss paths honor dirty-tree and open-PR suppressions", () => {
+    const root = fakeEngine({
+      pending: {
+        oldest: "ZZ-1",
+        count: 1,
+        consumed: false,
+        executePrompt: "BACKLOG_WAKE_EXECUTE: Start ZZ-1 NOW",
+      },
+    });
+    const pending = {
+      oldest: "ZZ-1",
+      count: 1,
+      branchPrefix: "feat/ZZ-1",
+      issuedAt: new Date().toISOString(),
+      consumed: false,
+      executePrompt: "BACKLOG_WAKE_EXECUTE: Start ZZ-1 NOW",
+    };
+    expect(
+      decideDevFactoryStopHook({
+        engineRoot: root,
+        status: "completed",
+        loopCount: 0,
+        envSlug: "",
+        hasWorkingTreeChanges: true,
+        pending,
+        argusPending: null,
+      }),
+    ).toEqual({});
+    expect(
+      decideDevFactoryStopHook({
+        engineRoot: root,
+        status: "completed",
+        loopCount: 0,
+        envSlug: "",
+        hasOpenPr: true,
+        pending,
+        argusPending: null,
+      }),
+    ).toEqual({});
+  });
 });
