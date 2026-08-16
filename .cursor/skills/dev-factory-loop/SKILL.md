@@ -23,12 +23,18 @@ Human exceptions: `projects/<slug>/docs/HUMAN-EXCEPTIONS.md`.
 
 ## Loop mechanics
 
-**Portfolio (default on campus):** **Kairos** decides when to wake this slug. Kairos arms with
-`DEV_LOOP_EXIT_ON_IDLE=1` — oneshot stays up while `impl-dev` **or** open PR/MR remains;
-exits only when backlog is idle **and** no open MRs (`LOOP_HOLD_OPEN_MR` while MRs remain).
-Do not manually `arm_dev_loop` forever for every product while Kairos is running.
+**Active factory (Cursor / user intent — coequal contract):** when the user message
+matches `FACTORY_RUN_INTENT_PHRASES` (`lib/devFactoryExecution.ts`) — e.g. run/execute/arm
+loop, drain backlog, active factory — **same turn** arm + watch + tick + drain. See
+`.cursor/rules/dev-factory-active.mdc`. Do **not** end the turn listen-only.
 
-**Manual / legacy single-slug arm** (unchanged):
+**Portfolio dispatcher (Kairos):** Kairos may also wake this slug with
+`DEV_LOOP_EXIT_ON_IDLE=1` — oneshot stays up while `impl-dev` **or** open PR/MR remains;
+exits only when backlog is idle **and** no open MRs (`LOOP_HOLD_OPEN_MR` while MRs remain;
+`LOOP_HOLD_OPEN_MR_PROBE_ERROR` if the open-MR probe fails). Kairos does **not** replace
+Active-factory arming when the user triggered intent phrases.
+
+**Manual single-slug arm** (legacy forever-loop or debug):
 
 1. **Arm:** `bash scripts/run_dev_loop.sh <slug>` (wraps **`arm_dev_loop.sh`**) —
    **detached setsid** (`projects/<slug>/factory/loop.pid` + `loop.out`).
@@ -36,7 +42,7 @@ Do not manually `arm_dev_loop` forever for every product while Kairos is running
    `DEV_LOOP_FOREGROUND=1 bash scripts/arm_dev_loop.sh <slug>`
 2. **Watch (Cursor) — mandatory same turn:** background Shell
    `bash scripts/watch_dev_loop.sh <slug>` with **`notify_on_output`** on
-   `^(BACKLOG_WAKE_EXECUTE|MR_SESSION_MERGED_STALE_BRANCH|MR_PR_BACKUP_)`.
+   `^(BACKLOG_WAKE_EXECUTE|MR_SESSION_MERGED_STALE_BRANCH|MR_PR_BACKUP_|LOOP_HOLD_OPEN_MR)`.
    Sentinel `LOOP_WATCH_ATTACH_REQUIRED` means arm is incomplete until this runs.
    Watcher may die later; scheduler keeps ticking — re-attach watch only.
 3. **Tick:** `scripts/dev-loop.sh` → `dev_factory_tick.sh <slug>` → **`BACKLOG_WAKE_EXECUTE`** (execution-only) or `DEV_FACTORY_IDLE`
