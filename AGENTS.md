@@ -1,12 +1,18 @@
 # Hephaestus — Dev engine (`dev-agent`)
 
-**Hephaestus** is the product name for this repository and engine. The agent runs **Jira-backed
-dev factory loops**: pick `impl-dev` tickets, implement spec-first in the **app repo**, ship via
+**Hephaestus** is the product name for this repository and engine. The agent runs **per-slug
+dev factory work**: pick `impl-dev` tickets, implement spec-first in the **app repo**, ship via
 MR, verify STG buildId, hand off to **Validate/Testing** for the QA agent. One project = one app
 factory; one tick = one backlog drain attempt.
 
+> **Portfolio default:** **Kairos** (`kairos-agent`) owns *which* slug to wake and *when*.
+> Under Kairos, Hephaestus runs as a **oneshot** (`DEV_LOOP_EXIT_ON_IDLE=1`): process backlog →
+> `DEV_FACTORY_IDLE` → **exit**. Do not leave permanent per-slug `dev-loop` processes when Kairos
+> is the dispatcher. Legacy forever `arm_dev_loop.sh <slug>` remains for manual single-project arms.
+
 > **Naming map:** Hephaestus (brand) ≡ `dev-agent` repo ≡ factory `agent=dev`. Pantheon siblings
-> live elsewhere: Argus (QA) in `qa-agent`, Themis (review) in the app repo — not renamed here.
+> live elsewhere: Argus (QA) in `qa-agent`, Themis (review) in the app repo, **Kairos** (portfolio
+> dispatcher) in `kairos-agent` — not renamed here.
 > Internal paths, skills, and scripts keep the `dev-*` prefix. Presentation: *Hephaestus · Dev*.
 
 > Operating role: follow `.cursor/rules/dev-engine.mdc` and `.cursor/rules/dev-factory-active.mdc`.

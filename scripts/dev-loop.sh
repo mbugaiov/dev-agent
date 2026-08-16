@@ -1,6 +1,9 @@
 #!/usr/bin/env bash
 # Dev factory scheduler (internal — use scripts/arm_dev_loop.sh only).
 # Usage: bash scripts/dev-loop.sh <slug>
+#
+# DEV_LOOP_EXIT_ON_IDLE=1 — Kairos oneshot mode: after backlog drains to IDLE, exit
+# (no permanent loop). Default remains forever-loop for legacy arms.
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
@@ -22,10 +25,33 @@ fi
 INTERVAL="${DEV_LOOP_INTERVAL_SEC:-300}"
 POLL="${DEV_LOOP_POLL_SEC:-30}"
 PR_BACKUP="${DEV_PR_BACKUP_SEC:-300}"
+EXIT_ON_IDLE="${DEV_LOOP_EXIT_ON_IDLE:-0}"
+SAW_WORK=0
+PID_FILE="$ROOT/projects/$SLUG/factory/loop.pid"
+
+cleanup_exit() {
+  local code="${1:-0}"
+  rm -f "$PID_FILE"
+  exit "$code"
+}
 
 emit_tick() {
   export DEV_FACTORY_NEXT_WAKE_EPOCH="$(( $(date +%s) + INTERVAL ))"
-  bash "$ROOT/scripts/dev_factory_tick.sh" "$SLUG"
+  local out
+  out="$(bash "$ROOT/scripts/dev_factory_tick.sh" "$SLUG" 2>&1)" || true
+  printf '%s\n' "$out"
+  if echo "$out" | grep -q '^BACKLOG_WAKE_EXECUTE'; then
+    SAW_WORK=1
+  fi
+  if echo "$out" | grep -q '^DEV_FACTORY_IDLE\|^JIRA_UNAVAILABLE\|^GITHUB_UNAVAILABLE'; then
+    if [[ "$EXIT_ON_IDLE" == "1" ]]; then
+      # Only sleep when the tick *is* idle (not when the wake prompt mentions IDLE).
+      if echo "$out" | grep -q '^DEV_FACTORY_IDLE'; then
+        printf 'LOOP_EXIT_IDLE {"slug":"%s","sawWork":%s}\n' "$SLUG" "$SAW_WORK"
+        cleanup_exit 0
+      fi
+    fi
+  fi
 }
 
 emit_pr_backup() {
@@ -60,14 +86,19 @@ emit_schedule() {
   pr_in=$(( PR_NEXT - now ))
   if [ "$backlog_in" -lt 0 ]; then backlog_in=0; fi
   if [ "$pr_in" -lt 0 ]; then pr_in=0; fi
-  printf 'LOOP_NEXT_WAKE {"slug":"%s","nextBacklogWake":"%s","nextPrBackupWake":"%s","backlogWakeInSec":%s,"prBackupWakeInSec":%s,"intervalSec":%s,"prBackupSec":%s}\n' \
-    "$SLUG" "$(format_ts "$NEXT")" "$(format_ts "$PR_NEXT")" "$backlog_in" "$pr_in" "$INTERVAL" "$PR_BACKUP"
+  printf 'LOOP_NEXT_WAKE {"slug":"%s","nextBacklogWake":"%s","nextPrBackupWake":"%s","backlogWakeInSec":%s,"prBackupWakeInSec":%s,"intervalSec":%s,"prBackupSec":%s,"exitOnIdle":%s}\n' \
+    "$SLUG" "$(format_ts "$NEXT")" "$(format_ts "$PR_NEXT")" "$backlog_in" "$pr_in" "$INTERVAL" "$PR_BACKUP" "$EXIT_ON_IDLE"
 }
+
+if [[ "$EXIT_ON_IDLE" == "1" ]]; then
+  printf 'LOOP_ONESHOT {"slug":"%s","intervalSec":%s}\n' "$SLUG" "$INTERVAL"
+fi
 
 NEXT=$(( $(date +%s) + INTERVAL ))
 PR_NEXT=$(( $(date +%s) + PR_BACKUP ))
 
 emit_tick
+# If EXIT_ON_IDLE and first tick was IDLE, emit_tick already exited.
 emit_pr_backup
 emit_schedule
 

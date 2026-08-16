@@ -23,10 +23,13 @@ Human exceptions: `projects/<slug>/docs/HUMAN-EXCEPTIONS.md`.
 
 ## Loop mechanics
 
-**Active factory:** User phrases in `FACTORY_RUN_INTENT_PHRASES` (`lib/devFactoryExecution.ts`)
-→ arm + tick + drain in **same turn**. See `.cursor/rules/dev-factory-active.mdc`.
+**Portfolio (default on campus):** **Kairos** decides when to wake this slug. Kairos arms with
+`DEV_LOOP_EXIT_ON_IDLE=1` — after `DEV_FACTORY_IDLE`, the scheduler **exits** (forge sleeps).
+Do not manually `arm_dev_loop` forever for every product while Kairos is running.
 
-1. **Arm (default):** `bash scripts/run_dev_loop.sh <slug>` (wraps **`arm_dev_loop.sh`**) —
+**Manual / legacy single-slug arm** (unchanged):
+
+1. **Arm:** `bash scripts/run_dev_loop.sh <slug>` (wraps **`arm_dev_loop.sh`**) —
    **detached setsid** (`projects/<slug>/factory/loop.pid` + `loop.out`).
    Slug-scoped; multiple factories can coexist. Foreground debug:
    `DEV_LOOP_FOREGROUND=1 bash scripts/arm_dev_loop.sh <slug>`
