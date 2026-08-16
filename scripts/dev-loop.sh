@@ -2,8 +2,8 @@
 # Dev factory scheduler (internal — use scripts/arm_dev_loop.sh only).
 # Usage: bash scripts/dev-loop.sh <slug>
 #
-# DEV_LOOP_EXIT_ON_IDLE=1 — Kairos oneshot mode: after backlog drains to IDLE, exit
-# (no permanent loop). Default remains forever-loop for legacy arms.
+# DEV_LOOP_EXIT_ON_IDLE=1 — Kairos oneshot mode: stay up while work remains
+# (impl-dev backlog OR open PR/MR), then exit. Default remains forever-loop for legacy arms.
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
@@ -43,13 +43,14 @@ emit_tick() {
   if echo "$out" | grep -q '^BACKLOG_WAKE_EXECUTE'; then
     SAW_WORK=1
   fi
-  if echo "$out" | grep -q '^DEV_FACTORY_IDLE\|^JIRA_UNAVAILABLE\|^GITHUB_UNAVAILABLE'; then
-    if [[ "$EXIT_ON_IDLE" == "1" ]]; then
-      # Only sleep when the tick *is* idle (not when the wake prompt mentions IDLE).
-      if echo "$out" | grep -q '^DEV_FACTORY_IDLE'; then
-        printf 'LOOP_EXIT_IDLE {"slug":"%s","sawWork":%s}\n' "$SLUG" "$SAW_WORK"
-        cleanup_exit 0
-      fi
+  if [[ "$EXIT_ON_IDLE" == "1" ]] && echo "$out" | grep -q '^DEV_FACTORY_IDLE'; then
+    # Oneshot = drain to the end: tickets AND open MRs (CI fix → merge).
+    if bash "$ROOT/scripts/project_has_open_mrs.sh" "$SLUG" >/dev/null 2>&1; then
+      printf 'LOOP_HOLD_OPEN_MR {"slug":"%s","reason":"open_pr_or_mr_remaining"}\n' "$SLUG"
+      SAW_WORK=1
+    else
+      printf 'LOOP_EXIT_IDLE {"slug":"%s","sawWork":%s,"openMrs":0}\n' "$SLUG" "$SAW_WORK"
+      cleanup_exit 0
     fi
   fi
 }

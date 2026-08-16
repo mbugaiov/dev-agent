@@ -24,7 +24,8 @@ Human exceptions: `projects/<slug>/docs/HUMAN-EXCEPTIONS.md`.
 ## Loop mechanics
 
 **Portfolio (default on campus):** **Kairos** decides when to wake this slug. Kairos arms with
-`DEV_LOOP_EXIT_ON_IDLE=1` — after `DEV_FACTORY_IDLE`, the scheduler **exits** (forge sleeps).
+`DEV_LOOP_EXIT_ON_IDLE=1` — oneshot stays up while `impl-dev` **or** open PR/MR remains;
+exits only when backlog is idle **and** no open MRs (`LOOP_HOLD_OPEN_MR` while MRs remain).
 Do not manually `arm_dev_loop` forever for every product while Kairos is running.
 
 **Manual / legacy single-slug arm** (unchanged):

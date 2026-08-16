@@ -6,9 +6,10 @@ MR, verify STG buildId, hand off to **Validate/Testing** for the QA agent. One p
 factory; one tick = one backlog drain attempt.
 
 > **Portfolio default:** **Kairos** (`kairos-agent`) owns *which* slug to wake and *when*.
-> Under Kairos, Hephaestus runs as a **oneshot** (`DEV_LOOP_EXIT_ON_IDLE=1`): process backlog →
-> `DEV_FACTORY_IDLE` → **exit**. Do not leave permanent per-slug `dev-loop` processes when Kairos
-> is the dispatcher. Legacy forever `arm_dev_loop.sh <slug>` remains for manual single-project arms.
+> Under Kairos, Hephaestus runs as a **oneshot** (`DEV_LOOP_EXIT_ON_IDLE=1`): drain
+> `impl-dev` **and** stay up while open PR/MR remains (CI fix → merge) → exit only when
+> both are clear. Do not leave permanent idle per-slug loops when Kairos is the dispatcher.
+> Legacy forever `arm_dev_loop.sh <slug>` remains for manual single-project arms.
 
 > **Naming map:** Hephaestus (brand) ≡ `dev-agent` repo ≡ factory `agent=dev`. Pantheon siblings
 > live elsewhere: Argus (QA) in `qa-agent`, Themis (review) in the app repo, **Kairos** (portfolio
