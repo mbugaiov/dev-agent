@@ -68,12 +68,13 @@ emit_tick() {
     if [[ "$mrs_rc" -eq 0 ]]; then
       printf 'LOOP_HOLD_OPEN_MR {"slug":"%s","reason":"open_pr_or_mr_remaining"}\n' "$SLUG"
       SAW_WORK=1
-    elif [[ "$mrs_rc" -eq 2 ]]; then
-      printf 'LOOP_HOLD_OPEN_MR_PROBE_ERROR {"slug":"%s","reason":"open_mr_probe_failed"}\n' "$SLUG"
-      SAW_WORK=1
-    else
+    elif [[ "$mrs_rc" -eq 1 ]]; then
       printf 'LOOP_EXIT_IDLE {"slug":"%s","sawWork":%s,"openMrs":0}\n' "$SLUG" "$SAW_WORK"
       cleanup_exit 0
+    else
+      # Exit 2 = documented probe error; any other code = unexpected — still hold.
+      printf 'LOOP_HOLD_OPEN_MR_PROBE_ERROR {"slug":"%s","reason":"open_mr_probe_failed","exit":%s}\n' "$SLUG" "$mrs_rc"
+      SAW_WORK=1
     fi
   fi
 }

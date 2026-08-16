@@ -42,9 +42,10 @@ Active-factory arming when the user triggered intent phrases.
    `DEV_LOOP_FOREGROUND=1 bash scripts/arm_dev_loop.sh <slug>`
 2. **Watch (Cursor) — mandatory same turn:** background Shell
    `bash scripts/watch_dev_loop.sh <slug>` with **`notify_on_output`** on
-   `^(BACKLOG_WAKE_EXECUTE|MR_SESSION_MERGED_STALE_BRANCH|MR_PR_BACKUP_|LOOP_HOLD_OPEN_MR)`.
+   `^(BACKLOG_WAKE_EXECUTE|MR_SESSION_MERGED_STALE_BRANCH|MR_PR_BACKUP_)`.
    Sentinel `LOOP_WATCH_ATTACH_REQUIRED` means arm is incomplete until this runs.
    Watcher may die later; scheduler keeps ticking — re-attach watch only.
+   (`LOOP_HOLD_OPEN_MR*` is scheduler/Kairos-only — not a Cursor notify wake.)
 3. **Tick:** `scripts/dev-loop.sh` → `dev_factory_tick.sh <slug>` → **`BACKLOG_WAKE_EXECUTE`** (execution-only) or `DEV_FACTORY_IDLE`
 4. **Watch patterns:** `lib/devFactoryLoopWiring.ts` — **`notify_on_output`** required on `^BACKLOG_WAKE_EXECUTE` only (no inform-only wake)
 5. **Stop / sessionStart hooks:** workspace-root `.cursor/hooks.json` (not only

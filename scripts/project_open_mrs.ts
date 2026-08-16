@@ -13,7 +13,51 @@ const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..");
 
 type MrItem = { id: string; url: string; title: string; head?: string };
 
+function githubToken(): string {
+  return (
+    process.env.GITHUB_TOKEN?.trim() ||
+    process.env.GH_TOKEN?.trim() ||
+    ""
+  );
+}
+
+async function githubOpenPrsViaToken(
+  owner: string,
+  repo: string,
+  token: string,
+): Promise<MrItem[]> {
+  const url =
+    `https://api.github.com/repos/${owner}/${repo}/pulls?state=open&per_page=50`;
+  const res = await fetch(url, {
+    headers: {
+      Authorization: `Bearer ${token}`,
+      Accept: "application/vnd.github+json",
+      "User-Agent": "dev-agent-open-mrs-probe",
+    },
+  });
+  if (!res.ok) {
+    throw new Error(
+      `GitHub PRs ${res.status}: ${(await res.text()).slice(0, 200)}`,
+    );
+  }
+  const rows = (await res.json()) as {
+    number: number;
+    title: string;
+    html_url: string;
+    head?: { ref?: string };
+  }[];
+  return rows.map((r) => ({
+    id: String(r.number),
+    url: r.html_url,
+    title: r.title,
+    head: r.head?.ref,
+  }));
+}
+
 function ghOpenPrs(owner: string, repo: string): MrItem[] {
+  const env = { ...process.env };
+  const token = githubToken();
+  if (token && !env.GH_TOKEN) env.GH_TOKEN = token;
   const raw = execFileSync(
     "gh",
     [
@@ -28,7 +72,7 @@ function ghOpenPrs(owner: string, repo: string): MrItem[] {
       "--json",
       "number,title,url,headRefName",
     ],
-    { encoding: "utf8" },
+    { encoding: "utf8", env },
   );
   const rows = JSON.parse(raw) as {
     number: number;
@@ -82,7 +126,10 @@ async function main() {
   const config = loadProjectConfig(ROOT, slug);
   let items: MrItem[] = [];
   if (config.git.provider === "github") {
-    items = ghOpenPrs(config.git.workspace, config.git.repo);
+    const token = githubToken();
+    items = token
+      ? await githubOpenPrsViaToken(config.git.workspace, config.git.repo, token)
+      : ghOpenPrs(config.git.workspace, config.git.repo);
   } else {
     items = await bbOpenPrs(config.git.workspace, config.git.repo);
   }
@@ -104,5 +151,5 @@ async function main() {
 
 main().catch((e) => {
   console.error(e instanceof Error ? e.message : e);
-  process.exit(1);
+  process.exit(2);
 });

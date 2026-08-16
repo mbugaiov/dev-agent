@@ -39,8 +39,10 @@ describe("oneshot open-MR probe contract", () => {
     expect(loop).toContain("LOOP_HOLD_OPEN_MR_PROBE_ERROR");
     expect(loop).toContain("LOOP_EXIT_IDLE");
     expect(loop).toMatch(/mrs_rc.*-eq 0/);
-    expect(loop).toMatch(/mrs_rc.*-eq 2/);
-    // Must not collapse exit 1 and 2 into a single else that exits idle.
+    expect(loop).toMatch(/mrs_rc.*-eq 1/);
+    expect(loop).toContain("LOOP_HOLD_OPEN_MR_PROBE_ERROR");
+    // Exit idle only on documented "none" (1); never treat other codes as idle.
+    expect(loop).toContain('elif [[ "$mrs_rc" -eq 1 ]]; then');
     expect(loop).not.toContain(
       'project_has_open_mrs.sh" "$SLUG" >/dev/null 2>&1',
     );
