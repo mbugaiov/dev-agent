@@ -15,8 +15,10 @@ fi
 FACTORY_DIR="$ROOT/projects/$SLUG/factory"
 PID_FILE="$FACTORY_DIR/loop.pid"
 WATCH_PID_FILE="$FACTORY_DIR/watch.pid"
+AGENT_PID_FILE="$FACTORY_DIR/hephaestus-oneshot.pid"
 killed_sched=0
 killed_watch=0
+killed_agent=0
 
 kill_pid() {
   local pid="$1" label="$2"
@@ -105,6 +107,15 @@ if [[ -f "$LOG" ]]; then
   done < <(pgrep -f "tail" 2>/dev/null || true)
 fi
 
-printf 'LOOP_STOPPED {"slug":"%s","schedulerKilled":%s,"watcherKilled":%s}\n' \
-  "$SLUG" "$killed_sched" "$killed_watch"
+# Cursor-agent oneshot (Kairos K13 path)
+if [[ -f "$AGENT_PID_FILE" ]]; then
+  AOLD="$(tr -d '[:space:]' <"$AGENT_PID_FILE" || true)"
+  if kill_tree "$AOLD" "agent-oneshot"; then
+    killed_agent=1
+  fi
+  rm -f "$AGENT_PID_FILE"
+fi
+
+printf 'LOOP_STOPPED {"slug":"%s","schedulerKilled":%s,"watcherKilled":%s,"agentKilled":%s}\n' \
+  "$SLUG" "$killed_sched" "$killed_watch" "$killed_agent"
 exit 0
