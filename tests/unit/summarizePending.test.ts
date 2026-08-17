@@ -13,10 +13,10 @@ describe("summarizePending", () => {
     expect(shouldArmSummarizeFromAgentText("DEV_FACTORY_IDLE {\"slug\":\"x\"}")).toBe(
       true,
     );
-    expect(shouldArmSummarizeFromAgentText("GITHUB_HANDOFF_OK pantheon#1")).toBe(
-      true,
-    );
     expect(shouldArmSummarizeFromAgentText("LOOP_EXIT_IDLE")).toBe(true);
+    expect(shouldArmSummarizeFromAgentText("GITHUB_HANDOFF_OK selftest#1")).toBe(
+      false,
+    );
   });
 
   it("skips summarize turn itself", () => {

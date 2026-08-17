@@ -14,8 +14,7 @@ export type PendingSummarizeState = {
 };
 
 /** Assistant text that means the Kairos/Hephaestus oneshot drain finished. */
-const DONE_MARKERS =
-  /\b(DEV_FACTORY_IDLE|LOOP_EXIT_IDLE|GITHUB_HANDOFF_OK|JIRA_HANDOFF_OK|PENDING_EXECUTE_CONSUMED|HANDOFF_OK)\b/;
+const DONE_MARKERS = /\b(DEV_FACTORY_IDLE|LOOP_EXIT_IDLE)\b/;
 
 /** Do not re-arm summarize from the summarize turn itself. */
 const SKIP_MARKERS =
