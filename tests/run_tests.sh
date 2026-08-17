@@ -281,7 +281,16 @@ echo "$BLIND_AR_PID" > "projects/$SLUG/factory/loop.pid"
 sleep 0.3
 OUT3=$(PATH="$EA_STUB:/usr/bin:/bin" CURSOR_API_KEY=test-key-not-real \
   bash scripts/ensure_hephaestus_agent.sh "$SLUG" 2>&1); EC3=$?
-echo "$OUT3" | grep -q HEPHAESTUS_REAP_BLIND   && echo "$OUT3" | grep -q ALREADY_RUNNING && [[ "$EC3" -eq 0 ]]   && ! kill -0 "$BLIND_AR_PID" 2>/dev/null   && ok "ensure ALREADY_RUNNING still reaps coexisting blind bash"   || no "ALREADY_RUNNING path must REAP_BLIND (ec=$EC3 blind=$BLIND_AR_PID out=$OUT3)"
+AGENT_STILL=0
+[[ -f "projects/$SLUG/factory/hephaestus-oneshot.pid" ]] && \
+  AP=$(tr -d '[:space:]' <"projects/$SLUG/factory/hephaestus-oneshot.pid") && \
+  kill -0 "$AP" 2>/dev/null && AGENT_STILL=1 || true
+echo "$OUT3" | grep -q HEPHAESTUS_REAP_BLIND \
+  && echo "$OUT3" | grep -q ALREADY_RUNNING && [[ "$EC3" -eq 0 ]] \
+  && ! kill -0 "$BLIND_AR_PID" 2>/dev/null \
+  && [[ "$AGENT_STILL" -eq 1 ]] \
+  && ok "ensure ALREADY_RUNNING still reaps coexisting blind bash" \
+  || no "ALREADY_RUNNING path must REAP_BLIND and keep agent (ec=$EC3 blind=$BLIND_AR_PID agentAlive=$AGENT_STILL out=$OUT3)"
 kill "$BLIND_AR_PID" 2>/dev/null || true
 rm -f "projects/$SLUG/factory/loop.pid"
 _ea_kill
