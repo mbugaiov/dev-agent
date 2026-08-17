@@ -67,7 +67,13 @@ jobs:
           EOF
           else
             git fetch origin "${BASE}" --quiet || true
-            PROMPT="You are the automated reviewer for GitHub PR #${{ github.event.pull_request.number }} on the dev-agent engine. Follow .cursor/rules/code-review.mdc AND .themis-agent/templates/engine-code-review-block.md (MUST-HAVE: new/changed behavior needs new or updated tests → Blocking) (and AGENTS.md + rules it references). Review ONLY changes vs origin/${BASE} — begin with: git --no-pager diff origin/${BASE}...HEAD — produce exactly the output sections that guide specifies. Isolation is enforced by the separate CI job isolation (Themis); still fold leak findings into Blocking issues if you see them."
+            PROMPT="$(bash .themis-agent/scripts/build_review_prompt.sh \
+              --pr "${{ github.event.pull_request.number }}" \
+              --base "origin/${BASE}" \
+              --label "${{ github.event.repository.name }}" \
+              --local-rule .cursor/rules/code-review.mdc \
+              --agents AGENTS.md \
+              --themis-root .themis-agent)"
             cursor-agent --force --api-key "$CURSOR_API_KEY" --output-format text -p "$PROMPT" > review.md || true
             [[ -s review.md ]] || echo "Cursor review produced no output (see build log above)." > review.md
           fi
