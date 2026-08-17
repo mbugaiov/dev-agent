@@ -197,8 +197,41 @@ have "scripts/stop_dev_loop.sh"
 grep -q 'watch_dev_loop' scripts/stop_dev_loop.sh \
   && grep -q 'LOOP_STOPPED' scripts/stop_dev_loop.sh \
   && grep -q 'kill_tree' scripts/stop_dev_loop.sh \
+  && grep -q 'dev-loop.sh' scripts/stop_dev_loop.sh \
   && ok "stop_dev_loop kills scheduler + watchers (children first)" \
   || no "stop_dev_loop.sh must reap scheduler and watchers with kill_tree"
+
+# Negative: stale loop.pid whose cmdline is not this slug's scheduler must not be killed.
+pidguard_mismatched_loop_pid() {
+  local PID_SLUG="pidguard-selftest"
+  local STALE_PID=""
+  cleanup() {
+    [[ -n "${STALE_PID:-}" ]] && kill "$STALE_PID" 2>/dev/null || true
+    rm -rf "projects/$PID_SLUG"
+  }
+  trap cleanup RETURN
+  rm -rf "projects/$PID_SLUG"
+  mkdir -p "projects/$PID_SLUG/factory"
+  sleep 60 &
+  STALE_PID=$!
+  echo "$STALE_PID" > "projects/$PID_SLUG/factory/loop.pid"
+  bash scripts/stop_dev_loop.sh "$PID_SLUG" >/dev/null 2>&1 || true
+  if kill -0 "$STALE_PID" 2>/dev/null; then
+    ok "stop_dev_loop does not kill mismatched loop.pid"
+  else
+    STALE_PID=""
+    no "stop_dev_loop must not kill pid-file process that is not dev-loop.sh <slug>"
+  fi
+}
+pidguard_mismatched_loop_pid
+python3 - <<'PY' && ok "pid-file block requires ps cmdline match before kill_tree" || no "pid-file block missing ps-before-kill_tree"
+from pathlib import Path
+t = Path("scripts/stop_dev_loop.sh").read_text()
+idx = t.find("Scheduler via pid file")
+chunk = t[idx : idx + 700]
+assert "ps -p" in chunk and "kill_tree" in chunk
+assert chunk.find("ps -p") < chunk.find("kill_tree")
+PY
 
 grep -q 'stop_dev_loop.sh' scripts/arm_dev_loop.sh \
   && ok "arm_dev_loop clears prior loop+watcher via stop_dev_loop" \

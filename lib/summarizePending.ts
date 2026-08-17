@@ -62,7 +62,7 @@ export function shouldForceSummarizeFollowup(input: {
   loopCount: number;
   maxFollowups?: number;
 }): { force: true; message: string } | { force: false } {
-  const max = input.maxFollowups ?? 5;
+  const max = input.maxFollowups ?? 6;
   if (!input.pending || input.pending.consumed) return { force: false };
   if (input.loopCount >= max) return { force: false };
   return { force: true, message: formatSummarizeFollowup(input.pending) };

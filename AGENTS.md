@@ -86,7 +86,8 @@ Upstream map (also in `--list-packs`): [dotnet/skills](https://github.com/dotnet
 8. Drain      → re-run JQL; next ticket same session until DEV_FACTORY_IDLE
 ```
 
-Workspace-root `.cursor/hooks.json` (parent of this engine) runs stop + sessionStart
+Workspace-root `.cursor/hooks.json` (parent of this engine) runs
+`afterAgentResponse` (arm `/summarize`), stop, and sessionStart
 when `dev-factory-pending-execute.json` is unconsumed. Hooks must not need `DEV_AGENT_SLUG`.
 
 For **active factory** (user says run/execute/arm loop — see `FACTORY_RUN_INTENT_PHRASES` in
