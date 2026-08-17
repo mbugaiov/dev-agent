@@ -196,6 +196,7 @@ grep -q 'tail -n 200' scripts/watch_dev_loop.sh \
 have "scripts/stop_dev_loop.sh"
 
 have "scripts/ensure_hephaestus_agent.sh"
+have "scripts/lib/kill_tree.sh"
 grep -q 'cursor-agent' scripts/ensure_hephaestus_agent.sh \
   && grep -q 'HEPHAESTUS_ONESHOT_ARMED' scripts/ensure_hephaestus_agent.sh \
   && grep -q 'HEPHAESTUS_REAP_BLIND' scripts/ensure_hephaestus_agent.sh \
@@ -283,6 +284,18 @@ sleep 0.4
   && echo "$OUT" | grep -q HEPHAESTUS_ONESHOT_ARMED && [[ "$EC" -eq 0 ]] \
   && ok "ensure inherits CURSOR_API_KEY into child env" \
   || no "ensure must inherit CURSOR_API_KEY (ec=$EC out=$OUT marker=$(ls -la "$ENV_STUB" 2>/dev/null))"
+# Key must not appear on the oneshot child's argv (env inheritance only).
+if [[ -f "projects/$SLUG/factory/hephaestus-oneshot.pid" ]]; then
+  AP=$(tr -d '[:space:]' <"projects/$SLUG/factory/hephaestus-oneshot.pid")
+  ARGS=$(ps -p "$AP" -o args= 2>/dev/null || true)
+  if [[ "$ARGS" != *test-key-not-real* ]] && [[ "$ARGS" != *--api-key* ]]; then
+    ok "ensure does not put CURSOR_API_KEY on child argv"
+  else
+    no "ensure leaked API key onto argv (pid=$AP args=$ARGS)"
+  fi
+else
+  no "ensure missing oneshot pid for argv leak check"
+fi
 _ea_kill
 rm -rf "$ENV_STUB"
 
