@@ -201,6 +201,7 @@ grep -q 'cursor-agent' scripts/ensure_hephaestus_agent.sh \
   && grep -q 'HEPHAESTUS_REAP_BLIND' scripts/ensure_hephaestus_agent.sh \
   && grep -q 'CURSOR_FACTORY_SESSION=1' scripts/ensure_hephaestus_agent.sh \
   && grep -q 'DEV_FACTORY_SLUG' scripts/ensure_hephaestus_agent.sh \
+  && ! grep -q -- '--api-key' scripts/ensure_hephaestus_agent.sh \
   && ok "ensure_hephaestus_agent is cursor-agent oneshot (K13)" \
   || no "ensure_hephaestus_agent must arm cursor-agent oneshot and reap blind bash"
 # usage / slug / skip matrix (mirror ensure_argus)
@@ -245,6 +246,17 @@ _restore_cursor_secrets
 [[ "$EC" -eq 4 ]] && echo "$OUT" | grep -q CURSOR_API_KEY-missing \
   && ok "ensure_hephaestus_agent skips when CURSOR_API_KEY missing" \
   || no "ensure_hephaestus_agent should exit 4 without API key (ec=$EC: $OUT)"
+# REAP_BLIND before SKIP when API key missing (exit 4) — blind bash must not block portfolio
+perl -e "\$0 = \"bash scripts/dev-loop.sh ${SLUG}\"; sleep 45" &
+BLIND_SKIP_PID=$!
+echo "$BLIND_SKIP_PID" > "projects/$SLUG/factory/loop.pid"
+sleep 0.3
+_hide_cursor_secrets
+OUT=$(env -u CURSOR_API_KEY PATH="$EA_STUB:/usr/bin:/bin" bash scripts/ensure_hephaestus_agent.sh "$SLUG" 2>&1); EC=$?
+_restore_cursor_secrets
+echo "$OUT" | grep -q HEPHAESTUS_REAP_BLIND   && echo "$OUT" | grep -q CURSOR_API_KEY-missing && [[ "$EC" -eq 4 ]]   && ! kill -0 "$BLIND_SKIP_PID" 2>/dev/null   && ok "ensure reaps blind bash then SKIP exit 4 without API key"   || no "ensure must REAP_BLIND then exit 4 without key (ec=$EC blind=$BLIND_SKIP_PID out=$OUT)"
+kill "$BLIND_SKIP_PID" 2>/dev/null || true
+rm -f "projects/$SLUG/factory/loop.pid"
 _ea_kill() {
   local pf="projects/$SLUG/factory/hephaestus-oneshot.pid"
   if [[ -f "$pf" ]]; then
@@ -263,6 +275,15 @@ OUT2=$(PATH="$EA_STUB:/usr/bin:/bin" CURSOR_API_KEY=test-key-not-real \
 echo "$OUT2" | grep -q ALREADY_RUNNING && [[ "$EC2" -eq 0 ]] \
   && ok "ensure_hephaestus_agent ALREADY_RUNNING on live pid" \
   || no "ensure_hephaestus_agent should short-circuit live pid (ec=$EC2: $OUT2)"
+perl -e "\$0 = \"bash scripts/dev-loop.sh ${SLUG}\"; sleep 45" &
+BLIND_AR_PID=$!
+echo "$BLIND_AR_PID" > "projects/$SLUG/factory/loop.pid"
+sleep 0.3
+OUT3=$(PATH="$EA_STUB:/usr/bin:/bin" CURSOR_API_KEY=test-key-not-real \
+  bash scripts/ensure_hephaestus_agent.sh "$SLUG" 2>&1); EC3=$?
+echo "$OUT3" | grep -q HEPHAESTUS_REAP_BLIND   && echo "$OUT3" | grep -q ALREADY_RUNNING && [[ "$EC3" -eq 0 ]]   && ! kill -0 "$BLIND_AR_PID" 2>/dev/null   && ok "ensure ALREADY_RUNNING still reaps coexisting blind bash"   || no "ALREADY_RUNNING path must REAP_BLIND (ec=$EC3 blind=$BLIND_AR_PID out=$OUT3)"
+kill "$BLIND_AR_PID" 2>/dev/null || true
+rm -f "projects/$SLUG/factory/loop.pid"
 _ea_kill
 
 # Negative: recycled PID without slug-bound cmdline must NOT ALREADY_RUNNING
@@ -310,8 +331,7 @@ chmod +x "$FAIL_STUB/cursor-agent"
 rm -f "projects/$SLUG/factory/hephaestus-oneshot.pid"
 OUT=$(PATH="$FAIL_STUB:/usr/bin:/bin" CURSOR_API_KEY=test-key-not-real \
   bash scripts/ensure_hephaestus_agent.sh "$SLUG" 2>&1); EC=$?
-echo "$OUT" | grep -q HEPHAESTUS_ONESHOT_FAIL && [[ "$EC" -eq 5 ]] \
-  && ok "ensure_hephaestus_agent FAIL when agent exits immediately" \
+echo "$OUT" | grep -q HEPHAESTUS_ONESHOT_FAIL && [[ "$EC" -eq 5 ]]   && ! echo "$OUT" | grep -q '"detail":'   && ok "ensure_hephaestus_agent FAIL when agent exits immediately" \
   || no "ensure_hephaestus_agent should exit 5 on immediate agent exit (ec=$EC: $OUT)"
 rm -rf "$FAIL_STUB"
 _ea_kill
@@ -347,6 +367,15 @@ echo "$STOP_OUT" | grep -q '"agentKilled":1' \
   || no "stop must kill agent oneshot (pid=$AGENT_PID out=$STOP_OUT)"
 kill "$AGENT_PID" 2>/dev/null || true
 rm -f "projects/$SLUG/factory/hephaestus-oneshot.pid"
+
+# Orphan slug-bound agent (no hephaestus-oneshot.pid) — pgrep scan must kill
+perl -e "\$0 = \"cursor-agent --force DEV_FACTORY_SLUG=${SLUG}\"; sleep 45" &
+ORPHAN_AGENT_PID=$!
+sleep 0.2
+rm -f "projects/$SLUG/factory/hephaestus-oneshot.pid"
+STOP_OUT=$(bash scripts/stop_dev_loop.sh "$SLUG" 2>&1)
+echo "$STOP_OUT" | grep -q '"agentKilled":1'   && ! kill -0 "$ORPHAN_AGENT_PID" 2>/dev/null   && ok "stop_dev_loop kills orphan slug-bound agent (no pid file)"   || no "stop must pgrep-kill orphan agent (pid=$ORPHAN_AGENT_PID out=$STOP_OUT)"
+kill "$ORPHAN_AGENT_PID" 2>/dev/null || true
 
 # Negative: mismatched agent pid file must not be killed
 sleep 45 &

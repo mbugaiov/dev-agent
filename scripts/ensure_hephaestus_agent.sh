@@ -33,12 +33,40 @@ STOP="$ROOT/scripts/stop_dev_loop.sh"
 
 # Do not rewrite PATH before command -v — tests stub cursor-agent via PATH.
 
+reap_blind_bash_if_needed() {
+  local blind_bash=0 lp cmd pid
+  if [[ -f "$LOOP_PID_FILE" ]]; then
+    lp="$(tr -d '[:space:]' <"$LOOP_PID_FILE" || true)"
+    if [[ -n "${lp:-}" ]] && kill -0 "$lp" 2>/dev/null; then
+      cmd="$(ps -p "$lp" -o args= 2>/dev/null || true)"
+      if [[ "$cmd" =~ scripts/dev-loop\.sh[[:space:]]+${SLUG}([[:space:]]|$) ]]; then
+        blind_bash=1
+      fi
+    fi
+  fi
+  while read -r pid; do
+    [ -z "$pid" ] && continue
+    cmd="$(ps -p "$pid" -o args= 2>/dev/null || true)"
+    if [[ "$cmd" =~ scripts/dev-loop\.sh[[:space:]]+${SLUG}([[:space:]]|$) ]]; then
+      blind_bash=1
+    fi
+  done < <(pgrep -f "scripts/dev-loop.sh" 2>/dev/null || true)
+
+  if [[ "$blind_bash" -eq 1 ]]; then
+    printf 'HEPHAESTUS_REAP_BLIND {"slug":"%s","reason":"bash-scheduler-without-agent-oneshot"}\n' "$SLUG"
+    if [[ -f "$STOP" ]]; then
+      bash "$STOP" "$SLUG" >/dev/null 2>&1 || true
+    fi
+  fi
+}
+
 if [[ -f "$PID_FILE" ]]; then
   OLD="$(tr -d '[:space:]' <"$PID_FILE" || true)"
   if [[ -n "${OLD:-}" ]] && kill -0 "$OLD" 2>/dev/null; then
     acmd="$(ps -p "$OLD" -o args= 2>/dev/null || true)"
     # Slug-bound only — recycled PID of another tenant must not short-circuit.
     if [[ "$acmd" =~ DEV_FACTORY_SLUG=${SLUG}([^a-z0-9-]|$) ]]; then
+      reap_blind_bash_if_needed
       printf 'ALREADY_RUNNING {"slug":"%s","pid":%s,"mode":"cursor-agent-oneshot"}\n' \
         "$SLUG" "$OLD"
       exit 0
@@ -62,30 +90,8 @@ done
 
 # Blind bash scheduler (no agent oneshot) blocks Kairos forever — reap it.
 # Reap even when we will SKIP (exit 3/4): empty slug beats a forever zombie.
-blind_bash=0
-if [[ -f "$LOOP_PID_FILE" ]]; then
-  lp="$(tr -d '[:space:]' <"$LOOP_PID_FILE" || true)"
-  if [[ -n "${lp:-}" ]] && kill -0 "$lp" 2>/dev/null; then
-    cmd="$(ps -p "$lp" -o args= 2>/dev/null || true)"
-    if [[ "$cmd" =~ scripts/dev-loop\.sh[[:space:]]+${SLUG}([[:space:]]|$) ]]; then
-      blind_bash=1
-    fi
-  fi
-fi
-while read -r pid; do
-  [ -z "$pid" ] && continue
-  cmd="$(ps -p "$pid" -o args= 2>/dev/null || true)"
-  if [[ "$cmd" =~ scripts/dev-loop\.sh[[:space:]]+${SLUG}([[:space:]]|$) ]]; then
-    blind_bash=1
-  fi
-done < <(pgrep -f "scripts/dev-loop.sh" 2>/dev/null || true)
+reap_blind_bash_if_needed
 
-if [[ "$blind_bash" -eq 1 ]]; then
-  printf 'HEPHAESTUS_REAP_BLIND {"slug":"%s","reason":"bash-scheduler-without-agent-oneshot"}\n' "$SLUG"
-  if [[ -f "$STOP" ]]; then
-    bash "$STOP" "$SLUG" >/dev/null 2>&1 || true
-  fi
-fi
 
 # No apostrophes in PROMPT — nested bash -c quoting hazard (see qa-agent arm_qa_loop).
 PROMPT="EXECUTE Hephaestus oneshot for ${SLUG}. Isolated oneshot — not an ambient IDE chat. Set CURSOR_FACTORY_SESSION=1 and DEV_FACTORY_SLUG=${SLUG}. Drain impl-dev backlog (oldest first): pickup → OpenSpec/gates → implement → app gate → MR → wait_pr_pipeline → handoff; stay while open PR/MR remains; exit only when backlog idle AND no open MRs (DEV_FACTORY_IDLE). Skills: dev-factory-loop, dev-mr-pipeline. Forbidden: notify-only / status-only; do not leave a bash-only dev-loop without executing tickets. Prefer direct ticket pickup over silent watch_dev_loop."
@@ -112,16 +118,19 @@ if [[ ${#MODEL_ARGS[@]} -gt 0 ]]; then
 fi
 QUOTED_PROMPT=$(printf '%q' "$PROMPT")
 QUOTED_BIN=$(printf '%q' "$CURSOR_AGENT_BIN")
+QUOTED_KEY=$(printf '%q' "$CURSOR_API_KEY")
 
 : >"$LOG"
 printf '{"slug":"%s","issuedAt":"%s","mode":"cursor-agent-oneshot"}\n' \
   "$SLUG" "$(date -u +%Y-%m-%dT%H:%M:%SZ)" >"$CLAIM"
 
+# Auth via CURSOR_API_KEY env only — never pass the API key flag on argv (ps/log leakage).
 nohup bash -c "
   cd \"$ROOT\"
   export CURSOR_FACTORY_SESSION=1
   export DEV_FACTORY_SLUG=\"$SLUG\"
-  ${QUOTED_BIN} --force --api-key \"\$CURSOR_API_KEY\"${MODEL_ARGS_Q} \
+  export CURSOR_API_KEY=${QUOTED_KEY}
+  ${QUOTED_BIN} --force${MODEL_ARGS_Q} \
     --output-format text -p ${QUOTED_PROMPT} >>\"$LOG\" 2>&1
   rm -f \"$PID_FILE\"
 " >/dev/null 2>&1 &
@@ -131,9 +140,9 @@ disown "$ONESHOT_PID" 2>/dev/null || true
 
 sleep 1.5
 if ! kill -0 "$ONESHOT_PID" 2>/dev/null; then
-  detail="$(tail -c 240 "$LOG" 2>/dev/null | tr '\n' ' ' | tr -d '\"' || true)"
-  printf 'HEPHAESTUS_ONESHOT_FAIL {"slug":"%s","reason":"exited-immediately","detail":"%s","log":"%s"}\n' \
-    "$SLUG" "${detail:0:180}" "$LOG"
+  # Do not echo log tail — may contain secrets from cursor-agent stderr.
+  printf 'HEPHAESTUS_ONESHOT_FAIL {"slug":"%s","reason":"exited-immediately","log":"%s"}\n' \
+    "$SLUG" "$LOG"
   rm -f "$PID_FILE"
   exit 5
 fi

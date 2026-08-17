@@ -6,6 +6,8 @@ MR, verify STG buildId, hand off to **Validate/Testing** for the QA agent. One p
 factory; one tick = one backlog drain attempt.
 
 > **Portfolio default:** **Kairos** (`kairos-agent`) owns *which* slug to wake and *when*.
+> **Kairos #11 (merged):** portfolio wake uses `ensure_hephaestus_agent.sh` — the sibling
+> “unchecked bash-only arm” gap is closed; Kairos must not leave blind `dev-loop.sh` without an agent.
 > Under Kairos, Hephaestus runs as a **cursor-agent oneshot** (`scripts/ensure_hephaestus_agent.sh`,
 > same pattern as Argus `ensure_argus.sh`): drain `impl-dev` **and** stay up while open PR/MR
 > remains (CI fix → merge) → exit only when both are clear. Kairos must **not** leave a
