@@ -102,7 +102,7 @@ jobs:
         with:
           repository: mbugaiov/themis-agent
           # Keep in sync with THEMIS_AGENT_REF in scripts/ensure_themis_agent.sh
-          ref: 7170f1be9a0e8b87717e683e716c6b4207098cc6
+          ref: 236d9de61677af77c8540ec792e2d834f20c6f55
           path: .themis-agent
 
       - name: Require Themis Suggestions/Risks disposed

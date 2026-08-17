@@ -7,7 +7,7 @@ alwaysApply: false
 
 The GitHub PR workflow (`.github/workflows/code-review.yml`) runs headless
 `cursor-agent` on every PR. The workflow passes only a short prompt pointing
-here; this file is the **single source of truth** for review policy.
+here; this file is the **local engine rule (shared pack via build_review_prompt takes precedence for MUST-HAVEs)** for review policy.
 
 **Product / app MRs** use that application's own CR pipeline — not this rule.
 
@@ -21,10 +21,17 @@ here; this file is the **single source of truth** for review policy.
 
 Read `AGENTS.md`, `ARCHITECTURE.md`, `PORTABILITY.md`, and `.cursor/rules/dev-engine.mdc`. Block on:
 
+## MUST-HAVE — tests (Themis shared)
+
+Behavior change (scripts/libs/skills/workflows/CLI/gates) without **new or updated**
+tests → **Blocking**. Align with `themis-agent/review-rules/10-tests-must-have.md` via `build_review_prompt.sh`
+(CI loads `.themis-agent/review-rules/` through that builder).
+
+
 1. **Live project data in git** — anything under `projects/<slug>/` except `projects/_template/`
 2. **Project-specific leaks** — product slugs, private paths, real Jira keys in engine files
 3. **Secrets** — tokens, `.env`, credentials in the diff
-4. **Missing tests** — new script/skill/lib behavior without coverage in `tests/run_tests.sh` or vitest
+4. **Missing or stale tests (MUST-HAVE)** — new/changed script/skill/lib/rule behavior without **new or updated** coverage in `tests/run_tests.sh` / vitest (file-exists/`grep` smoke alone is not enough)
 5. **Portability** — hardcoded customer URLs, machine paths, app CI commands in `lib/`, `scripts/`, `.cursor/`
 6. **Handoff / Jira gate drift** — `jiraCommentGate.ts` or handoff templates changed without unit tests
 7. **Correctness** — broken error paths, wrong exit codes, bash `set -u` traps on empty arrays

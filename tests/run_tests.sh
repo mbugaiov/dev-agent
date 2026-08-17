@@ -139,12 +139,12 @@ have "scripts/check_review_followups_disposed.sh"
 have "scripts/file_review_followups.sh"
 have "scripts/review_followups.py"
 grep -q 'Require Themis Suggestions' .github/workflows/auto-merge.yml || no "auto-merge gates followups"
-grep -q '7170f1be9a0e8b87717e683e716c6b4207098cc6' scripts/ensure_themis_agent.sh || no "ensure pins themis SHA"
-grep -q '7170f1be9a0e8b87717e683e716c6b4207098cc6' .github/workflows/auto-merge.yml || no "auto-merge pins themis SHA"
-grep -q '7170f1be9a0e8b87717e683e716c6b4207098cc6' .github/workflows/code-review.yml || no "code-review pins themis SHA"
+grep -q '236d9de61677af77c8540ec792e2d834f20c6f55' scripts/ensure_themis_agent.sh || no "ensure pins themis SHA"
+grep -q '236d9de61677af77c8540ec792e2d834f20c6f55' .github/workflows/auto-merge.yml || no "auto-merge pins themis SHA"
+grep -q '236d9de61677af77c8540ec792e2d834f20c6f55' .github/workflows/code-review.yml || no "code-review pins themis SHA"
 ENS_ROOT=$(ROOT=/ bash scripts/ensure_themis_agent.sh)
 ENGINE_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
-PIN_SHA=7170f1be9a0e8b87717e683e716c6b4207098cc6
+PIN_SHA=236d9de61677af77c8540ec792e2d834f20c6f55
 ENS_HEAD=$(git -C "$ENS_ROOT" rev-parse HEAD 2>/dev/null || true)
 if [[ "$ENS_ROOT" == "$ENGINE_ROOT/.themis-agent" \
   && "$ENS_ROOT" != "/.themis-agent" \
@@ -249,6 +249,39 @@ else
   echo "  (skip vitest — install node)"
 fi
 
+
+# Themis central review-rules wiring — exercise builder at pin
+WF=.github/workflows/code-review.yml
+grep -q build_review_prompt.sh "$WF" && ok "workflow cites build_review_prompt" || no "workflow missing build_review_prompt"
+grep -q 'repository: mbugaiov/themis-agent' "$WF" && ok "workflow checkouts themis-agent" || no "workflow missing themis checkout"
+PIN=$(grep -Eo '[0-9a-f]{40}' scripts/ensure_themis_agent.sh | head -1)
+grep -q "$PIN" "$WF" && ok "isolation/ensure pin present in workflow" || no "workflow missing themis pin"
+# Review checkout must float (WIRING); isolation may pin.
+python3 - <<'PY2' "$WF" && ok "review checkout floats (no ref)" || no "review checkout must float without ref"
+import sys, re
+from pathlib import Path
+text = Path(sys.argv[1]).read_text()
+m = re.search(r"name: review \(Themis\)(.*?)name: isolation \(Themis\)", text, re.S)
+chunk = m.group(1) if m else ""
+idx = chunk.find("repository: mbugaiov/themis-agent")
+window = chunk[idx:idx+220] if idx >= 0 else ""
+raise SystemExit(0 if idx >= 0 and not re.search(r"(?m)^\s*ref:\s*", window) else 1)
+PY2
+grep -q build_review_prompt.sh scripts/run_code_review.sh && ok "run_code_review uses builder" || no "run_code_review missing builder"
+THEMIS_TMP=$(mktemp -d)
+git clone --depth 1 https://github.com/mbugaiov/themis-agent.git "$THEMIS_TMP/themis" >/dev/null 2>&1
+git -C "$THEMIS_TMP/themis" fetch --depth 1 origin "$PIN" >/dev/null 2>&1
+git -C "$THEMIS_TMP/themis" checkout --detach FETCH_HEAD >/dev/null 2>&1
+PROMPT_OUT=$(bash "$THEMIS_TMP/themis/scripts/build_review_prompt.sh" \
+  --pr 1 --base origin/main --label selftest \
+  --local-rule .cursor/rules/code-review.mdc \
+  --themis-root "$THEMIS_TMP/themis")
+echo "$PROMPT_OUT" | grep -q 'review-rules/10-tests-must-have' \
+  && ok "build_review_prompt inlines shared pack at pin" \
+  || no "build_review_prompt selftest failed"
+rm -rf "$THEMIS_TMP"
+
 echo ""
 echo "Results: $PASS passed, $FAIL failed"
+
 [[ "$FAIL" -eq 0 ]]

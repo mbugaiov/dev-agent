@@ -44,6 +44,11 @@ jobs:
           echo "$HOME/.cursor/bin" >> "$GITHUB_PATH"
           echo "$HOME/.local/bin" >> "$GITHUB_PATH"
 
+      - uses: actions/checkout@v4
+        with:
+          repository: mbugaiov/themis-agent
+          path: .themis-agent
+
       - name: Run Cursor code review
         env:
           CURSOR_API_KEY: ${{ secrets.CURSOR_API_KEY }}
@@ -62,7 +67,13 @@ jobs:
           EOF
           else
             git fetch origin "${BASE}" --quiet || true
-            PROMPT="You are the automated reviewer for GitHub PR #${{ github.event.pull_request.number }} on the dev-agent engine. Follow .cursor/rules/code-review.mdc (and AGENTS.md + rules it references). Review ONLY changes vs origin/${BASE} — begin with: git --no-pager diff origin/${BASE}...HEAD — produce exactly the output sections that guide specifies. Isolation is enforced by the separate CI job isolation (Themis); still fold leak findings into Blocking issues if you see them."
+            PROMPT="$(bash .themis-agent/scripts/build_review_prompt.sh \
+              --pr "${{ github.event.pull_request.number }}" \
+              --base "origin/${BASE}" \
+              --label "${{ github.event.repository.name }}" \
+              --local-rule .cursor/rules/code-review.mdc \
+              --agents AGENTS.md \
+              --themis-root .themis-agent)"
             cursor-agent --force --api-key "$CURSOR_API_KEY" --output-format text -p "$PROMPT" > review.md || true
             [[ -s review.md ]] || echo "Cursor review produced no output (see build log above)." > review.md
           fi
@@ -130,7 +141,7 @@ jobs:
         with:
           repository: mbugaiov/themis-agent
           # Keep in sync with THEMIS_AGENT_REF in scripts/ensure_themis_agent.sh
-          ref: 7170f1be9a0e8b87717e683e716c6b4207098cc6
+          ref: 236d9de61677af77c8540ec792e2d834f20c6f55
           path: .themis-agent
       - name: Cache Cursor CLI
         id: cache-cursor
