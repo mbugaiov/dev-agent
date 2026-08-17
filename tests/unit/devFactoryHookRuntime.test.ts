@@ -163,10 +163,24 @@ describe("devFactoryHookRuntime", () => {
     ).toBe("selftest");
   });
 
-  it("HK-05 stop hook forces followup with no DEV_AGENT_SLUG", () => {
+  it("HK-05 stop hook forces followup only in factory sessions", () => {
     const root = fakeEngine({
       projects: [{ slug: "selftest", pattern: "TST-\\\\d+" }],
     });
+    expect(
+      decideDevFactoryStopHook({
+        engineRoot: root,
+        status: "completed",
+        loopCount: 0,
+        envSlug: "",
+        currentBranch: "main",
+        hasWorkingTreeChanges: false,
+        hasOpenPr: false,
+        pending: { ...pending, slug: undefined, oldest: "TST-105" },
+        argusPending: null,
+        factorySession: false,
+      }),
+    ).toEqual({});
     const res = decideDevFactoryStopHook({
       engineRoot: root,
       status: "completed",
@@ -177,6 +191,7 @@ describe("devFactoryHookRuntime", () => {
       hasOpenPr: false,
       pending: { ...pending, slug: undefined, oldest: "TST-105" },
       argusPending: null,
+      factorySession: true,
     });
     expect(res.followup_message).toContain("TST-105");
     expect(res.followup_message).toContain("BACKLOG_WAKE_EXECUTE");
@@ -190,6 +205,7 @@ describe("devFactoryHookRuntime", () => {
       envSlug: "",
       pending: { ...pending, consumed: true },
       argusPending: null,
+      factorySession: true,
     });
     expect(res).toEqual({});
   });
@@ -201,11 +217,12 @@ describe("devFactoryHookRuntime", () => {
       loopCount: 0,
       pending,
       argusPending: null,
+      factorySession: true,
     });
     expect(res).toEqual({});
   });
 
-  it("HK-08 sessionStart injects pending execute from engine root", () => {
+  it("HK-08 sessionStart injects pending only for background/factory sessions", () => {
     const root = fakeEngine({
       pending: {
         oldest: "TST-105",
@@ -214,9 +231,32 @@ describe("devFactoryHookRuntime", () => {
         executePrompt: "BACKLOG_WAKE_EXECUTE: Start TST-105 NOW",
       },
     });
-    const res = decideDevFactorySessionStart(root);
+    expect(decideDevFactorySessionStart(root)).toEqual({});
+    expect(
+      decideDevFactorySessionStart(root, { isBackgroundAgent: false }),
+    ).toEqual({});
+    const res = decideDevFactorySessionStart(root, {
+      isBackgroundAgent: true,
+    });
+    expect(res.env?.CURSOR_FACTORY_SESSION).toBe("1");
     expect(res.additional_context).toContain("TST-105");
     expect(res.additional_context).toContain("DEV FACTORY EXECUTION PENDING");
+  });
+
+  it("HK-08b sessionStart never injects Argus kick (oneshot-only)", () => {
+    const root = fakeEngine({
+      argus: {
+        slug: "selftest",
+        ticket: "selftest#1",
+        consumed: false,
+        issuedAt: new Date().toISOString(),
+        executePrompt: "ARGUS_KICK_EXECUTE: ensure oneshot",
+      },
+    });
+    const res = decideDevFactorySessionStart(root, {
+      isBackgroundAgent: true,
+    });
+    expect(res.additional_context ?? "").not.toContain("ARGUS");
   });
 
   it("HK-09 stop hook still forces when project yaml cannot load", () => {
@@ -242,6 +282,7 @@ describe("devFactoryHookRuntime", () => {
         executePrompt: "BACKLOG_WAKE_EXECUTE: Start ZZ-1 NOW",
       },
       argusPending: null,
+      factorySession: true,
     });
     expect(res.followup_message).toContain("ZZ-1");
   });
@@ -255,7 +296,7 @@ describe("devFactoryHookRuntime", () => {
         executePrompt: "BACKLOG_WAKE_EXECUTE: Start ZZ-1 NOW",
       },
     });
-    const pending = {
+    const pendingLocal = {
       oldest: "ZZ-1",
       count: 1,
       branchPrefix: "feat/ZZ-1",
@@ -270,8 +311,9 @@ describe("devFactoryHookRuntime", () => {
         loopCount: 0,
         envSlug: "",
         hasWorkingTreeChanges: true,
-        pending,
+        pending: pendingLocal,
         argusPending: null,
+        factorySession: true,
       }),
     ).toEqual({});
     expect(
@@ -281,8 +323,9 @@ describe("devFactoryHookRuntime", () => {
         loopCount: 0,
         envSlug: "",
         hasOpenPr: true,
-        pending,
+        pending: pendingLocal,
         argusPending: null,
+        factorySession: true,
       }),
     ).toEqual({});
   });
