@@ -55,10 +55,9 @@ Do not skip summarize to “save a step.”
    (`LOOP_HOLD_OPEN_MR*` is scheduler/Kairos-only — not a Cursor notify wake.)
 3. **Tick:** `scripts/dev-loop.sh` → `dev_factory_tick.sh <slug>` → **`BACKLOG_WAKE_EXECUTE`** (execution-only) or `DEV_FACTORY_IDLE`
 4. **Watch patterns:** `lib/devFactoryLoopWiring.ts` — **`notify_on_output`** required on `^BACKLOG_WAKE_EXECUTE` only (no inform-only wake)
-5. **Stop / sessionStart hooks:** workspace-root `.cursor/hooks.json` — followup
-   **only** when `CURSOR_FACTORY_SESSION=1` / background agent. Ambient chats get
-   `{}`. Argus kick is oneshot (`ensure_argus`), not these hooks.
-   Hooks resolve the engine from the parent workspace and do **not** need `DEV_AGENT_SLUG`.
+5. **Stop / sessionStart hooks:** workspace-root `.cursor/hooks.json` (not only
+   `dev-agent/.cursor/`) — auto-followup if pending execute unconsumed. Hooks
+   resolve the engine from the parent workspace and do **not** need `DEV_AGENT_SLUG`.
 6. **Policy guard:** `scripts/validate_execution_only_policy.ts` — CI blocks inform-only `BACKLOG_WAKE` regressions
 7. **Notify smoke:** `bash scripts/test_tick_notify.sh <slug>` — prove Teams delivery after editing `.secrets/jira.env`
 
@@ -102,10 +101,9 @@ Follow skill **`dev-mr-pipeline`** (project overrides in `projects/<slug>/` if p
 6. **UX polish when required** — `should_kick_ux.ts` (default after-implement) → Athena Mode A on the **same branch**
 7. `app.gate_command` → `app.mr_push_command`
 8. Merge → STG buildId → handoff (`post_jira_handoff.ts` or `post_github_handoff.ts`) → Validate/Testing
-8b. **On `QA_KICK_YES`:** handoff **hard-kicks** Argus (`QA_WAKE_EXECUTE` +
-   `ensure_argus.sh` oneshot + auto-ack latch). Skill `dev-qa-subagent`.
-   Do **not** spawn Task / paste kick into ambient IDE chats; do **not** rely on
-   `arm_qa_loop` timer alone.
+8b. **On `QA_KICK_YES`:** handoff **hard-kicks** Argus (`QA_WAKE_EXECUTE` + qa/dev pending latches).
+   Wake Argus now (`dev-qa-subagent`) — do **not** rely on `arm_qa_loop` alone; then
+   `npx tsx scripts/ack_argus_kick.ts`
 9. Re-query backlog → next ticket or IDLE
 
 ## QA RETURN
