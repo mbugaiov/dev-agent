@@ -7,7 +7,7 @@ alwaysApply: false
 
 The GitHub PR workflow (`.github/workflows/code-review.yml`) runs headless
 `cursor-agent` on every PR. The workflow passes only a short prompt pointing
-here; this file is the **single source of truth** for review policy.
+here; this file is the **local engine rule (shared pack via build_review_prompt takes precedence for MUST-HAVEs)** for review policy.
 
 **Product / app MRs** use that application's own CR pipeline — not this rule.
 

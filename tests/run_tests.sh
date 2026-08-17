@@ -251,11 +251,24 @@ fi
 
 echo ""
 echo "Results: $PASS passed, $FAIL failed"
-[[ "$FAIL" -eq 0 ]]
 
-# Themis central review-rules wiring (must stay green with shared 10-tests-must-have)
-grep -q 'build_review_prompt.sh' .github/workflows/code-review.yml \
-  && grep -q 'repository: mbugaiov/themis-agent' .github/workflows/code-review.yml \
-  && ok "review (Themis) uses build_review_prompt central pack" \
-  || no "review workflow missing build_review_prompt wiring"
+# Themis central review-rules wiring — exercise builder
+WF=.github/workflows/code-review.yml
+[[ -f "$WF" ]] || WF=.github/workflows/pr.yml
+grep -q build_review_prompt.sh "$WF"
+grep -q 'repository: mbugaiov/themis-agent' "$WF"
+if [[ -f scripts/ensure_themis_agent.sh ]]; then
+  PIN=$(grep -Eo '[0-9a-f]{40}' scripts/ensure_themis_agent.sh | head -1 || true)
+  [[ -z "${PIN:-}" ]] || grep -q "$PIN" "$WF"
+fi
+THEMIS_TMP=$(mktemp -d)
+git clone --depth 1 https://github.com/mbugaiov/themis-agent.git "$THEMIS_TMP/themis" >/dev/null 2>&1
+PROMPT_OUT=$(bash "$THEMIS_TMP/themis/scripts/build_review_prompt.sh" \
+  --pr 1 --base origin/main --label selftest \
+  --local-rule .cursor/rules/code-review.mdc \
+  --themis-root "$THEMIS_TMP/themis")
+echo "$PROMPT_OUT" | grep -q 'review-rules/10-tests-must-have'
+rm -rf "$THEMIS_TMP"
+
+[[ "$FAIL" -eq 0 ]]
 
