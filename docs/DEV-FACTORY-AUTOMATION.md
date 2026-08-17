@@ -1,6 +1,16 @@
 # Dev factory loop — wiring and automation
 
-## Arm the loop
+## Kairos wake (portfolio default)
+
+Kairos arms Hephaestus via **`scripts/ensure_hephaestus_agent.sh`** — detached
+`cursor-agent` oneshot (same pattern as Argus `ensure_argus.sh`). Requires
+`cursor-agent` on PATH and `CURSOR_API_KEY` (env, or load order engine
+`.secrets/cursor.env` then `projects/<slug>/.secrets/cursor.env` — per-slug wins).
+
+Bash-only `dev-loop.sh` without an agent oneshot is a **blind arm** (K13) and is
+reaped — it must not block the portfolio as `ALREADY_RUNNING`.
+
+## Manual arm (IDE watcher)
 
 ```bash
 # Default: detached scheduler + Cursor watch attach contract
@@ -10,7 +20,7 @@ bash scripts/watch_dev_loop.sh <slug>
 # Optional override: DEV_LOOP_INTERVAL_SEC=300 bash scripts/run_dev_loop.sh <slug>
 ```
 
-Arm detaches the scheduler (`loop.pid` / `loop.out`). **Mandatory same turn:** attach
+Arm detaches the scheduler (`loop.pid` / `loop.out`). **Mandatory same turn for manual arms:** attach
 `watch_dev_loop.sh` with `notify_on_output` on execute/PR patterns (see
 `LOOP_WATCH_ATTACH_REQUIRED`). Without the watcher, `BACKLOG_WAKE_EXECUTE` is silent.
 

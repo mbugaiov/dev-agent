@@ -15,8 +15,10 @@ fi
 FACTORY_DIR="$ROOT/projects/$SLUG/factory"
 PID_FILE="$FACTORY_DIR/loop.pid"
 WATCH_PID_FILE="$FACTORY_DIR/watch.pid"
+AGENT_PID_FILE="$FACTORY_DIR/hephaestus-oneshot.pid"
 killed_sched=0
 killed_watch=0
+killed_agent=0
 
 kill_pid() {
   local pid="$1" label="$2"
@@ -105,6 +107,26 @@ if [[ -f "$LOG" ]]; then
   done < <(pgrep -f "tail" 2>/dev/null || true)
 fi
 
-printf 'LOOP_STOPPED {"slug":"%s","schedulerKilled":%s,"watcherKilled":%s}\n' \
-  "$SLUG" "$killed_sched" "$killed_watch"
+# Cursor-agent oneshot (Kairos K13 path) — kill only when cmdline is slug-bound.
+# Require DEV_FACTORY_SLUG=<slug> with end boundary (same class as scheduler
+# `dev-loop.sh <slug>`). Never match bare *cursor-agent* or loose *" $SLUG"* —
+# a recycled PID must not kill another tenant's oneshot.
+if [[ -f "$AGENT_PID_FILE" ]]; then
+  AOLD="$(tr -d '[:space:]' <"$AGENT_PID_FILE" || true)"
+  if [[ -n "$AOLD" ]] && kill -0 "$AOLD" 2>/dev/null; then
+    acmd="$(ps -p "$AOLD" -o args= 2>/dev/null || true)"
+    if [[ "$acmd" =~ DEV_FACTORY_SLUG=${SLUG}([^a-z0-9-]|$) ]]; then
+      if kill_tree "$AOLD" "agent-oneshot"; then
+        killed_agent=1
+      fi
+    else
+      printf 'LOOP_STOP_SKIP {"slug":"%s","kind":"agent-oneshot","pid":%s,"reason":"cmdline-mismatch"}\n' \
+        "$SLUG" "$AOLD"
+    fi
+  fi
+  rm -f "$AGENT_PID_FILE"
+fi
+
+printf 'LOOP_STOPPED {"slug":"%s","schedulerKilled":%s,"watcherKilled":%s,"agentKilled":%s}\n' \
+  "$SLUG" "$killed_sched" "$killed_watch" "$killed_agent"
 exit 0

@@ -194,6 +194,203 @@ grep -q 'tail -n 200' scripts/watch_dev_loop.sh \
   && ok "watch_dev_loop replays wakes, follows log, exits when scheduler gone" \
   || no "watch_dev_loop must replay, tail -F, and exit on scheduler death"
 have "scripts/stop_dev_loop.sh"
+
+have "scripts/ensure_hephaestus_agent.sh"
+grep -q 'cursor-agent' scripts/ensure_hephaestus_agent.sh \
+  && grep -q 'HEPHAESTUS_ONESHOT_ARMED' scripts/ensure_hephaestus_agent.sh \
+  && grep -q 'HEPHAESTUS_REAP_BLIND' scripts/ensure_hephaestus_agent.sh \
+  && grep -q 'CURSOR_FACTORY_SESSION=1' scripts/ensure_hephaestus_agent.sh \
+  && grep -q 'DEV_FACTORY_SLUG' scripts/ensure_hephaestus_agent.sh \
+  && ok "ensure_hephaestus_agent is cursor-agent oneshot (K13)" \
+  || no "ensure_hephaestus_agent must arm cursor-agent oneshot and reap blind bash"
+# usage / slug / skip matrix (mirror ensure_argus)
+OUT=$(bash scripts/ensure_hephaestus_agent.sh 2>&1); EC=$?
+[[ "$EC" -eq 1 ]] && echo "$OUT" | grep -qi Usage \
+  && ok "ensure_hephaestus_agent usage exit 1" \
+  || no "ensure_hephaestus_agent should exit 1 on missing args (ec=$EC)"
+OUT=$(bash scripts/ensure_hephaestus_agent.sh "Bad_Slug" 2>&1); EC=$?
+[[ "$EC" -eq 2 ]] && echo "$OUT" | grep -qi Invalid \
+  && ok "ensure_hephaestus_agent invalid slug exit 2" \
+  || no "ensure_hephaestus_agent should exit 2 on bad slug (ec=$EC)"
+OUT=$(env -u CURSOR_API_KEY PATH="/usr/bin:/bin" bash scripts/ensure_hephaestus_agent.sh "$SLUG" 2>&1); EC=$?
+[[ "$EC" -eq 3 ]] && echo "$OUT" | grep -q cursor-agent-missing \
+  && ok "ensure_hephaestus_agent skips when cursor-agent missing" \
+  || no "ensure_hephaestus_agent should exit 3 without cursor-agent (ec=$EC: $OUT)"
+EA_STUB=$(mktemp -d)
+printf '%s\n' '#!/bin/bash' 'sleep 60' >"$EA_STUB/cursor-agent"
+chmod +x "$EA_STUB/cursor-agent"
+rm -f "projects/$SLUG/factory/hephaestus-oneshot.pid"
+# Hide local cursor.env so ambient/engine secrets cannot satisfy the key check
+# (CI has no .secrets; developer worktrees often do after pantheon key copy).
+_hide_cursor_secrets() {
+  _CURSOR_SECRET_HIDES=()
+  local f
+  for f in .secrets/cursor.env "projects/$SLUG/.secrets/cursor.env"; do
+    if [[ -f "$f" ]]; then
+      mv "$f" "${f}.__test_hide"
+      _CURSOR_SECRET_HIDES+=("$f")
+    fi
+  done
+}
+_restore_cursor_secrets() {
+  local f
+  for f in "${_CURSOR_SECRET_HIDES[@]:-}"; do
+    [[ -f "${f}.__test_hide" ]] && mv "${f}.__test_hide" "$f"
+  done
+  _CURSOR_SECRET_HIDES=()
+}
+_hide_cursor_secrets
+OUT=$(env -u CURSOR_API_KEY PATH="$EA_STUB:/usr/bin:/bin" bash scripts/ensure_hephaestus_agent.sh "$SLUG" 2>&1); EC=$?
+_restore_cursor_secrets
+[[ "$EC" -eq 4 ]] && echo "$OUT" | grep -q CURSOR_API_KEY-missing \
+  && ok "ensure_hephaestus_agent skips when CURSOR_API_KEY missing" \
+  || no "ensure_hephaestus_agent should exit 4 without API key (ec=$EC: $OUT)"
+_ea_kill() {
+  local pf="projects/$SLUG/factory/hephaestus-oneshot.pid"
+  if [[ -f "$pf" ]]; then
+    kill "$(tr -d '[:space:]' <"$pf")" 2>/dev/null || true
+    rm -f "$pf"
+  fi
+}
+_ea_kill
+OUT=$(PATH="$EA_STUB:/usr/bin:/bin" CURSOR_API_KEY=test-key-not-real \
+  bash scripts/ensure_hephaestus_agent.sh "$SLUG" 2>&1); EC=$?
+echo "$OUT" | grep -q HEPHAESTUS_ONESHOT_ARMED && [[ "$EC" -eq 0 ]] \
+  && ok "ensure_hephaestus_agent arms oneshot" \
+  || no "ensure_hephaestus_agent should arm (ec=$EC: $OUT)"
+OUT2=$(PATH="$EA_STUB:/usr/bin:/bin" CURSOR_API_KEY=test-key-not-real \
+  bash scripts/ensure_hephaestus_agent.sh "$SLUG" 2>&1); EC2=$?
+echo "$OUT2" | grep -q ALREADY_RUNNING && [[ "$EC2" -eq 0 ]] \
+  && ok "ensure_hephaestus_agent ALREADY_RUNNING on live pid" \
+  || no "ensure_hephaestus_agent should short-circuit live pid (ec=$EC2: $OUT2)"
+_ea_kill
+
+# Negative: recycled PID without slug-bound cmdline must NOT ALREADY_RUNNING
+# (clears pid file and continues — arm or skip). Cross-tenant PID-reuse gate.
+(
+  sleep 45 &
+  STALE=$!
+  echo "$STALE" > "projects/$SLUG/factory/hephaestus-oneshot.pid"
+  sleep 0.2
+  OUT=$(PATH="$EA_STUB:/usr/bin:/bin" CURSOR_API_KEY=test-key-not-real \
+    bash scripts/ensure_hephaestus_agent.sh "$SLUG" 2>&1); EC=$?
+  if ! echo "$OUT" | grep -q ALREADY_RUNNING \
+    && echo "$OUT" | grep -qE 'HEPHAESTUS_ONESHOT_ARMED|HEPHAESTUS_ONESHOT_SKIP' \
+    && [[ "$EC" -eq 0 || "$EC" -eq 3 || "$EC" -eq 4 ]]; then
+    ok "ensure rejects mismatched oneshot pid (no ALREADY_RUNNING)"
+  else
+    no "ensure must not ALREADY_RUNNING on unbound pid (ec=$EC out=$OUT)"
+  fi
+  kill "$STALE" 2>/dev/null || true
+  wait "$STALE" 2>/dev/null || true
+  _ea_kill
+)
+# Prefix collision: DEV_FACTORY_SLUG=<slug>-other must not short-circuit
+(
+  perl -e "\$0 = \"cursor-agent DEV_FACTORY_SLUG=${SLUG}-other\"; sleep 45" &
+  PREF=$!
+  echo "$PREF" > "projects/$SLUG/factory/hephaestus-oneshot.pid"
+  sleep 0.2
+  OUT=$(PATH="$EA_STUB:/usr/bin:/bin" CURSOR_API_KEY=test-key-not-real \
+    bash scripts/ensure_hephaestus_agent.sh "$SLUG" 2>&1); EC=$?
+  if ! echo "$OUT" | grep -q ALREADY_RUNNING \
+    && echo "$OUT" | grep -qE 'HEPHAESTUS_ONESHOT_ARMED|HEPHAESTUS_ONESHOT_SKIP'; then
+    ok "ensure rejects DEV_FACTORY_SLUG prefix collision"
+  else
+    no "ensure must not ALREADY_RUNNING on slug-prefix collision (ec=$EC out=$OUT)"
+  fi
+  kill "$PREF" 2>/dev/null || true
+  wait "$PREF" 2>/dev/null || true
+  _ea_kill
+)
+
+FAIL_STUB=$(mktemp -d)
+printf '%s\n' '#!/bin/bash' 'exit 0' >"$FAIL_STUB/cursor-agent"
+chmod +x "$FAIL_STUB/cursor-agent"
+rm -f "projects/$SLUG/factory/hephaestus-oneshot.pid"
+OUT=$(PATH="$FAIL_STUB:/usr/bin:/bin" CURSOR_API_KEY=test-key-not-real \
+  bash scripts/ensure_hephaestus_agent.sh "$SLUG" 2>&1); EC=$?
+echo "$OUT" | grep -q HEPHAESTUS_ONESHOT_FAIL && [[ "$EC" -eq 5 ]] \
+  && ok "ensure_hephaestus_agent FAIL when agent exits immediately" \
+  || no "ensure_hephaestus_agent should exit 5 on immediate agent exit (ec=$EC: $OUT)"
+rm -rf "$FAIL_STUB"
+_ea_kill
+
+# Behavioral: blind bash reap then arm (not grep-only).
+# macOS: `bash -c '… # comment'` drops the comment from `ps`; set $0 via perl.
+mkdir -p "projects/$SLUG/factory"
+perl -e "\$0 = \"bash scripts/dev-loop.sh ${SLUG}\"; sleep 45" &
+BLIND_PID=$!
+echo "$BLIND_PID" > "projects/$SLUG/factory/loop.pid"
+sleep 0.3
+OUT=$(PATH="$EA_STUB:/usr/bin:/bin" CURSOR_API_KEY=test-key-not-real \
+  bash scripts/ensure_hephaestus_agent.sh "$SLUG" 2>&1); EC=$?
+echo "$OUT" | grep -q HEPHAESTUS_REAP_BLIND \
+  && echo "$OUT" | grep -q HEPHAESTUS_ONESHOT_ARMED && [[ "$EC" -eq 0 ]] \
+  && ! kill -0 "$BLIND_PID" 2>/dev/null \
+  && ok "ensure reaps live blind bash then arms oneshot" \
+  || no "ensure must emit REAP_BLIND, stop bash, arm (ec=$EC blind=$BLIND_PID out=$OUT)"
+kill "$BLIND_PID" 2>/dev/null || true
+rm -f "projects/$SLUG/factory/loop.pid"
+_ea_kill
+rm -rf "$EA_STUB"
+
+# Behavioral: stop_dev_loop kills matching agent oneshot (macOS: perl \$0 for ps title).
+perl -e "\$0 = \"cursor-agent --force DEV_FACTORY_SLUG=${SLUG}\"; sleep 45" &
+AGENT_PID=$!
+echo "$AGENT_PID" > "projects/$SLUG/factory/hephaestus-oneshot.pid"
+sleep 0.2
+STOP_OUT=$(bash scripts/stop_dev_loop.sh "$SLUG" 2>&1)
+echo "$STOP_OUT" | grep -q '"agentKilled":1' \
+  && ! kill -0 "$AGENT_PID" 2>/dev/null \
+  && ok "stop_dev_loop kills live hephaestus-oneshot (agentKilled:1)" \
+  || no "stop must kill agent oneshot (pid=$AGENT_PID out=$STOP_OUT)"
+kill "$AGENT_PID" 2>/dev/null || true
+rm -f "projects/$SLUG/factory/hephaestus-oneshot.pid"
+
+# Negative: mismatched agent pid file must not be killed
+sleep 45 &
+MISMATCH_PID=$!
+echo "$MISMATCH_PID" > "projects/$SLUG/factory/hephaestus-oneshot.pid"
+STOP_OUT=$(bash scripts/stop_dev_loop.sh "$SLUG" 2>&1)
+if kill -0 "$MISMATCH_PID" 2>/dev/null && echo "$STOP_OUT" | grep -q cmdline-mismatch; then
+  ok "stop_dev_loop skips mismatched agent pid"
+else
+  no "stop must not kill mismatched agent pid (pid=$MISMATCH_PID out=$STOP_OUT)"
+fi
+kill "$MISMATCH_PID" 2>/dev/null || true
+rm -f "projects/$SLUG/factory/hephaestus-oneshot.pid"
+
+# Negative: bare cursor-agent / slug-prefix collision must not kill
+perl -e '$0 = "cursor-agent --force"; sleep 45' &
+BARE_PID=$!
+echo "$BARE_PID" > "projects/$SLUG/factory/hephaestus-oneshot.pid"
+STOP_OUT=$(bash scripts/stop_dev_loop.sh "$SLUG" 2>&1)
+if kill -0 "$BARE_PID" 2>/dev/null && echo "$STOP_OUT" | grep -q cmdline-mismatch; then
+  ok "stop skips bare cursor-agent without DEV_FACTORY_SLUG"
+else
+  no "stop must not kill bare cursor-agent (pid=$BARE_PID out=$STOP_OUT)"
+fi
+kill "$BARE_PID" 2>/dev/null || true
+rm -f "projects/$SLUG/factory/hephaestus-oneshot.pid"
+perl -e "\$0 = \"cursor-agent DEV_FACTORY_SLUG=${SLUG}-other\"; sleep 45" &
+PREF_PID=$!
+echo "$PREF_PID" > "projects/$SLUG/factory/hephaestus-oneshot.pid"
+STOP_OUT=$(bash scripts/stop_dev_loop.sh "$SLUG" 2>&1)
+if kill -0 "$PREF_PID" 2>/dev/null && echo "$STOP_OUT" | grep -q cmdline-mismatch; then
+  ok "stop skips DEV_FACTORY_SLUG prefix collision"
+else
+  no "stop must not kill slug-prefix collision (pid=$PREF_PID out=$STOP_OUT)"
+fi
+kill "$PREF_PID" 2>/dev/null || true
+rm -f "projects/$SLUG/factory/hephaestus-oneshot.pid"
+
+grep -q 'agentKilled' scripts/stop_dev_loop.sh \
+  && grep -q 'hephaestus-oneshot.pid' scripts/stop_dev_loop.sh \
+  && ok "stop_dev_loop reaps hephaestus-oneshot.pid" \
+  || no "stop_dev_loop must kill agent oneshot pid"
+
+
 grep -q 'watch_dev_loop' scripts/stop_dev_loop.sh \
   && grep -q 'LOOP_STOPPED' scripts/stop_dev_loop.sh \
   && grep -q 'kill_tree' scripts/stop_dev_loop.sh \
