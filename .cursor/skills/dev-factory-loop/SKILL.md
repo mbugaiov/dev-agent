@@ -32,8 +32,9 @@ loop, drain backlog, active factory — **same turn** arm + watch + tick + drain
 `bash scripts/ensure_hephaestus_agent.sh <slug>` — detached **`cursor-agent` oneshot**
 (same pattern as Argus `ensure_argus.sh`). The agent drains `impl-dev` and stays until
 backlog idle **and** no open PR/MR (`DEV_FACTORY_IDLE`). Requires `cursor-agent` on PATH
-and `CURSOR_API_KEY` (env or `projects/<slug>/.secrets/cursor.env`, then engine
-`.secrets/cursor.env`). Bash-only `dev-loop.sh` without an agent oneshot is a **blind arm
+and `CURSOR_API_KEY` (env, or load order engine `.secrets/cursor.env` then
+`projects/<slug>/.secrets/cursor.env` — per-slug wins). Bash-only `dev-loop.sh`
+without an agent oneshot is a **blind arm
 (K13)** and is reaped — do not treat it as healthy `ALREADY_RUNNING`. Kairos reaps via
 `reap_hephaestus.sh` → `stop_dev_loop.sh` (including `hephaestus-oneshot.pid`). Kairos does
 **not** replace Active-factory arming when the user triggered intent phrases.

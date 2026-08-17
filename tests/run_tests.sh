@@ -321,6 +321,30 @@ fi
 kill "$MISMATCH_PID" 2>/dev/null || true
 rm -f "projects/$SLUG/factory/hephaestus-oneshot.pid"
 
+# Negative: bare cursor-agent / slug-prefix collision must not kill
+perl -e '$0 = "cursor-agent --force"; sleep 45' &
+BARE_PID=$!
+echo "$BARE_PID" > "projects/$SLUG/factory/hephaestus-oneshot.pid"
+STOP_OUT=$(bash scripts/stop_dev_loop.sh "$SLUG" 2>&1)
+if kill -0 "$BARE_PID" 2>/dev/null && echo "$STOP_OUT" | grep -q cmdline-mismatch; then
+  ok "stop skips bare cursor-agent without DEV_FACTORY_SLUG"
+else
+  no "stop must not kill bare cursor-agent (pid=$BARE_PID out=$STOP_OUT)"
+fi
+kill "$BARE_PID" 2>/dev/null || true
+rm -f "projects/$SLUG/factory/hephaestus-oneshot.pid"
+perl -e "\$0 = \"cursor-agent DEV_FACTORY_SLUG=${SLUG}-other\"; sleep 45" &
+PREF_PID=$!
+echo "$PREF_PID" > "projects/$SLUG/factory/hephaestus-oneshot.pid"
+STOP_OUT=$(bash scripts/stop_dev_loop.sh "$SLUG" 2>&1)
+if kill -0 "$PREF_PID" 2>/dev/null && echo "$STOP_OUT" | grep -q cmdline-mismatch; then
+  ok "stop skips DEV_FACTORY_SLUG prefix collision"
+else
+  no "stop must not kill slug-prefix collision (pid=$PREF_PID out=$STOP_OUT)"
+fi
+kill "$PREF_PID" 2>/dev/null || true
+rm -f "projects/$SLUG/factory/hephaestus-oneshot.pid"
+
 grep -q 'agentKilled' scripts/stop_dev_loop.sh \
   && grep -q 'hephaestus-oneshot.pid' scripts/stop_dev_loop.sh \
   && ok "stop_dev_loop reaps hephaestus-oneshot.pid" \

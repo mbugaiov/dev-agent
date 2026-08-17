@@ -107,12 +107,15 @@ if [[ -f "$LOG" ]]; then
   done < <(pgrep -f "tail" 2>/dev/null || true)
 fi
 
-# Cursor-agent oneshot (Kairos K13 path) — only kill if cmdline looks like the agent
+# Cursor-agent oneshot (Kairos K13 path) — kill only when cmdline is slug-bound.
+# Require DEV_FACTORY_SLUG=<slug> with end boundary (same class as scheduler
+# `dev-loop.sh <slug>`). Never match bare *cursor-agent* or loose *" $SLUG"* —
+# a recycled PID must not kill another tenant's oneshot.
 if [[ -f "$AGENT_PID_FILE" ]]; then
   AOLD="$(tr -d '[:space:]' <"$AGENT_PID_FILE" || true)"
   if [[ -n "$AOLD" ]] && kill -0 "$AOLD" 2>/dev/null; then
     acmd="$(ps -p "$AOLD" -o args= 2>/dev/null || true)"
-    if [[ "$acmd" == *cursor-agent* ]] || [[ "$acmd" == *DEV_FACTORY_SLUG=$SLUG* ]] || [[ "$acmd" == *" $SLUG"* ]]; then
+    if [[ "$acmd" =~ DEV_FACTORY_SLUG=${SLUG}([^a-z0-9-]|$) ]]; then
       if kill_tree "$AOLD" "agent-oneshot"; then
         killed_agent=1
       fi

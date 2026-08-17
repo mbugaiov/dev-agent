@@ -4,7 +4,8 @@
 
 Kairos arms Hephaestus via **`scripts/ensure_hephaestus_agent.sh`** — detached
 `cursor-agent` oneshot (same pattern as Argus `ensure_argus.sh`). Requires
-`cursor-agent` on PATH and `CURSOR_API_KEY` (env or `projects/<slug>/.secrets/cursor.env`).
+`cursor-agent` on PATH and `CURSOR_API_KEY` (env, or load order engine
+`.secrets/cursor.env` then `projects/<slug>/.secrets/cursor.env` — per-slug wins).
 
 Bash-only `dev-loop.sh` without an agent oneshot is a **blind arm** (K13) and is
 reaped — it must not block the portfolio as `ALREADY_RUNNING`.

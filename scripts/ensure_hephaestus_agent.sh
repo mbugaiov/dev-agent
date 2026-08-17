@@ -36,9 +36,14 @@ STOP="$ROOT/scripts/stop_dev_loop.sh"
 if [[ -f "$PID_FILE" ]]; then
   OLD="$(tr -d '[:space:]' <"$PID_FILE" || true)"
   if [[ -n "${OLD:-}" ]] && kill -0 "$OLD" 2>/dev/null; then
-    printf 'ALREADY_RUNNING {"slug":"%s","pid":%s,"mode":"cursor-agent-oneshot"}\n' \
-      "$SLUG" "$OLD"
-    exit 0
+    acmd="$(ps -p "$OLD" -o args= 2>/dev/null || true)"
+    # Slug-bound only — recycled PID of another tenant must not short-circuit.
+    if [[ "$acmd" =~ DEV_FACTORY_SLUG=${SLUG}([^a-z0-9-]|$) ]]; then
+      printf 'ALREADY_RUNNING {"slug":"%s","pid":%s,"mode":"cursor-agent-oneshot"}\n' \
+        "$SLUG" "$OLD"
+      exit 0
+    fi
+    rm -f "$PID_FILE"
   fi
 fi
 
