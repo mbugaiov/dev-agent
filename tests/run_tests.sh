@@ -220,7 +220,28 @@ EA_STUB=$(mktemp -d)
 printf '%s\n' '#!/bin/bash' 'sleep 60' >"$EA_STUB/cursor-agent"
 chmod +x "$EA_STUB/cursor-agent"
 rm -f "projects/$SLUG/factory/hephaestus-oneshot.pid"
+# Hide local cursor.env so ambient/engine secrets cannot satisfy the key check
+# (CI has no .secrets; developer worktrees often do after pantheon key copy).
+_hide_cursor_secrets() {
+  _CURSOR_SECRET_HIDES=()
+  local f
+  for f in .secrets/cursor.env "projects/$SLUG/.secrets/cursor.env"; do
+    if [[ -f "$f" ]]; then
+      mv "$f" "${f}.__test_hide"
+      _CURSOR_SECRET_HIDES+=("$f")
+    fi
+  done
+}
+_restore_cursor_secrets() {
+  local f
+  for f in "${_CURSOR_SECRET_HIDES[@]:-}"; do
+    [[ -f "${f}.__test_hide" ]] && mv "${f}.__test_hide" "$f"
+  done
+  _CURSOR_SECRET_HIDES=()
+}
+_hide_cursor_secrets
 OUT=$(env -u CURSOR_API_KEY PATH="$EA_STUB:/usr/bin:/bin" bash scripts/ensure_hephaestus_agent.sh "$SLUG" 2>&1); EC=$?
+_restore_cursor_secrets
 [[ "$EC" -eq 4 ]] && echo "$OUT" | grep -q CURSOR_API_KEY-missing \
   && ok "ensure_hephaestus_agent skips when CURSOR_API_KEY missing" \
   || no "ensure_hephaestus_agent should exit 4 without API key (ec=$EC: $OUT)"
@@ -252,8 +273,54 @@ OUT=$(PATH="$FAIL_STUB:/usr/bin:/bin" CURSOR_API_KEY=test-key-not-real \
 echo "$OUT" | grep -q HEPHAESTUS_ONESHOT_FAIL && [[ "$EC" -eq 5 ]] \
   && ok "ensure_hephaestus_agent FAIL when agent exits immediately" \
   || no "ensure_hephaestus_agent should exit 5 on immediate agent exit (ec=$EC: $OUT)"
-rm -rf "$FAIL_STUB" "$EA_STUB"
+rm -rf "$FAIL_STUB"
 _ea_kill
+
+# Behavioral: blind bash reap then arm (not grep-only).
+# macOS: `bash -c '… # comment'` drops the comment from `ps`; set $0 via perl.
+mkdir -p "projects/$SLUG/factory"
+perl -e "\$0 = \"bash scripts/dev-loop.sh ${SLUG}\"; sleep 45" &
+BLIND_PID=$!
+echo "$BLIND_PID" > "projects/$SLUG/factory/loop.pid"
+sleep 0.3
+OUT=$(PATH="$EA_STUB:/usr/bin:/bin" CURSOR_API_KEY=test-key-not-real \
+  bash scripts/ensure_hephaestus_agent.sh "$SLUG" 2>&1); EC=$?
+echo "$OUT" | grep -q HEPHAESTUS_REAP_BLIND \
+  && echo "$OUT" | grep -q HEPHAESTUS_ONESHOT_ARMED && [[ "$EC" -eq 0 ]] \
+  && ! kill -0 "$BLIND_PID" 2>/dev/null \
+  && ok "ensure reaps live blind bash then arms oneshot" \
+  || no "ensure must emit REAP_BLIND, stop bash, arm (ec=$EC blind=$BLIND_PID out=$OUT)"
+kill "$BLIND_PID" 2>/dev/null || true
+rm -f "projects/$SLUG/factory/loop.pid"
+_ea_kill
+rm -rf "$EA_STUB"
+
+# Behavioral: stop_dev_loop kills matching agent oneshot (macOS: perl \$0 for ps title).
+perl -e "\$0 = \"cursor-agent --force DEV_FACTORY_SLUG=${SLUG}\"; sleep 45" &
+AGENT_PID=$!
+echo "$AGENT_PID" > "projects/$SLUG/factory/hephaestus-oneshot.pid"
+sleep 0.2
+STOP_OUT=$(bash scripts/stop_dev_loop.sh "$SLUG" 2>&1)
+echo "$STOP_OUT" | grep -q '"agentKilled":1' \
+  && ! kill -0 "$AGENT_PID" 2>/dev/null \
+  && ok "stop_dev_loop kills live hephaestus-oneshot (agentKilled:1)" \
+  || no "stop must kill agent oneshot (pid=$AGENT_PID out=$STOP_OUT)"
+kill "$AGENT_PID" 2>/dev/null || true
+rm -f "projects/$SLUG/factory/hephaestus-oneshot.pid"
+
+# Negative: mismatched agent pid file must not be killed
+sleep 45 &
+MISMATCH_PID=$!
+echo "$MISMATCH_PID" > "projects/$SLUG/factory/hephaestus-oneshot.pid"
+STOP_OUT=$(bash scripts/stop_dev_loop.sh "$SLUG" 2>&1)
+if kill -0 "$MISMATCH_PID" 2>/dev/null && echo "$STOP_OUT" | grep -q cmdline-mismatch; then
+  ok "stop_dev_loop skips mismatched agent pid"
+else
+  no "stop must not kill mismatched agent pid (pid=$MISMATCH_PID out=$STOP_OUT)"
+fi
+kill "$MISMATCH_PID" 2>/dev/null || true
+rm -f "projects/$SLUG/factory/hephaestus-oneshot.pid"
+
 grep -q 'agentKilled' scripts/stop_dev_loop.sh \
   && grep -q 'hephaestus-oneshot.pid' scripts/stop_dev_loop.sh \
   && ok "stop_dev_loop reaps hephaestus-oneshot.pid" \

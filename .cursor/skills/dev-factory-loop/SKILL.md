@@ -28,14 +28,15 @@ matches `FACTORY_RUN_INTENT_PHRASES` (`lib/devFactoryExecution.ts`) — e.g. run
 loop, drain backlog, active factory — **same turn** arm + watch + tick + drain. See
 `.cursor/rules/dev-factory-active.mdc`. Do **not** end the turn listen-only.
 
-**Portfolio dispatcher (Kairos):** Kairos may also wake this slug with
-`DEV_LOOP_EXIT_ON_IDLE=1` — oneshot stays up while `impl-dev` **or** open PR/MR remains;
-exits with `LOOP_EXIT_IDLE` only when backlog is idle **and** no open MRs
-(`LOOP_HOLD_OPEN_MR` while MRs remain; `LOOP_HOLD_OPEN_MR_PROBE_ERROR` if the open-MR
-probe fails). **`watch_dev_loop.sh` must exit** when the scheduler dies (no forever
-`tail -F` Cursor Shell). Kairos reaps orphan arms via `reap_hephaestus.sh` →
-`stop_dev_loop.sh`. Kairos does **not** replace Active-factory arming when the user
-triggered intent phrases.
+**Portfolio dispatcher (Kairos):** Kairos wakes this slug via
+`bash scripts/ensure_hephaestus_agent.sh <slug>` — detached **`cursor-agent` oneshot**
+(same pattern as Argus `ensure_argus.sh`). The agent drains `impl-dev` and stays until
+backlog idle **and** no open PR/MR (`DEV_FACTORY_IDLE`). Requires `cursor-agent` on PATH
+and `CURSOR_API_KEY` (env or `projects/<slug>/.secrets/cursor.env`, then engine
+`.secrets/cursor.env`). Bash-only `dev-loop.sh` without an agent oneshot is a **blind arm
+(K13)** and is reaped — do not treat it as healthy `ALREADY_RUNNING`. Kairos reaps via
+`reap_hephaestus.sh` → `stop_dev_loop.sh` (including `hephaestus-oneshot.pid`). Kairos does
+**not** replace Active-factory arming when the user triggered intent phrases.
 
 **After oneshot drain (`DEV_FACTORY_IDLE` / `LOOP_EXIT_IDLE`):** Cursor **stop hook**
 auto-submits **`/summarize`** (latch via `afterAgentResponse` on those markers only —

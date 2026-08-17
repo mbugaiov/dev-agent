@@ -32,7 +32,6 @@ LOOP_PID_FILE="$FACTORY/loop.pid"
 STOP="$ROOT/scripts/stop_dev_loop.sh"
 
 # Do not rewrite PATH before command -v — tests stub cursor-agent via PATH.
-# LaunchAgent hosts may lack ~/.local/bin; prepend only inside the detached spawn.
 
 if [[ -f "$PID_FILE" ]]; then
   OLD="$(tr -d '[:space:]' <"$PID_FILE" || true)"
@@ -43,7 +42,21 @@ if [[ -f "$PID_FILE" ]]; then
   fi
 fi
 
+# Secrets: engine-wide first, then per-slug (per-slug wins).
+for envf in \
+  "$ROOT/.secrets/cursor.env" \
+  "$ROOT/projects/$SLUG/.secrets/cursor.env"
+do
+  if [[ -f "$envf" ]]; then
+    set -a
+    # shellcheck disable=SC1090
+    source "$envf" || true
+    set +a
+  fi
+done
+
 # Blind bash scheduler (no agent oneshot) blocks Kairos forever — reap it.
+# Reap even when we will SKIP (exit 3/4): empty slug beats a forever zombie.
 blind_bash=0
 if [[ -f "$LOOP_PID_FILE" ]]; then
   lp="$(tr -d '[:space:]' <"$LOOP_PID_FILE" || true)"
@@ -68,19 +81,6 @@ if [[ "$blind_bash" -eq 1 ]]; then
     bash "$STOP" "$SLUG" >/dev/null 2>&1 || true
   fi
 fi
-
-# Secrets: per-slug cursor.env, then engine-wide.
-for envf in \
-  "$ROOT/projects/$SLUG/.secrets/cursor.env" \
-  "$ROOT/.secrets/cursor.env"
-do
-  if [[ -f "$envf" ]]; then
-    set -a
-    # shellcheck disable=SC1090
-    source "$envf" || true
-    set +a
-  fi
-done
 
 # No apostrophes in PROMPT — nested bash -c quoting hazard (see qa-agent arm_qa_loop).
 PROMPT="EXECUTE Hephaestus oneshot for ${SLUG}. Isolated oneshot — not an ambient IDE chat. Set CURSOR_FACTORY_SESSION=1 and DEV_FACTORY_SLUG=${SLUG}. Drain impl-dev backlog (oldest first): pickup → OpenSpec/gates → implement → app gate → MR → wait_pr_pipeline → handoff; stay while open PR/MR remains; exit only when backlog idle AND no open MRs (DEV_FACTORY_IDLE). Skills: dev-factory-loop, dev-mr-pipeline. Forbidden: notify-only / status-only; do not leave a bash-only dev-loop without executing tickets. Prefer direct ticket pickup over silent watch_dev_loop."

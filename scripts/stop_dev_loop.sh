@@ -107,11 +107,19 @@ if [[ -f "$LOG" ]]; then
   done < <(pgrep -f "tail" 2>/dev/null || true)
 fi
 
-# Cursor-agent oneshot (Kairos K13 path)
+# Cursor-agent oneshot (Kairos K13 path) — only kill if cmdline looks like the agent
 if [[ -f "$AGENT_PID_FILE" ]]; then
   AOLD="$(tr -d '[:space:]' <"$AGENT_PID_FILE" || true)"
-  if kill_tree "$AOLD" "agent-oneshot"; then
-    killed_agent=1
+  if [[ -n "$AOLD" ]] && kill -0 "$AOLD" 2>/dev/null; then
+    acmd="$(ps -p "$AOLD" -o args= 2>/dev/null || true)"
+    if [[ "$acmd" == *cursor-agent* ]] || [[ "$acmd" == *DEV_FACTORY_SLUG=$SLUG* ]] || [[ "$acmd" == *" $SLUG"* ]]; then
+      if kill_tree "$AOLD" "agent-oneshot"; then
+        killed_agent=1
+      fi
+    else
+      printf 'LOOP_STOP_SKIP {"slug":"%s","kind":"agent-oneshot","pid":%s,"reason":"cmdline-mismatch"}\n' \
+        "$SLUG" "$AOLD"
+    fi
   fi
   rm -f "$AGENT_PID_FILE"
 fi
