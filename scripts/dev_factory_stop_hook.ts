@@ -1,6 +1,6 @@
 /**
- * Cursor stop hook — force drain when BACKLOG_WAKE_EXECUTE ended without starting work,
- * or when Argus kick after handoff was not acknowledged.
+ * Cursor stop hook — force drain followup for factory sessions
+ * (oneshot `/summarize` latch + unconsumed execute pending).
  *
  * Must work from the workspace root (`<workspace>/`) without DEV_AGENT_SLUG.
  */

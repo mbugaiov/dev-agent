@@ -49,11 +49,14 @@ kill_tree() {
   kill_pid "$pid" "$label"
 }
 
-# Scheduler via pid file
+# Scheduler via pid file — only if cmdline still matches this slug
 if [[ -f "$PID_FILE" ]]; then
   OLD="$(tr -d '[:space:]' <"$PID_FILE" || true)"
-  if kill_tree "$OLD" "scheduler"; then
-    killed_sched=1
+  cmd="$(ps -p "$OLD" -o args= 2>/dev/null || true)"
+  if [[ -n "$OLD" && "$cmd" =~ scripts/dev-loop\.sh[[:space:]]+${SLUG}([[:space:]]|$) ]]; then
+    if kill_tree "$OLD" "scheduler"; then
+      killed_sched=1
+    fi
   fi
   rm -f "$PID_FILE"
 fi

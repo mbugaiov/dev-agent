@@ -45,6 +45,12 @@ describe("summarizePending", () => {
       shouldForceSummarizeFollowup({ pending, loopCount: 0 }).force,
     ).toBe(true);
     expect(
+      shouldForceSummarizeFollowup({ pending, loopCount: 5 }).force,
+    ).toBe(true);
+    expect(
+      shouldForceSummarizeFollowup({ pending, loopCount: 6 }).force,
+    ).toBe(false);
+    expect(
       shouldForceSummarizeFollowup({
         pending: { ...pending, consumed: true },
         loopCount: 0,

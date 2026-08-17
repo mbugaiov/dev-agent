@@ -197,6 +197,7 @@ have "scripts/stop_dev_loop.sh"
 grep -q 'watch_dev_loop' scripts/stop_dev_loop.sh \
   && grep -q 'LOOP_STOPPED' scripts/stop_dev_loop.sh \
   && grep -q 'kill_tree' scripts/stop_dev_loop.sh \
+  && grep -q 'dev-loop.sh' scripts/stop_dev_loop.sh \
   && ok "stop_dev_loop kills scheduler + watchers (children first)" \
   || no "stop_dev_loop.sh must reap scheduler and watchers with kill_tree"
 

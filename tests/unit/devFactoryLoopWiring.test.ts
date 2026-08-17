@@ -151,5 +151,6 @@ describe("devFactoryLoopWiring", () => {
   it("LW-28 hooks.json registers drain stop hook", () => {
     const hooks = readFileSync(join(ROOT, ".cursor/hooks.json"), "utf8");
     expect(hooks).toContain("dev-factory-drain-stop");
+    expect(hooks).toContain("afterAgentResponse");
   });
 });
