@@ -249,26 +249,27 @@ else
   echo "  (skip vitest — install node)"
 fi
 
-echo ""
-echo "Results: $PASS passed, $FAIL failed"
 
-# Themis central review-rules wiring — exercise builder
+# Themis central review-rules wiring — exercise builder at pin
 WF=.github/workflows/code-review.yml
-[[ -f "$WF" ]] || WF=.github/workflows/pr.yml
-grep -q build_review_prompt.sh "$WF"
-grep -q 'repository: mbugaiov/themis-agent' "$WF"
-if [[ -f scripts/ensure_themis_agent.sh ]]; then
-  PIN=$(grep -Eo '[0-9a-f]{40}' scripts/ensure_themis_agent.sh | head -1 || true)
-  [[ -z "${PIN:-}" ]] || grep -q "$PIN" "$WF"
-fi
+grep -q build_review_prompt.sh "$WF" && ok "workflow cites build_review_prompt" || no "workflow missing build_review_prompt"
+grep -q 'repository: mbugaiov/themis-agent' "$WF" && ok "workflow checkouts themis-agent" || no "workflow missing themis checkout"
+PIN=$(grep -Eo '[0-9a-f]{40}' scripts/ensure_themis_agent.sh | head -1)
+grep -q "$PIN" "$WF" && ok "workflow pins themis SHA" || no "workflow missing themis pin"
+grep -q build_review_prompt.sh scripts/run_code_review.sh && ok "run_code_review uses builder" || no "run_code_review missing builder"
 THEMIS_TMP=$(mktemp -d)
 git clone --depth 1 https://github.com/mbugaiov/themis-agent.git "$THEMIS_TMP/themis" >/dev/null 2>&1
+git -C "$THEMIS_TMP/themis" fetch --depth 1 origin "$PIN" >/dev/null 2>&1
+git -C "$THEMIS_TMP/themis" checkout --detach FETCH_HEAD >/dev/null 2>&1
 PROMPT_OUT=$(bash "$THEMIS_TMP/themis/scripts/build_review_prompt.sh" \
   --pr 1 --base origin/main --label selftest \
   --local-rule .cursor/rules/code-review.mdc \
   --themis-root "$THEMIS_TMP/themis")
-echo "$PROMPT_OUT" | grep -q 'review-rules/10-tests-must-have'
+echo "$PROMPT_OUT" | grep -q 'review-rules/10-tests-must-have' \
+  && ok "build_review_prompt inlines shared pack at pin" \
+  || no "build_review_prompt selftest failed"
 rm -rf "$THEMIS_TMP"
 
-[[ "$FAIL" -eq 0 ]]
+echo ""
+echo "Results: $PASS passed, $FAIL failed"
 

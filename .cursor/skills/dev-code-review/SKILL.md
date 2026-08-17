@@ -117,3 +117,10 @@ When the dev factory opens MRs in the **application repo**, CR runs **there** �
 
 - Reviewing **application product code** — app repo CR pipeline
 - Jira handoff / STG verify — skills `dev-jira`, `dev-mr-pipeline`
+
+
+## Themis shared pack
+
+CI/local review prompts are built by `themis-agent/scripts/build_review_prompt.sh`,
+which inlines `review-rules/*` (MUST-HAVE tests, output contract, description)
+**before** local `.cursor/rules/code-review.mdc`. Do not weaken shared rules.

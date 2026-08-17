@@ -24,8 +24,8 @@ Read `AGENTS.md`, `ARCHITECTURE.md`, `PORTABILITY.md`, and `.cursor/rules/dev-en
 ## MUST-HAVE — tests (Themis shared)
 
 Behavior change (scripts/libs/skills/workflows/CLI/gates) without **new or updated**
-tests → **Blocking**. Align with `themis-agent/review-rules/ (via build_review_prompt.sh)`
-(CI also loads `.themis-agent/review-rules/ (via build_review_prompt.sh)`).
+tests → **Blocking**. Align with `themis-agent/review-rules/10-tests-must-have.md` via `build_review_prompt.sh`
+(CI loads `.themis-agent/review-rules/` through that builder).
 
 
 1. **Live project data in git** — anything under `projects/<slug>/` except `projects/_template/`
