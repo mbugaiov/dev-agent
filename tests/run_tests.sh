@@ -175,13 +175,12 @@ have "scripts/notify_ux_kick.ts"
 have "scripts/arm_dev_loop.sh"
 have "scripts/run_dev_loop.sh"
 have "scripts/watch_dev_loop.sh"
-grep -q 'exact trailing slug' scripts/arm_dev_loop.sh \
-  && grep -q 'pgrep -f "scripts/dev-loop.sh"' scripts/arm_dev_loop.sh \
+grep -q 'stop_dev_loop.sh' scripts/arm_dev_loop.sh \
   && grep -q 'setsid' scripts/arm_dev_loop.sh \
   && grep -q 'loop.pid' scripts/arm_dev_loop.sh \
   && grep -q 'LOOP_WATCH_ATTACH_REQUIRED' scripts/arm_dev_loop.sh \
-  && ok "arm_dev_loop slug-scoped kill + setsid detach + watch attach contract" \
-  || no "arm_dev_loop must kill only target slug, detach via setsid, and require watcher"
+  && ok "arm_dev_loop stop-then-setsid detach + watch attach contract" \
+  || no "arm_dev_loop must stop prior slug, detach via setsid, and require watcher"
 grep -q 'watch_dev_loop.sh' scripts/run_dev_loop.sh \
   && grep -q 'LOOP_WATCH_ATTACH_REQUIRED' scripts/run_dev_loop.sh \
   && ok "run_dev_loop requires Cursor watcher" \
@@ -189,8 +188,22 @@ grep -q 'watch_dev_loop.sh' scripts/run_dev_loop.sh \
 grep -q 'tail -n 200' scripts/watch_dev_loop.sh \
   && grep -q 'grep -E "\$WATCH_PATTERN"' scripts/watch_dev_loop.sh \
   && grep -q 'tail -n 0 -F' scripts/watch_dev_loop.sh \
-  && ok "watch_dev_loop replays recent wakes before follow" \
-  || no "watch_dev_loop must replay matching lines then tail -F"
+  && grep -q 'LOOP_WATCH_EXIT' scripts/watch_dev_loop.sh \
+  && grep -q 'scheduler_alive' scripts/watch_dev_loop.sh \
+  && grep -q 'watch.pid' scripts/watch_dev_loop.sh \
+  && ok "watch_dev_loop replays wakes, follows log, exits when scheduler gone" \
+  || no "watch_dev_loop must replay, tail -F, and exit on scheduler death"
+have "scripts/stop_dev_loop.sh"
+grep -q 'watch_dev_loop' scripts/stop_dev_loop.sh \
+  && grep -q 'LOOP_STOPPED' scripts/stop_dev_loop.sh \
+  && grep -q 'kill_tree' scripts/stop_dev_loop.sh \
+  && ok "stop_dev_loop kills scheduler + watchers (children first)" \
+  || no "stop_dev_loop.sh must reap scheduler and watchers with kill_tree"
+
+grep -q 'stop_dev_loop.sh' scripts/arm_dev_loop.sh \
+  && ok "arm_dev_loop clears prior loop+watcher via stop_dev_loop" \
+  || no "arm_dev_loop must call stop_dev_loop before re-arm"
+
 have "lib/devFactoryHookRuntime.ts"
 have "scripts/dev_factory_stop_hook.ts"
 have "scripts/dev_factory_session_start_hook.ts"
