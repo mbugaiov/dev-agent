@@ -273,3 +273,4 @@ rm -rf "$THEMIS_TMP"
 echo ""
 echo "Results: $PASS passed, $FAIL failed"
 
+[[ "$FAIL" -eq 0 ]]
