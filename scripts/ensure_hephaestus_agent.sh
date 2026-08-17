@@ -32,10 +32,12 @@ LOOP_PID_FILE="$FACTORY/loop.pid"
 STOP="$ROOT/scripts/stop_dev_loop.sh"
 
 # Do not rewrite PATH before command -v — tests stub cursor-agent via PATH.
+# shellcheck disable=SC1091
+source "$ROOT/scripts/lib/kill_tree.sh"
 
 # Reap blind bash schedulers. When preserve_agent=1 (ALREADY_RUNNING path),
-# kill only matching `scripts/dev-loop.sh <slug>` trees — never call full
-# stop_dev_loop (that would kill the live hephaestus oneshot).
+# kill only matching `scripts/dev-loop.sh <slug>` trees via shared kill_tree —
+# never call full stop_dev_loop (that would kill the live hephaestus oneshot).
 reap_blind_bash_if_needed() {
   local preserve_agent="${1:-0}"
   local blind_bash=0 lp cmd pid
@@ -64,9 +66,7 @@ reap_blind_bash_if_needed() {
     if [[ "$preserve_agent" -eq 1 ]]; then
       local p
       for p in "${blind_pids[@]}"; do
-        kill "$p" 2>/dev/null || true
-        # children of bash -c wrappers
-        pkill -P "$p" 2>/dev/null || true
+        kill_tree "$p" "scheduler" || true
       done
       rm -f "$LOOP_PID_FILE"
     elif [[ -f "$STOP" ]]; then
@@ -140,6 +140,8 @@ printf '{"slug":"%s","issuedAt":"%s","mode":"cursor-agent-oneshot"}\n' \
 
 # Auth: inherit CURSOR_API_KEY from this process env into the child.
 # Do NOT interpolate the key into bash -c text (ps/cmdline leakage).
+# FAIL path does not echo log tails — operators open hephaestus-oneshot.out
+# (secret hygiene; slightly slower triage by design).
 nohup bash -c "
   cd \"$ROOT\"
   export CURSOR_FACTORY_SESSION=1

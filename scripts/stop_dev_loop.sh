@@ -20,36 +20,8 @@ killed_sched=0
 killed_watch=0
 killed_agent=0
 
-kill_pid() {
-  local pid="$1" label="$2"
-  [[ -z "$pid" ]] && return 1
-  if kill -0 "$pid" 2>/dev/null; then
-    kill "$pid" 2>/dev/null || true
-    sleep 0.2
-    if kill -0 "$pid" 2>/dev/null; then
-      kill -9 "$pid" 2>/dev/null || true
-    fi
-    printf 'LOOP_STOP_KILL {"slug":"%s","kind":"%s","pid":%s}\n' "$SLUG" "$label" "$pid"
-    return 0
-  fi
-  return 1
-}
-
-# Kill children before parent so tails are not reparented past pgrep -P.
-kill_tree() {
-  local pid="$1" label="$2"
-  [[ -z "$pid" ]] && return 1
-  local kids=()
-  while read -r cpid; do
-    [ -z "$cpid" ] && continue
-    kids+=("$cpid")
-  done < <(pgrep -P "$pid" 2>/dev/null || true)
-  local c
-  for c in "${kids[@]+"${kids[@]}"}"; do
-    kill_tree "$c" "${label}-child" || true
-  done
-  kill_pid "$pid" "$label"
-}
+# shellcheck disable=SC1091
+source "$ROOT/scripts/lib/kill_tree.sh"
 
 # Scheduler via pid file — only if cmdline still matches this slug
 if [[ -f "$PID_FILE" ]]; then
@@ -127,7 +99,10 @@ if [[ -f "$AGENT_PID_FILE" ]]; then
   rm -f "$AGENT_PID_FILE"
 fi
 
-# Orphan slug-bound agent oneshot (no pid file / stale file already removed)
+# Orphan slug-bound agent oneshot (no pid file / stale file already removed).
+# pgrep -f "DEV_FACTORY_SLUG=${SLUG}" is a substring prefilter; the end-boundary
+# regex below rejects ${SLUG}-other. Any process that embeds the exact
+# DEV_FACTORY_SLUG=<slug> token in argv (including prompt text) is in scope.
 while read -r pid; do
   [ -z "$pid" ] && continue
   acmd="$(ps -p "$pid" -o args= 2>/dev/null || true)"

@@ -196,11 +196,14 @@ grep -q 'tail -n 200' scripts/watch_dev_loop.sh \
 have "scripts/stop_dev_loop.sh"
 
 have "scripts/ensure_hephaestus_agent.sh"
+have "scripts/lib/kill_tree.sh"
 grep -q 'cursor-agent' scripts/ensure_hephaestus_agent.sh \
   && grep -q 'HEPHAESTUS_ONESHOT_ARMED' scripts/ensure_hephaestus_agent.sh \
   && grep -q 'HEPHAESTUS_REAP_BLIND' scripts/ensure_hephaestus_agent.sh \
   && grep -q 'CURSOR_FACTORY_SESSION=1' scripts/ensure_hephaestus_agent.sh \
   && grep -q 'DEV_FACTORY_SLUG' scripts/ensure_hephaestus_agent.sh \
+  && grep -q 'scripts/lib/kill_tree.sh' scripts/ensure_hephaestus_agent.sh \
+  && grep -q 'scripts/lib/kill_tree.sh' scripts/stop_dev_loop.sh \
   && ! grep -q -- '--api-key' scripts/ensure_hephaestus_agent.sh \
   && ok "ensure_hephaestus_agent is cursor-agent oneshot (K13)" \
   || no "ensure_hephaestus_agent must arm cursor-agent oneshot and reap blind bash"
@@ -265,6 +268,37 @@ _ea_kill() {
   fi
 }
 _ea_kill
+# Stub asserts CURSOR_API_KEY is inherited into the child (not argv --api-key).
+ENV_STUB=$(mktemp -d)
+printf '%s\n' '#!/bin/bash' \
+  'MARKER="$(cd "$(dirname "$0")" && pwd)/key_ok"' \
+  'if [[ -z "${CURSOR_API_KEY:-}" ]]; then echo missing >"$MARKER.fail"; exit 42; fi' \
+  'echo "ok len=${#CURSOR_API_KEY}" >"$MARKER"' \
+  'sleep 60' >"$ENV_STUB/cursor-agent"
+chmod +x "$ENV_STUB/cursor-agent"
+rm -f "projects/$SLUG/factory/hephaestus-oneshot.pid"
+OUT=$(PATH="$ENV_STUB:/usr/bin:/bin" CURSOR_API_KEY=test-key-not-real \
+  bash scripts/ensure_hephaestus_agent.sh "$SLUG" 2>&1); EC=$?
+sleep 0.4
+[[ -f "$ENV_STUB/key_ok" ]] \
+  && echo "$OUT" | grep -q HEPHAESTUS_ONESHOT_ARMED && [[ "$EC" -eq 0 ]] \
+  && ok "ensure inherits CURSOR_API_KEY into child env" \
+  || no "ensure must inherit CURSOR_API_KEY (ec=$EC out=$OUT marker=$(ls -la "$ENV_STUB" 2>/dev/null))"
+# Key must not appear on the oneshot child's argv (env inheritance only).
+if [[ -f "projects/$SLUG/factory/hephaestus-oneshot.pid" ]]; then
+  AP=$(tr -d '[:space:]' <"projects/$SLUG/factory/hephaestus-oneshot.pid")
+  ARGS=$(ps -p "$AP" -o args= 2>/dev/null || true)
+  if [[ "$ARGS" != *test-key-not-real* ]] && [[ "$ARGS" != *--api-key* ]]; then
+    ok "ensure does not put CURSOR_API_KEY on child argv"
+  else
+    no "ensure leaked API key onto argv (pid=$AP args=$ARGS)"
+  fi
+else
+  no "ensure missing oneshot pid for argv leak check"
+fi
+_ea_kill
+rm -rf "$ENV_STUB"
+
 OUT=$(PATH="$EA_STUB:/usr/bin:/bin" CURSOR_API_KEY=test-key-not-real \
   bash scripts/ensure_hephaestus_agent.sh "$SLUG" 2>&1); EC=$?
 echo "$OUT" | grep -q HEPHAESTUS_ONESHOT_ARMED && [[ "$EC" -eq 0 ]] \
@@ -422,6 +456,21 @@ else
 fi
 kill "$PREF_PID" 2>/dev/null || true
 rm -f "projects/$SLUG/factory/hephaestus-oneshot.pid"
+
+# Negative orphan: live DEV_FACTORY_SLUG=<slug>-other with *no* pid file must
+# survive stop (pgrep prefilter must not kill prefix neighbors).
+perl -e "\$0 = \"cursor-agent DEV_FACTORY_SLUG=${SLUG}-other\"; sleep 45" &
+ORPHAN_PREF_PID=$!
+sleep 0.2
+rm -f "projects/$SLUG/factory/hephaestus-oneshot.pid"
+STOP_OUT=$(bash scripts/stop_dev_loop.sh "$SLUG" 2>&1)
+if kill -0 "$ORPHAN_PREF_PID" 2>/dev/null \
+  && ! echo "$STOP_OUT" | grep -q '"agentKilled":1'; then
+  ok "stop leaves orphan DEV_FACTORY_SLUG=<slug>-other (no pid file)"
+else
+  no "stop must not kill orphan slug-prefix neighbor (pid=$ORPHAN_PREF_PID out=$STOP_OUT)"
+fi
+kill "$ORPHAN_PREF_PID" 2>/dev/null || true
 
 grep -q 'agentKilled' scripts/stop_dev_loop.sh \
   && grep -q 'hephaestus-oneshot.pid' scripts/stop_dev_loop.sh \
