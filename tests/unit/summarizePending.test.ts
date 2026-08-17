@@ -31,8 +31,8 @@ describe("summarizePending", () => {
   it("followup starts with /summarize slash", () => {
     const s = buildPendingSummarizeState({
       reason: "test",
-      slug: "pantheon",
-      ticket: "pantheon#1",
+      slug: "selftest",
+      ticket: "selftest#1",
     });
     const msg = formatSummarizeFollowup(s);
     expect(msg.startsWith(SUMMARIZE_FOLLOWUP_SENTINEL)).toBe(true);
@@ -57,7 +57,7 @@ describe("stop hook summarize followup", () => {
   it("emits /summarize when drain idle and latch armed", () => {
     const pending = buildPendingSummarizeState({
       reason: "agent_done_marker",
-      slug: "pantheon",
+      slug: "selftest",
     });
     const res = decideDevFactoryStopHook({
       engineRoot: "/tmp/no-engine",
