@@ -178,6 +178,7 @@ export function buildBacklogWakeExecution(
       `git checkout -B <prefix>/${oldest}-<slug> origin/<default-branch>`,
       handoffHint,
       "Do NOT end turn with status-only; drain until DEV_FACTORY_IDLE",
+      "After DEV_FACTORY_IDLE (oneshot done): invoke /summarize same turn (token hygiene)",
     ],
   };
 }

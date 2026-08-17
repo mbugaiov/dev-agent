@@ -28,22 +28,9 @@ LOG="$FACTORY_DIR/loop.out"
 PID_FILE="$FACTORY_DIR/loop.pid"
 mkdir -p "$FACTORY_DIR"
 
-# Kill only this slug's loop — other factories must coexist.
-# Match exact trailing slug (not a hyphenated prefix of another slug).
-if [[ -f "$PID_FILE" ]]; then
-  OLD_PID="$(tr -d '[:space:]' <"$PID_FILE" || true)"
-  if [[ -n "${OLD_PID:-}" ]] && kill -0 "$OLD_PID" 2>/dev/null; then
-    kill "$OLD_PID" 2>/dev/null || true
-  fi
-fi
-while read -r pid; do
-  [ -z "$pid" ] && continue
-  cmd="$(ps -p "$pid" -o args= 2>/dev/null || true)"
-  if [[ "$cmd" =~ scripts/dev-loop\.sh[[:space:]]+${SLUG}([[:space:]]|$) ]]; then
-    kill "$pid" 2>/dev/null || true
-  fi
-done < <(pgrep -f "scripts/dev-loop.sh" 2>/dev/null || true)
-sleep 0.3
+# Clean prior scheduler + Cursor watchers for this slug only (other factories coexist).
+bash "$ROOT/scripts/stop_dev_loop.sh" "$SLUG" >/dev/null || true
+sleep 0.2
 
 cd "$ROOT"
 export DEV_AGENT_SLUG="$SLUG"
