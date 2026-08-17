@@ -252,3 +252,10 @@ fi
 echo ""
 echo "Results: $PASS passed, $FAIL failed"
 [[ "$FAIL" -eq 0 ]]
+
+# Themis central review-rules wiring (must stay green with shared 10-tests-must-have)
+grep -q 'build_review_prompt.sh' .github/workflows/code-review.yml \
+  && grep -q 'repository: mbugaiov/themis-agent' .github/workflows/code-review.yml \
+  && ok "review (Themis) uses build_review_prompt central pack" \
+  || no "review workflow missing build_review_prompt wiring"
+
