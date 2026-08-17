@@ -57,6 +57,12 @@ describe("devFactoryExecution", () => {
     );
   });
 
+  it("EX-03b oneshot wake steps require /summarize after idle", () => {
+    const execution = buildBacklogWakeExecution(payload, branches);
+    expect(execution.firstSteps.some((s) => s.includes("/summarize"))).toBe(true);
+    expect(formatExecutePrompt(execution)).toContain("/summarize");
+  });
+
   it("EX-04 pending execute state captures oldest ticket", () => {
     const pending = buildPendingExecuteState(payload, branches, "jira", "acme");
     expect(pending.oldest).toBe("TST-105");

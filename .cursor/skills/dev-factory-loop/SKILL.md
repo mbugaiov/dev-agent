@@ -30,9 +30,16 @@ loop, drain backlog, active factory — **same turn** arm + watch + tick + drain
 
 **Portfolio dispatcher (Kairos):** Kairos may also wake this slug with
 `DEV_LOOP_EXIT_ON_IDLE=1` — oneshot stays up while `impl-dev` **or** open PR/MR remains;
-exits only when backlog is idle **and** no open MRs (`LOOP_HOLD_OPEN_MR` while MRs remain;
-`LOOP_HOLD_OPEN_MR_PROBE_ERROR` if the open-MR probe fails). Kairos does **not** replace
-Active-factory arming when the user triggered intent phrases.
+exits with `LOOP_EXIT_IDLE` only when backlog is idle **and** no open MRs
+(`LOOP_HOLD_OPEN_MR` while MRs remain; `LOOP_HOLD_OPEN_MR_PROBE_ERROR` if the open-MR
+probe fails). **`watch_dev_loop.sh` must exit** when the scheduler dies (no forever
+`tail -F` Cursor Shell). Kairos reaps orphan arms via `reap_hephaestus.sh` →
+`stop_dev_loop.sh`. Kairos does **not** replace Active-factory arming when the user
+triggered intent phrases.
+
+**After oneshot drain (`DEV_FACTORY_IDLE` / ticket closed):** invoke Cursor **`/summarize`**
+in the same turn so the next wake starts from a compact transcript (minimize token burn).
+Do not skip summarize to “save a step.”
 
 **Manual single-slug arm** (legacy forever-loop or debug):
 
