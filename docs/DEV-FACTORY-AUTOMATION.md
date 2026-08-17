@@ -37,13 +37,14 @@ in a parent folder (e.g. `<workspace>/dev-agent`), install hooks at the workspac
   + `dev-factory-session-start.sh` (cd into `dev-agent/`, run the TS hooks)
 - Engine copy: `dev-agent/.cursor/hooks.json` (used if the engine itself is the workspace)
 
-Stop + sessionStart enforce the execute contract when
-`dev-agent/.cursor/dev-factory-pending-execute.json` is pending. They **must not**
-require `DEV_AGENT_SLUG` — slug comes from the latch, then
-`git.ticket_key_pattern` match against `projects/*/project.yaml`.
+Stop + sessionStart enforce the execute contract **only for factory sessions**
+(`is_background_agent` or `CURSOR_FACTORY_SESSION=1`). Ambient Composer chats get `{}`.
+Argus kick is **oneshot-only** (`qa-agent/scripts/ensure_argus.sh` from handoff) — never
+injected via these hooks.
 
 `stop` only runs when a turn ends. `sessionStart` only runs on a new chat.
-Neither replaces `notify_on_output`; they recover when notify is silent.
+Neither replaces `notify_on_output`; they recover when notify is silent **inside**
+a factory session.
 
 ## Shell watcher policy (no monitor mode)
 

@@ -11,7 +11,6 @@ import {
 } from "./devFactoryExecution.ts";
 import {
   PENDING_ARGUS_KICK_PATH,
-  shouldForceArgusKickFollowup,
   type PendingArgusKickState,
 } from "./argusKickPending.ts";
 import { loadProjectConfig, projectYamlPath } from "./loadProject.ts";
@@ -125,26 +124,52 @@ export type StopHookDecisionInput = {
   hasOpenPr?: boolean;
   pending?: PendingExecuteState | null;
   argusPending?: PendingArgusKickState | null;
+  /**
+   * Factory hooks must not force followups into ambient Composer chats.
+   * True only for background agents / sessions that opted in via sessionStart env.
+   */
+  factorySession?: boolean;
 };
 
-export type HookJson = { followup_message?: string; additional_context?: string };
+export type HookJson = {
+  followup_message?: string;
+  additional_context?: string;
+  env?: Record<string, string>;
+};
+
+export type SessionStartDecisionInput = {
+  engineRoot: string;
+  /** Cursor sessionStart: background agent vs interactive Composer. */
+  isBackgroundAgent?: boolean;
+  /** Prior session env (stop hooks inherit CURSOR_FACTORY_SESSION). */
+  factorySessionEnv?: boolean;
+};
+
+/** Whether this Cursor session may receive factory execute/kick injections. */
+export function isFactoryHookSession(input: {
+  isBackgroundAgent?: boolean;
+  factorySessionEnv?: boolean;
+  env?: NodeJS.ProcessEnv;
+}): boolean {
+  if (input.isBackgroundAgent) return true;
+  if (input.factorySessionEnv) return true;
+  const env = input.env ?? process.env;
+  return env.CURSOR_FACTORY_SESSION === "1";
+}
 
 /** Pure-enough decision used by the stop hook (I/O is injected). */
 export function decideDevFactoryStopHook(
   input: StopHookDecisionInput,
 ): HookJson {
   if (input.status && input.status !== "completed") return {};
-  const loopCount = input.loopCount ?? 0;
-  const argusPending =
-    input.argusPending === undefined
-      ? readPendingArgusKick(input.engineRoot)
-      : input.argusPending;
-  const argus = shouldForceArgusKickFollowup({
-    pending: argusPending,
-    loopCount,
-  });
-  if (argus.force) return { followup_message: argus.message };
+  // Argus wake is oneshot-only (ensure_argus) — never force ARGUS_KICK into chats.
+  if (input.factorySession === false) return {};
+  if (input.factorySession !== true) {
+    // Default-deny when caller forgot to pass the flag (ambient workspace hooks).
+    return {};
+  }
 
+  const loopCount = input.loopCount ?? 0;
   const pending =
     input.pending === undefined
       ? readPendingExecute(input.engineRoot)
@@ -158,14 +183,12 @@ export function decideDevFactoryStopHook(
   });
 
   if (!slug) {
-    // Still honor loop/dirty/open-PR suppressions when slug inference fails.
     const decision = shouldForceDrainFollowup({
       pending,
       currentBranch: input.currentBranch ?? "",
       hasWorkingTreeChanges: input.hasWorkingTreeChanges ?? false,
       hasOpenPr: input.hasOpenPr ?? false,
       loopCount,
-      // No project git config — never treat branch as "already on ticket".
       git: { branch_prefixes: ["__none__/"], ticket_key_pattern: "NEVER-MATCH-\\d+" },
     });
     return decision.force ? { followup_message: decision.message } : {};
@@ -183,7 +206,6 @@ export function decideDevFactoryStopHook(
     });
     return decision.force ? { followup_message: decision.message } : {};
   } catch {
-    // Broken project.yaml: still suppress on loop/dirty/open-PR, don't nudge mid-implement.
     const decision = shouldForceDrainFollowup({
       pending,
       currentBranch: input.currentBranch ?? "",
@@ -196,21 +218,23 @@ export function decideDevFactoryStopHook(
   }
 }
 
-export function decideDevFactorySessionStart(engineRoot: string): HookJson {
-  const parts: string[] = [];
-  const argus = readPendingArgusKick(engineRoot);
-  if (argus && !argus.consumed) {
-    parts.push(
-      `ARGUS KICK PENDING: ${argus.executePrompt} ` +
-        `Do NOT end the session until Argus Task is spawned and ack_argus_kick.ts runs.`,
-    );
-  }
+export function decideDevFactorySessionStart(
+  engineRoot: string,
+  opts: Omit<SessionStartDecisionInput, "engineRoot"> = {},
+): HookJson {
+  // Interactive ambient chats must stay clean — Argus + backlog wakes are oneshot/background only.
+  if (!isFactoryHookSession(opts)) return {};
+
   const pending = readPendingExecute(engineRoot);
-  if (pending && !pending.consumed) {
-    parts.push(
-      `DEV FACTORY EXECUTION PENDING: ${pending.executePrompt} ` +
-        `Do NOT reply with status-only summaries while this file exists.`,
-    );
+  if (!pending || pending.consumed) {
+    return {
+      env: { CURSOR_FACTORY_SESSION: "1" },
+    };
   }
-  return parts.length ? { additional_context: parts.join(" ") } : {};
+  return {
+    env: { CURSOR_FACTORY_SESSION: "1" },
+    additional_context:
+      `DEV FACTORY EXECUTION PENDING: ${pending.executePrompt} ` +
+      `Do NOT reply with status-only summaries while this file exists.`,
+  };
 }

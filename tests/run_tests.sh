@@ -196,8 +196,10 @@ grep -q 'tail -n 200' scripts/watch_dev_loop.sh \
 have "scripts/stop_dev_loop.sh"
 grep -q 'watch_dev_loop' scripts/stop_dev_loop.sh \
   && grep -q 'LOOP_STOPPED' scripts/stop_dev_loop.sh \
-  && ok "stop_dev_loop kills scheduler + watchers" \
-  || no "stop_dev_loop.sh must reap scheduler and watchers"
+  && grep -q 'kill_tree' scripts/stop_dev_loop.sh \
+  && ok "stop_dev_loop kills scheduler + watchers (children first)" \
+  || no "stop_dev_loop.sh must reap scheduler and watchers with kill_tree"
+
 grep -q 'stop_dev_loop.sh' scripts/arm_dev_loop.sh \
   && ok "arm_dev_loop clears prior loop+watcher via stop_dev_loop" \
   || no "arm_dev_loop must call stop_dev_loop before re-arm"
