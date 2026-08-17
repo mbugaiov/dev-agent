@@ -255,7 +255,18 @@ WF=.github/workflows/code-review.yml
 grep -q build_review_prompt.sh "$WF" && ok "workflow cites build_review_prompt" || no "workflow missing build_review_prompt"
 grep -q 'repository: mbugaiov/themis-agent' "$WF" && ok "workflow checkouts themis-agent" || no "workflow missing themis checkout"
 PIN=$(grep -Eo '[0-9a-f]{40}' scripts/ensure_themis_agent.sh | head -1)
-grep -q "$PIN" "$WF" && ok "workflow pins themis SHA" || no "workflow missing themis pin"
+grep -q "$PIN" "$WF" && ok "isolation/ensure pin present in workflow" || no "workflow missing themis pin"
+# Review checkout must float (WIRING); isolation may pin.
+python3 - <<'PY2' "$WF" && ok "review checkout floats (no ref)" || no "review checkout must float without ref"
+import sys, re
+from pathlib import Path
+text = Path(sys.argv[1]).read_text()
+m = re.search(r"name: review \(Themis\)(.*?)name: isolation \(Themis\)", text, re.S)
+chunk = m.group(1) if m else ""
+idx = chunk.find("repository: mbugaiov/themis-agent")
+window = chunk[idx:idx+220] if idx >= 0 else ""
+raise SystemExit(0 if idx >= 0 and not re.search(r"(?m)^\s*ref:\s*", window) else 1)
+PY2
 grep -q build_review_prompt.sh scripts/run_code_review.sh && ok "run_code_review uses builder" || no "run_code_review missing builder"
 THEMIS_TMP=$(mktemp -d)
 git clone --depth 1 https://github.com/mbugaiov/themis-agent.git "$THEMIS_TMP/themis" >/dev/null 2>&1
