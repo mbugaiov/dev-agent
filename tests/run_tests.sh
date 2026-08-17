@@ -264,6 +264,46 @@ echo "$OUT2" | grep -q ALREADY_RUNNING && [[ "$EC2" -eq 0 ]] \
   && ok "ensure_hephaestus_agent ALREADY_RUNNING on live pid" \
   || no "ensure_hephaestus_agent should short-circuit live pid (ec=$EC2: $OUT2)"
 _ea_kill
+
+# Negative: recycled PID without slug-bound cmdline must NOT ALREADY_RUNNING
+# (clears pid file and continues — arm or skip). Cross-tenant PID-reuse gate.
+(
+  sleep 45 &
+  STALE=$!
+  echo "$STALE" > "projects/$SLUG/factory/hephaestus-oneshot.pid"
+  sleep 0.2
+  OUT=$(PATH="$EA_STUB:/usr/bin:/bin" CURSOR_API_KEY=test-key-not-real \
+    bash scripts/ensure_hephaestus_agent.sh "$SLUG" 2>&1); EC=$?
+  if ! echo "$OUT" | grep -q ALREADY_RUNNING \
+    && echo "$OUT" | grep -qE 'HEPHAESTUS_ONESHOT_ARMED|HEPHAESTUS_ONESHOT_SKIP' \
+    && [[ "$EC" -eq 0 || "$EC" -eq 3 || "$EC" -eq 4 ]]; then
+    ok "ensure rejects mismatched oneshot pid (no ALREADY_RUNNING)"
+  else
+    no "ensure must not ALREADY_RUNNING on unbound pid (ec=$EC out=$OUT)"
+  fi
+  kill "$STALE" 2>/dev/null || true
+  wait "$STALE" 2>/dev/null || true
+  _ea_kill
+)
+# Prefix collision: DEV_FACTORY_SLUG=<slug>-other must not short-circuit
+(
+  perl -e "\$0 = \"cursor-agent DEV_FACTORY_SLUG=${SLUG}-other\"; sleep 45" &
+  PREF=$!
+  echo "$PREF" > "projects/$SLUG/factory/hephaestus-oneshot.pid"
+  sleep 0.2
+  OUT=$(PATH="$EA_STUB:/usr/bin:/bin" CURSOR_API_KEY=test-key-not-real \
+    bash scripts/ensure_hephaestus_agent.sh "$SLUG" 2>&1); EC=$?
+  if ! echo "$OUT" | grep -q ALREADY_RUNNING \
+    && echo "$OUT" | grep -qE 'HEPHAESTUS_ONESHOT_ARMED|HEPHAESTUS_ONESHOT_SKIP'; then
+    ok "ensure rejects DEV_FACTORY_SLUG prefix collision"
+  else
+    no "ensure must not ALREADY_RUNNING on slug-prefix collision (ec=$EC out=$OUT)"
+  fi
+  kill "$PREF" 2>/dev/null || true
+  wait "$PREF" 2>/dev/null || true
+  _ea_kill
+)
+
 FAIL_STUB=$(mktemp -d)
 printf '%s\n' '#!/bin/bash' 'exit 0' >"$FAIL_STUB/cursor-agent"
 chmod +x "$FAIL_STUB/cursor-agent"
