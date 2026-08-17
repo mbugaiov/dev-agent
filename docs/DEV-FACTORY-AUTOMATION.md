@@ -35,6 +35,7 @@ in a parent folder (e.g. `<workspace>/dev-agent`), install hooks at the workspac
 
 - `<workspace>/.cursor/hooks.json` → `.cursor/hooks/dev-factory-drain-stop.sh`
   + `dev-factory-session-start.sh` (cd into `dev-agent/`, run the TS hooks)
+  + `dev-factory-after-agent-response.sh` (arms `/summarize` latch after oneshot markers)
 - Engine copy: `dev-agent/.cursor/hooks.json` (used if the engine itself is the workspace)
 
 Stop + sessionStart enforce the execute contract when
