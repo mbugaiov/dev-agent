@@ -127,6 +127,18 @@ if [[ -f "$AGENT_PID_FILE" ]]; then
   rm -f "$AGENT_PID_FILE"
 fi
 
+# Orphan slug-bound agent oneshot (no pid file / stale file already removed)
+while read -r pid; do
+  [ -z "$pid" ] && continue
+  acmd="$(ps -p "$pid" -o args= 2>/dev/null || true)"
+  if [[ "$acmd" =~ DEV_FACTORY_SLUG=${SLUG}([^a-z0-9-]|$) ]]; then
+    if kill_tree "$pid" "agent-oneshot"; then
+      killed_agent=1
+    fi
+  fi
+done < <(pgrep -f "DEV_FACTORY_SLUG=${SLUG}" 2>/dev/null || true)
+
+
 printf 'LOOP_STOPPED {"slug":"%s","schedulerKilled":%s,"watcherKilled":%s,"agentKilled":%s}\n' \
   "$SLUG" "$killed_sched" "$killed_watch" "$killed_agent"
 exit 0

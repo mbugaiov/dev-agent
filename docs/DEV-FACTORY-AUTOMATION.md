@@ -2,6 +2,8 @@
 
 ## Kairos wake (portfolio default)
 
+**Kairos #11 (merged):** portfolio dispatch arms Hephaestus only via `ensure_hephaestus_agent.sh` (not unchecked `arm_dev_loop` alone). Blind bash schedulers are reaped so they cannot masquerade as `ALREADY_RUNNING`.
+
 Kairos arms Hephaestus via **`scripts/ensure_hephaestus_agent.sh`** — detached
 `cursor-agent` oneshot (same pattern as Argus `ensure_argus.sh`). Requires
 `cursor-agent` on PATH and `CURSOR_API_KEY` (env, or load order engine
