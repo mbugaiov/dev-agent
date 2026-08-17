@@ -24,7 +24,17 @@ fi
 
 git fetch origin "$BASE" --quiet 2>/dev/null || true
 
-PROMPT="You are the automated reviewer for this dev-agent engine pull request. Follow .cursor/rules/code-review.mdc (and AGENTS.md + rules it references). Review ONLY this branch's changes vs origin/${BASE} — begin with: git --no-pager diff origin/${BASE}...HEAD — and produce exactly the output sections that guide specifies."
+THEMIS_ROOT="${THEMIS_AGENT_PATH:-$ROOT/.themis-agent}"
+if [[ ! -x "$THEMIS_ROOT/scripts/build_review_prompt.sh" ]]; then
+  THEMIS_ROOT="$(bash "$ROOT/scripts/ensure_themis_agent.sh")"
+fi
+PROMPT="$(bash "$THEMIS_ROOT/scripts/build_review_prompt.sh" \
+  --pr "${PR:-0}" \
+  --base "origin/${BASE}" \
+  --label dev-agent \
+  --local-rule .cursor/rules/code-review.mdc \
+  --agents AGENTS.md \
+  --themis-root "$THEMIS_ROOT")"
 
 echo "Running cursor-agent review (base=origin/${BASE})..."
 if cursor-agent --force --api-key "$CURSOR_API_KEY" --output-format text -p "$PROMPT" > review.md; then
