@@ -37,9 +37,9 @@ probe fails). **`watch_dev_loop.sh` must exit** when the scheduler dies (no fore
 `stop_dev_loop.sh`. Kairos does **not** replace Active-factory arming when the user
 triggered intent phrases.
 
-**After oneshot drain (`DEV_FACTORY_IDLE` / ticket closed):** invoke Cursor **`/summarize`**
-in the same turn so the next wake starts from a compact transcript (minimize token burn).
-Do not skip summarize to “save a step.”
+**After oneshot drain (`DEV_FACTORY_IDLE` / ticket closed):** Cursor **stop hook**
+auto-submits **`/summarize`** (latch via `afterAgentResponse` + handoff). Do not
+skip; do not end on a long status essay instead of summarize.
 
 **Manual single-slug arm** (legacy forever-loop or debug):
 

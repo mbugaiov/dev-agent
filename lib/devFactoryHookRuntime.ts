@@ -2,7 +2,7 @@
  * Cursor hook runtime — find the engine from a monorepo workspace and decide
  * stop / sessionStart follow-ups without requiring DEV_AGENT_SLUG.
  */
-import { existsSync, readdirSync, readFileSync } from "node:fs";
+import { existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import {
   PENDING_EXECUTE_PATH,
@@ -14,6 +14,12 @@ import {
   shouldForceArgusKickFollowup,
   type PendingArgusKickState,
 } from "./argusKickPending.ts";
+import {
+  PENDING_SUMMARIZE_PATH,
+  shouldForceSummarizeFollowup,
+  consumePendingSummarizeState,
+  type PendingSummarizeState,
+} from "./summarizePending.ts";
 import { loadProjectConfig, projectYamlPath } from "./loadProject.ts";
 
 export const ENGINE_STOP_HOOK_REL = "scripts/dev_factory_stop_hook.ts";
@@ -115,6 +121,23 @@ export function readPendingArgusKick(
   );
 }
 
+export function readPendingSummarize(
+  engineRoot: string,
+): PendingSummarizeState | null {
+  return readJsonFile<PendingSummarizeState>(
+    join(engineRoot, PENDING_SUMMARIZE_PATH),
+  );
+}
+
+export function writePendingSummarize(
+  engineRoot: string,
+  state: PendingSummarizeState,
+): void {
+  const path = join(engineRoot, PENDING_SUMMARIZE_PATH);
+  mkdirSync(dirname(path), { recursive: true });
+  writeFileSync(path, JSON.stringify(state, null, 2) + "\n", "utf8");
+}
+
 export type StopHookDecisionInput = {
   engineRoot: string;
   status?: string;
@@ -125,6 +148,9 @@ export type StopHookDecisionInput = {
   hasOpenPr?: boolean;
   pending?: PendingExecuteState | null;
   argusPending?: PendingArgusKickState | null;
+  summarizePending?: PendingSummarizeState | null;
+  /** When true (default), consume summarize latch when emitting followup. */
+  consumeSummarizeOnEmit?: boolean;
 };
 
 export type HookJson = { followup_message?: string; additional_context?: string };
@@ -149,51 +175,70 @@ export function decideDevFactoryStopHook(
     input.pending === undefined
       ? readPendingExecute(input.engineRoot)
       : input.pending;
-  if (!pending || pending.consumed || pending.count <= 0) return {};
 
-  const slug = resolveHookSlug({
-    engineRoot: input.engineRoot,
-    pending,
-    envSlug: input.envSlug,
+  if (pending && !pending.consumed && pending.count > 0) {
+    const slug = resolveHookSlug({
+      engineRoot: input.engineRoot,
+      pending,
+      envSlug: input.envSlug,
+    });
+
+    if (!slug) {
+      const decision = shouldForceDrainFollowup({
+        pending,
+        currentBranch: input.currentBranch ?? "",
+        hasWorkingTreeChanges: input.hasWorkingTreeChanges ?? false,
+        hasOpenPr: input.hasOpenPr ?? false,
+        loopCount,
+        git: { branch_prefixes: ["__none__/"], ticket_key_pattern: "NEVER-MATCH-\\d+" },
+      });
+      return decision.force ? { followup_message: decision.message } : {};
+    }
+
+    try {
+      const config = loadProjectConfig(input.engineRoot, slug);
+      const decision = shouldForceDrainFollowup({
+        pending,
+        currentBranch: input.currentBranch ?? "",
+        hasWorkingTreeChanges: input.hasWorkingTreeChanges ?? false,
+        hasOpenPr: input.hasOpenPr ?? false,
+        loopCount,
+        git: config.git,
+      });
+      return decision.force ? { followup_message: decision.message } : {};
+    } catch {
+      const decision = shouldForceDrainFollowup({
+        pending,
+        currentBranch: input.currentBranch ?? "",
+        hasWorkingTreeChanges: input.hasWorkingTreeChanges ?? false,
+        hasOpenPr: input.hasOpenPr ?? false,
+        loopCount,
+        git: { branch_prefixes: ["__none__/"], ticket_key_pattern: "NEVER-MATCH-\\d+" },
+      });
+      return decision.force ? { followup_message: decision.message } : {};
+    }
+  }
+
+  // Oneshot drain finished → auto-submit /summarize (token hygiene).
+  const summarizePending =
+    input.summarizePending === undefined
+      ? readPendingSummarize(input.engineRoot)
+      : input.summarizePending;
+  const summarize = shouldForceSummarizeFollowup({
+    pending: summarizePending,
+    loopCount,
   });
-
-  if (!slug) {
-    // Still honor loop/dirty/open-PR suppressions when slug inference fails.
-    const decision = shouldForceDrainFollowup({
-      pending,
-      currentBranch: input.currentBranch ?? "",
-      hasWorkingTreeChanges: input.hasWorkingTreeChanges ?? false,
-      hasOpenPr: input.hasOpenPr ?? false,
-      loopCount,
-      // No project git config — never treat branch as "already on ticket".
-      git: { branch_prefixes: ["__none__/"], ticket_key_pattern: "NEVER-MATCH-\\d+" },
-    });
-    return decision.force ? { followup_message: decision.message } : {};
+  if (summarize.force) {
+    if (input.consumeSummarizeOnEmit !== false && summarizePending) {
+      writePendingSummarize(
+        input.engineRoot,
+        consumePendingSummarizeState(summarizePending),
+      );
+    }
+    return { followup_message: summarize.message };
   }
 
-  try {
-    const config = loadProjectConfig(input.engineRoot, slug);
-    const decision = shouldForceDrainFollowup({
-      pending,
-      currentBranch: input.currentBranch ?? "",
-      hasWorkingTreeChanges: input.hasWorkingTreeChanges ?? false,
-      hasOpenPr: input.hasOpenPr ?? false,
-      loopCount,
-      git: config.git,
-    });
-    return decision.force ? { followup_message: decision.message } : {};
-  } catch {
-    // Broken project.yaml: still suppress on loop/dirty/open-PR, don't nudge mid-implement.
-    const decision = shouldForceDrainFollowup({
-      pending,
-      currentBranch: input.currentBranch ?? "",
-      hasWorkingTreeChanges: input.hasWorkingTreeChanges ?? false,
-      hasOpenPr: input.hasOpenPr ?? false,
-      loopCount,
-      git: { branch_prefixes: ["__none__/"], ticket_key_pattern: "NEVER-MATCH-\\d+" },
-    });
-    return decision.force ? { followup_message: decision.message } : {};
-  }
+  return {};
 }
 
 export function decideDevFactorySessionStart(engineRoot: string): HookJson {

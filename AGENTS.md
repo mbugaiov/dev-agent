@@ -9,8 +9,8 @@ factory; one tick = one backlog drain attempt.
 > Under Kairos, Hephaestus runs as a **oneshot** (`DEV_LOOP_EXIT_ON_IDLE=1`): drain
 > `impl-dev` **and** stay up while open PR/MR remains (CI fix → merge) → exit only when
 > both are clear. Do not leave permanent idle per-slug loops when Kairos is the dispatcher.
-> After oneshot drain (`DEV_FACTORY_IDLE`): invoke Cursor **`/summarize`** same turn
-> (compact transcript → lower next-wake tokens).
+> After oneshot drain (`DEV_FACTORY_IDLE`): Cursor **stop hook auto-submits `/summarize`**
+> (token hygiene). Latch: `dev-factory-pending-summarize.json`.
 > Legacy forever `arm_dev_loop.sh <slug>` remains for manual single-project arms.
 
 > **Naming map:** Hephaestus (brand) ≡ `dev-agent` repo ≡ factory `agent=dev`. Pantheon siblings

@@ -212,11 +212,15 @@ grep -q 'resolveDevFactoryEngineRoot' scripts/dev_factory_stop_hook.ts \
   && ok "stop hook does not no-op without DEV_AGENT_SLUG" \
   || no "stop hook must resolve engine/slug without env"
 ENGINE_HOOKS="$ROOT/.cursor/hooks.json"
-if [[ -f "$ENGINE_HOOKS" ]] && grep -q 'dev-factory-drain-stop' "$ENGINE_HOOKS"; then
-  ok "engine .cursor/hooks.json registers drain stop hook"
+if [[ -f "$ENGINE_HOOKS" ]] && grep -q 'dev-factory-drain-stop' "$ENGINE_HOOKS" \
+  && grep -q 'afterAgentResponse' "$ENGINE_HOOKS" \
+  && grep -q 'dev-factory-after-agent-response' "$ENGINE_HOOKS"; then
+  ok "engine .cursor/hooks.json registers drain stop + afterAgentResponse summarize arm"
 else
-  no "engine .cursor/hooks.json must register dev-factory-drain-stop"
+  no "engine .cursor/hooks.json must register drain stop + afterAgentResponse"
 fi
+have "scripts/dev_factory_after_agent_response_hook.ts"
+have "lib/summarizePending.ts"
 WS_HOOKS="$ROOT/../.cursor/hooks.json"
 if [[ -f "$WS_HOOKS" ]]; then
   if grep -q 'dev-factory-drain-stop' "$WS_HOOKS"; then

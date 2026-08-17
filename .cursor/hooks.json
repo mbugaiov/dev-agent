@@ -6,10 +6,15 @@
         "command": ".cursor/hooks/dev-factory-session-start.sh"
       }
     ],
+    "afterAgentResponse": [
+      {
+        "command": ".cursor/hooks/dev-factory-after-agent-response.sh"
+      }
+    ],
     "stop": [
       {
         "command": ".cursor/hooks/dev-factory-drain-stop.sh",
-        "loop_limit": 5
+        "loop_limit": 6
       }
     ]
   }

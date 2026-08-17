@@ -23,6 +23,8 @@ import {
   shouldConsumePendingOnHandoff,
   type PendingExecuteState,
 } from "../lib/devFactoryExecution.ts";
+import { buildPendingSummarizeState } from "../lib/summarizePending.ts";
+import { writePendingSummarize } from "../lib/devFactoryHookRuntime.ts";
 import { QA_KICK_YES, resolveQaHandoffKick } from "../lib/qaSubagentKick.ts";
 import { fireQaHandoffKick } from "../lib/qaHandoffKickBridge.ts";
 import {
@@ -146,6 +148,15 @@ function consumePendingExecuteForHandoff(ticketKey: string) {
       "utf8",
     );
     console.log(`PENDING_EXECUTE_CONSUMED {"ticket":"${ticketKey}"}`);
+    writePendingSummarize(
+      ROOT,
+      buildPendingSummarizeState({
+        reason: "jira_handoff",
+        slug: process.argv[2] ?? "",
+        ticket: ticketKey,
+      }),
+    );
+    console.log(`PENDING_SUMMARIZE_ARMED {"ticket":"${ticketKey}"}`);
   } catch {
     /* ignore */
   }
