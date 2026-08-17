@@ -139,12 +139,12 @@ have "scripts/check_review_followups_disposed.sh"
 have "scripts/file_review_followups.sh"
 have "scripts/review_followups.py"
 grep -q 'Require Themis Suggestions' .github/workflows/auto-merge.yml || no "auto-merge gates followups"
-grep -q '7170f1be9a0e8b87717e683e716c6b4207098cc6' scripts/ensure_themis_agent.sh || no "ensure pins themis SHA"
-grep -q '7170f1be9a0e8b87717e683e716c6b4207098cc6' .github/workflows/auto-merge.yml || no "auto-merge pins themis SHA"
-grep -q '7170f1be9a0e8b87717e683e716c6b4207098cc6' .github/workflows/code-review.yml || no "code-review pins themis SHA"
+grep -q '236d9de61677af77c8540ec792e2d834f20c6f55' scripts/ensure_themis_agent.sh || no "ensure pins themis SHA"
+grep -q '236d9de61677af77c8540ec792e2d834f20c6f55' .github/workflows/auto-merge.yml || no "auto-merge pins themis SHA"
+grep -q '236d9de61677af77c8540ec792e2d834f20c6f55' .github/workflows/code-review.yml || no "code-review pins themis SHA"
 ENS_ROOT=$(ROOT=/ bash scripts/ensure_themis_agent.sh)
 ENGINE_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
-PIN_SHA=7170f1be9a0e8b87717e683e716c6b4207098cc6
+PIN_SHA=236d9de61677af77c8540ec792e2d834f20c6f55
 ENS_HEAD=$(git -C "$ENS_ROOT" rev-parse HEAD 2>/dev/null || true)
 if [[ "$ENS_ROOT" == "$ENGINE_ROOT/.themis-agent" \
   && "$ENS_ROOT" != "/.themis-agent" \

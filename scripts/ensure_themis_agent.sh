@@ -8,7 +8,7 @@ DEST="${THEMIS_AGENT_PATH:-$ROOT/.themis-agent}"
 REPO_URL="${THEMIS_AGENT_GIT_URL:-https://github.com/mbugaiov/themis-agent.git}"
 # Bump when intentionally upgrading shared follow-up / isolation tooling.
 # Keep in sync with ref: in .github/workflows (auto-merge.yml / code-review.yml).
-REF="${THEMIS_AGENT_REF:-7170f1be9a0e8b87717e683e716c6b4207098cc6}"
+REF="${THEMIS_AGENT_REF:-236d9de61677af77c8540ec792e2d834f20c6f55}"
 
 ready() {
   [[ -f "$DEST/scripts/check_review_followups_disposed.sh" \
