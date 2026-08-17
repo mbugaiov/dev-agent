@@ -82,14 +82,12 @@ Upstream map (also in `--list-packs`): [dotnet/skills](https://github.com/dotnet
                GitHub: bot merge via GITHUB_TOKEN does not fire push deploys —
                app CI must workflow_dispatch Deploy STG after bot merge;
                wait_main_deploy may self-dispatch once if the run is missing.
-7. Handoff    → preflight → post_*_handoff → Validate/Testing → **on `QA_KICK_YES` + `QA_WAKE_EXECUTE`: `ensure_argus` oneshot (`dev-qa-subagent`) + auto-ack latch**
+7. Handoff    → preflight → post_*_handoff → Validate/Testing → **on `QA_KICK_YES` + `QA_WAKE_EXECUTE`: wake Argus (`dev-qa-subagent`) + `ack_argus_kick.ts`**
 8. Drain      → re-run JQL; next ticket same session until DEV_FACTORY_IDLE
 ```
 
 Workspace-root `.cursor/hooks.json` (parent of this engine) runs stop + sessionStart
-**only for factory sessions** (`is_background_agent` / `CURSOR_FACTORY_SESSION=1`).
-Ambient Composer chats must not receive `BACKLOG_WAKE` / `ARGUS_KICK` injections.
-Argus wake is **oneshot-only** (`ensure_argus.sh` via handoff) — never via ambient hooks.
+when `dev-factory-pending-execute.json` is unconsumed. Hooks must not need `DEV_AGENT_SLUG`.
 
 For **active factory** (user says run/execute/arm loop — see `FACTORY_RUN_INTENT_PHRASES` in
 `lib/devFactoryExecution.ts`), status-only replies are forbidden. Drain **many tickets**

@@ -5,7 +5,7 @@
  *   npx tsx scripts/should_kick_qa.ts <slug> --ticket <KEY> --handoff-ok
  *   npx tsx scripts/should_kick_qa.ts <slug> --ticket <KEY> --handoff-ok --no-kick
  *
- * Exit 0 + QA_KICK_YES → ensure_argus oneshot (skill dev-qa-subagent). Exit 1 + QA_KICK_NO → skip.
+ * Exit 0 + QA_KICK_YES → spawn Task (skill dev-qa-subagent). Exit 1 + QA_KICK_NO → skip.
  */
 import { resolveQaHandoffKick, QA_KICK_NO, QA_KICK_YES } from "../lib/qaSubagentKick.ts";
 
