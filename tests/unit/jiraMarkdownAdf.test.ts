@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { markdownToAdf, plainTextToAdf } from "../../lib/jiraClient.ts";
+import { markdownToAdf, plainTextToAdf, adfToPlainText } from "../../lib/jiraClient.ts";
 
 describe("markdownToAdf", () => {
   it("renders Argus seat-start with heading + bold", () => {
@@ -56,5 +56,15 @@ describe("markdownToAdf", () => {
   it("parses bullet lists", () => {
     const doc = markdownToAdf("- one\n- two\n");
     expect(doc.content[0]?.type).toBe("bulletList");
+  });
+
+  it("flattens ADF to searchable lines", () => {
+    const doc = markdownToAdf(
+      "### Hephaestus started\n\n**Mode:** pickup\n\n<!-- agent-started:Hephaestus:issue:1 -->",
+    );
+    const flat = adfToPlainText(doc);
+    expect(flat).toContain("Hephaestus started");
+    expect(flat).toContain("Mode: pickup");
+    expect(flat).toContain("agent-started:Hephaestus:issue:1");
   });
 });

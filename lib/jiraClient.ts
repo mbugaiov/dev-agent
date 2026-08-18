@@ -233,6 +233,25 @@ export function markdownToAdf(text: string): {
   return { type: "doc", version: 1, content };
 }
 
+/** Flatten ADF to searchable text (headings/paragraphs as lines). */
+export function adfToPlainText(node: unknown): string {
+  if (node == null) return "";
+  if (typeof node === "string") return node;
+  if (typeof node !== "object") return "";
+  const n = node as { type?: string; text?: string; content?: unknown[] };
+  if (typeof n.text === "string") return n.text;
+  const inner = (n.content ?? []).map(adfToPlainText);
+  if (
+    n.type === "paragraph" ||
+    n.type === "heading" ||
+    n.type === "listItem" ||
+    n.type === "codeBlock"
+  ) {
+    return inner.join("");
+  }
+  return inner.filter(Boolean).join("\n");
+}
+
 /** @deprecated Prefer markdownToAdf — kept for callers; now parses Markdown. */
 export function plainTextToAdf(text: string) {
   return markdownToAdf(text);

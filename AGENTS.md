@@ -103,7 +103,9 @@ immediately.
 
 - **Agent start banner (mandatory)** — as soon as any seat/Task takes a ticket or PR,
   post `### <Seat> started` + Ticket/Mode/Doing in **chat and on the tracker**
-  (`bash scripts/post_agent_started.sh …`; rule `dev-agent-start.mdc`). No silent work.
+  (`bash scripts/post_agent_started.sh …`; rule `dev-agent-start.mdc`). The helper
+  **upserts** one comment per seat+ticket (stack / skip), so overlapping wakes do
+  not flood the ticket. No silent work.
 - **One open MR at a time** — finish current PR before starting another ticket.
 - **Drain backlog per session** — do not stop after one handoff while JQL returns tickets.
 - **Never Done** on feature work — QA agent owns Validate/Testing → Done.
