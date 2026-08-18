@@ -1,9 +1,16 @@
 /**
  * Upsert ### <Seat> started on GitHub Issues/PR comments or Jira.
  * Decision logic lives in agentStartedStack.ts (unit-tested).
+ *
+ * List failure is fail-closed (skip tracker write) so a transient API error
+ * cannot recreate the duplicate-banner flood this helper exists to stop.
  */
 import { execFileSync } from "node:child_process";
 import { adfToPlainText, jiraFetch, markdownToAdf } from "./jiraClient.ts";
+import {
+  jiraCommentCountPath,
+  jiraNewestCommentsPath,
+} from "./jiraCommentList.ts";
 import {
   DEFAULT_SESSION_TTL_MS,
   decideAgentStartStack,
@@ -15,6 +22,7 @@ export type AgentStartUpsertResult = {
   action: "create" | "patch" | "skip";
   body: string;
   commentId?: string;
+  reason?: string;
 };
 
 function sessionTtlMs(): number {
@@ -86,17 +94,37 @@ export function upsertGithubAgentStarted(opts: {
     if (hit) existing = hit;
   } catch (e) {
     console.error(
-      "AGENT_START_WARN list comments failed — posting new:",
+      "AGENT_START_WARN list comments failed — skip tracker write:",
       e instanceof Error ? e.message : e,
     );
+    return {
+      action: "skip",
+      body: "",
+      reason: "list failed",
+    };
   }
 
+  return applyGithubDecision(opts, existing, ttl);
+}
+
+function applyGithubDecision(
+  opts: {
+    owner: string;
+    repo: string;
+    issueNumber: string;
+    event: AgentStartEvent;
+    targetKey: string;
+  },
+  existing: { body: string; updatedAt: Date; id: string } | null,
+  ttl: number,
+): AgentStartUpsertResult {
   const decision = decideAgentStartStack({
     existing,
     event: opts.event,
     targetKey: opts.targetKey,
     now: opts.event.at,
     sessionTtlMs: ttl,
+    markerStyle: "html",
   });
 
   if (decision.action === "skip") {
@@ -155,8 +183,17 @@ type JiraComment = {
   body?: unknown;
 };
 
-function jiraCommentText(c: JiraComment): string {
-  return adfToPlainText(c.body);
+type JiraCommentPage = {
+  total?: number;
+  comments?: JiraComment[];
+};
+
+function mapJiraComments(comments: JiraComment[]) {
+  return comments.map((c) => ({
+    id: String(c.id ?? ""),
+    body: adfToPlainText(c.body),
+    updatedAt: new Date(c.updated ?? c.created ?? 0),
+  }));
 }
 
 export async function upsertJiraAgentStarted(opts: {
@@ -167,16 +204,31 @@ export async function upsertJiraAgentStarted(opts: {
   const ttl = sessionTtlMs();
   let existing: { body: string; updatedAt: Date; id: string } | null = null;
   try {
-    const res = await jiraFetch(
-      `/rest/api/3/issue/${opts.issueKey}/comment?maxResults=50`,
-    );
-    if (res.ok) {
-      const data = (await res.json()) as { comments?: JiraComment[] };
-      const comments = (data.comments ?? []).map((c) => ({
-        id: String(c.id ?? ""),
-        body: jiraCommentText(c),
-        updatedAt: new Date(c.updated ?? c.created ?? 0),
-      }));
+    const countRes = await jiraFetch(jiraCommentCountPath(opts.issueKey));
+    if (!countRes.ok) {
+      console.error(
+        "AGENT_START_WARN list Jira comments failed — skip tracker write:",
+        countRes.status,
+        await countRes.text(),
+      );
+      return { action: "skip", body: "", reason: "list failed" };
+    }
+    const countPage = (await countRes.json()) as JiraCommentPage;
+    const total = Number(countPage.total ?? 0);
+    if (total > 0) {
+      const pageRes = await jiraFetch(
+        jiraNewestCommentsPath(opts.issueKey, total),
+      );
+      if (!pageRes.ok) {
+        console.error(
+          "AGENT_START_WARN list Jira comments failed — skip tracker write:",
+          pageRes.status,
+          await pageRes.text(),
+        );
+        return { action: "skip", body: "", reason: "list failed" };
+      }
+      const page = (await pageRes.json()) as JiraCommentPage;
+      const comments = mapJiraComments(page.comments ?? []);
       const hit = findStackableComment(
         comments.filter((c) => c.id),
         opts.event.seat,
@@ -188,9 +240,10 @@ export async function upsertJiraAgentStarted(opts: {
     }
   } catch (e) {
     console.error(
-      "AGENT_START_WARN list Jira comments failed — posting new:",
+      "AGENT_START_WARN list Jira comments failed — skip tracker write:",
       e instanceof Error ? e.message : e,
     );
+    return { action: "skip", body: "", reason: "list failed" };
   }
 
   const decision = decideAgentStartStack({
@@ -199,6 +252,7 @@ export async function upsertJiraAgentStarted(opts: {
     targetKey: opts.targetKey,
     now: opts.event.at,
     sessionTtlMs: ttl,
+    markerStyle: "code",
   });
 
   if (decision.action === "skip") {

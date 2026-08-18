@@ -228,19 +228,60 @@ describe("agentStartedStack", () => {
     expect(hit).toBeNull();
   });
 
-  it("round-trips marker + mode through Jira ADF flatten", () => {
-    const created = decideAgentStartStack({
+  it("round-trips stacked Also started bullets through Jira ADF flatten", () => {
+    const first = decideAgentStartStack({
       existing: null,
-      event: event({ mode: "QA validate", doing: "STG retest" }),
+      event: event({ mode: "pickup / implement", doing: "Draw PROD icon" }),
       targetKey: "TST-123",
       now: T0,
+      markerStyle: "code",
     });
-    const flat = adfToPlainText(markdownToAdf(created.body));
+    const second = decideAgentStartStack({
+      existing: { body: first.body, updatedAt: T0 },
+      event: event({
+        mode: "oneshot drain",
+        doing: "Pickup and implement",
+        at: T1,
+      }),
+      targetKey: "TST-123",
+      now: T1,
+      markerStyle: "code",
+    });
+    expect(second.action).toBe("patch");
+    const flat = adfToPlainText(markdownToAdf(second.body));
     expect(parseAgentStartedMarker(flat)?.targetKey).toBe("TST-123");
     const parsed = parseAgentStartedBanner(flat);
-    expect(parsed?.seat).toBe("Hephaestus");
-    expect(parsed?.mode).toBe("QA validate");
-    expect(parsed?.doing).toBe("STG retest");
+    expect(parsed?.mode).toBe("oneshot drain");
+    expect(parsed?.stack).toEqual([
+      {
+        at: formatStackClock(T0),
+        mode: "pickup / implement",
+        doing: "Draw PROD icon",
+      },
+    ]);
+  });
+
+  it("creates instead of patching when existing banner is another seat", () => {
+    const heph = decideAgentStartStack({
+      existing: null,
+      event: event({ mode: "pickup", doing: "impl" }),
+      targetKey: "issue:420",
+      now: T0,
+    }).body;
+    const d = decideAgentStartStack({
+      existing: { body: heph, updatedAt: T0 },
+      event: event({
+        seat: "Argus",
+        mode: "STG retest",
+        doing: "validate",
+        at: T1,
+      }),
+      targetKey: "issue:420",
+      now: T1,
+    });
+    expect(d.action).toBe("create");
+    expect(d.body).toContain("### Argus started");
+    expect(d.body).not.toContain("Also started");
   });
 
   it("treats whitespace-normalized doing as identical", () => {

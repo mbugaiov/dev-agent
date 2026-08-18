@@ -51,6 +51,10 @@ grep -q 'upsertGithubAgentStarted' scripts/pickup_github_ticket.ts \
   && grep -q 'upsertGithubAgentStarted' scripts/post_agent_started.ts \
   && ok "pickup + post_agent_started use stacked upsert" \
   || no "banners must upsert via agentStartedTracker (not a fresh gh issue comment each start)"
+grep -q 'jiraNewestCommentsPath' lib/agentStartedTracker.ts \
+  && grep -q 'jiraCommentCountPath' lib/agentStartedTracker.ts \
+  && ok "Jira banner lookup uses recency window (not first 50 oldest)" \
+  || no "upsertJiraAgentStarted must fetch newest comments via jiraNewestCommentsPath"
 grep -q 'github.com/dotnet/skills' docs/STACK-SKILLS.md \
   && grep -q 'sync_stack_skills.sh' docs/STACK-SKILLS.md \
   && ok "STACK-SKILLS catalog has URLs + sync commands" \

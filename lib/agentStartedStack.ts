@@ -28,8 +28,15 @@ export function githubTargetKey(
   return `${kind}:${String(n)}`;
 }
 
-export function agentStartedMarker(seat: string, targetKey: string): string {
-  return `<!-- agent-started:${sanitizeToken(seat)}:${sanitizeToken(targetKey)} -->`;
+export type MarkerStyle = "html" | "code";
+
+export function agentStartedMarker(
+  seat: string,
+  targetKey: string,
+  style: MarkerStyle = "html",
+): string {
+  const token = `agent-started:${sanitizeToken(seat)}:${sanitizeToken(targetKey)}`;
+  return style === "code" ? `\`${token}\`` : `<!-- ${token} -->`;
 }
 
 function sanitizeToken(s: string): string {
@@ -39,11 +46,15 @@ function sanitizeToken(s: string): string {
 const HTML_MARKER_RE =
   /<!--\s*agent-started:([^:\s]+):([^\s>]+)\s*-->/;
 const CODE_MARKER_RE = /`agent-started:([^:`\s]+):([^`\s]+)`/;
+const BARE_MARKER_RE = /(?:^|\n)agent-started:([^:\s]+):([^\s]+)(?:\n|$)/;
 
 export function parseAgentStartedMarker(
   body: string,
 ): { seat: string; targetKey: string } | null {
-  const m = body.match(HTML_MARKER_RE) ?? body.match(CODE_MARKER_RE);
+  const m =
+    body.match(HTML_MARKER_RE) ??
+    body.match(CODE_MARKER_RE) ??
+    body.match(BARE_MARKER_RE);
   if (!m) return null;
   return { seat: m[1]!, targetKey: m[2]! };
 }
@@ -137,6 +148,7 @@ function buildTrackerBody(
   targetKey: string,
   stack: StackLine[],
   maxStack: number,
+  markerStyle: MarkerStyle,
 ): string {
   const kept = stack.slice(-maxStack);
   const lines = [
@@ -154,7 +166,7 @@ function buildTrackerBody(
       lines.push(`- \`${row.at}\` ${row.mode} — ${row.doing}`);
     }
   }
-  lines.push("", agentStartedMarker(event.seat, targetKey));
+  lines.push("", agentStartedMarker(event.seat, targetKey, markerStyle));
   return lines.join("\n");
 }
 
@@ -204,11 +216,19 @@ export function decideAgentStartStack(opts: {
   now?: Date;
   sessionTtlMs?: number;
   maxStack?: number;
+  markerStyle?: MarkerStyle;
 }): StackDecision {
   const now = opts.now ?? opts.event.at;
   const sessionTtlMs = opts.sessionTtlMs ?? DEFAULT_SESSION_TTL_MS;
   const maxStack = opts.maxStack ?? DEFAULT_MAX_STACK;
-  const createBody = buildTrackerBody(opts.event, opts.targetKey, [], maxStack);
+  const markerStyle = opts.markerStyle ?? "html";
+  const createBody = buildTrackerBody(
+    opts.event,
+    opts.targetKey,
+    [],
+    maxStack,
+    markerStyle,
+  );
 
   if (
     !opts.existing ||
@@ -219,6 +239,9 @@ export function decideAgentStartStack(opts: {
 
   const parsed = parseAgentStartedBanner(opts.existing.body);
   if (!parsed) return { action: "create", body: createBody };
+  if (parsed.seat !== opts.event.seat) {
+    return { action: "create", body: createBody };
+  }
   if (sameStartEvent(parsed, opts.event)) {
     return {
       action: "skip",
@@ -233,6 +256,12 @@ export function decideAgentStartStack(opts: {
   ];
   return {
     action: "patch",
-    body: buildTrackerBody(opts.event, opts.targetKey, nextStack, maxStack),
+    body: buildTrackerBody(
+      opts.event,
+      opts.targetKey,
+      nextStack,
+      maxStack,
+      markerStyle,
+    ),
   };
 }
