@@ -6,6 +6,8 @@
 import { execFileSync } from "node:child_process";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
+import { githubTargetKey } from "../lib/agentStartedStack.ts";
+import { upsertGithubAgentStarted } from "../lib/agentStartedTracker.ts";
 import { parseGithubIssueNumber } from "../lib/githubIssuesBacklog.ts";
 import { loadProjectConfig } from "../lib/loadProject.ts";
 import { resolveTrackerProvider } from "../lib/projectConfig.ts";
@@ -126,31 +128,22 @@ function main() {
     }
   }
 
-  const scopeBody = [
-    "### Hephaestus started",
-    "",
-    `**Ticket:** ${config.slug}#${num}`,
-    "**Mode:** pickup / implement",
-    `**Doing:** ${args.scope}`,
-    "",
-    `_pickup_github_ticket · ${new Date().toISOString()}_`,
-  ].join("\n");
-
   actions.push("scope comment");
   if (!args.dryRun) {
-    execFileSync(
-      "gh",
-      [
-        "issue",
-        "comment",
-        String(num),
-        "-R",
-        `${owner}/${repo}`,
-        "--body",
-        scopeBody,
-      ],
-      { stdio: "inherit" },
-    );
+    const result = upsertGithubAgentStarted({
+      owner,
+      repo,
+      issueNumber: String(num),
+      targetKey: githubTargetKey("issue", num),
+      event: {
+        seat: "Hephaestus",
+        ticketLine: `**Ticket:** ${config.slug}#${num}`,
+        mode: "pickup / implement",
+        doing: args.scope,
+        at: new Date(),
+      },
+    });
+    actions.push(`banner ${result.action}`);
   }
 
   const key = `${config.slug}#${num}`;

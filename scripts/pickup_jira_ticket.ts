@@ -16,7 +16,8 @@ import {
   storyPointFieldIds,
   type JiraIssuePickupFields,
 } from "../lib/jiraPickup.ts";
-import { jiraFetch, markdownToAdf } from "../lib/jiraClient.ts";
+import { upsertJiraAgentStarted } from "../lib/agentStartedTracker.ts";
+import { jiraFetch } from "../lib/jiraClient.ts";
 import type { ProjectConfig } from "../lib/projectConfig.ts";
 import { loadProjectConfig } from "../lib/loadProject.ts";
 
@@ -182,24 +183,23 @@ async function main() {
 
   actions.push("scope comment");
   if (!args.dryRun) {
-    const scopeBody = [
-      "### Hephaestus started",
-      "",
-      `**Ticket:** ${args.key}`,
-      "**Mode:** pickup / implement",
-      `**Doing:** ${args.scope}`,
-      "",
-      `*pickup_jira_ticket · ${new Date().toISOString()}*`,
-    ].join("\n");
-    const commentRes = await jiraFetch(`/rest/api/3/issue/${args.key}/comment`, {
-      method: "POST",
-      body: JSON.stringify({ body: markdownToAdf(scopeBody) }),
-    });
-    if (!commentRes.ok) {
+    try {
+      const result = await upsertJiraAgentStarted({
+        issueKey: args.key,
+        targetKey: args.key,
+        event: {
+          seat: "Hephaestus",
+          ticketLine: `**Ticket:** ${args.key}`,
+          mode: "pickup / implement",
+          doing: args.scope,
+          at: new Date(),
+        },
+      });
+      actions.push(`banner ${result.action}`);
+    } catch (e) {
       console.error(
         "Jira scope comment failed:",
-        commentRes.status,
-        await commentRes.text(),
+        e instanceof Error ? e.message : e,
       );
       process.exit(1);
     }

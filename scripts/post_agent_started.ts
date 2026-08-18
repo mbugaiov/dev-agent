@@ -3,15 +3,25 @@
  * Post ### <Seat> started on the tracker (GitHub Issues/PR or Jira) and print
  * the same markdown for Cursor chat.
  *
+ * One living comment per seat+ticket: identical Mode+Doing is skipped;
+ * a new plan PATCHes and stacks onto the same comment (session TTL 6h).
+ *
  * Usage:
  *   npx tsx scripts/post_agent_started.ts <slug> <KEY|N|pr:N> <Seat> "<Mode>" "<Doing>"
  *   npx tsx scripts/post_agent_started.ts --repo owner/repo pr:<N> <Seat> "<Mode>" "<Doing>"
  *   AGENT_START_DRY_RUN=1 …  (print only)
  */
-import { execFileSync } from "node:child_process";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
-import { jiraFetch, markdownToAdf } from "../lib/jiraClient.ts";
+import {
+  buildChatBanner,
+  githubTargetKey,
+  type AgentStartEvent,
+} from "../lib/agentStartedStack.ts";
+import {
+  upsertGithubAgentStarted,
+  upsertJiraAgentStarted,
+} from "../lib/agentStartedTracker.ts";
 import { loadProjectConfig } from "../lib/loadProject.ts";
 import { resolveTrackerProvider } from "../lib/projectConfig.ts";
 
@@ -25,21 +35,34 @@ function usage(): never {
   process.exit(2);
 }
 
-function buildBody(opts: {
-  seat: string;
-  ticketLine: string;
-  mode: string;
-  doing: string;
-}): string {
-  return [
-    `### ${opts.seat} started`,
-    "",
-    opts.ticketLine,
-    `**Mode:** ${opts.mode}`,
-    `**Doing:** ${opts.doing}`,
-    "",
-    `\`post_agent_started · ${new Date().toISOString()}\``,
-  ].join("\n");
+async function postGithub(opts: {
+  owner: string;
+  repo: string;
+  target: string;
+  slug: string;
+  event: AgentStartEvent;
+  extraOk?: Record<string, string>;
+}): Promise<void> {
+  const isPr = opts.target.startsWith("pr:");
+  const num = isPr ? opts.target.slice(3) : opts.target;
+  // PRs share the issue comment thread — one Hephaestus banner per number.
+  const targetKey = githubTargetKey("issue", num);
+  const result = upsertGithubAgentStarted({
+    owner: opts.owner,
+    repo: opts.repo,
+    issueNumber: num,
+    event: opts.event,
+    targetKey,
+  });
+  console.log(
+    `AGENT_START_OK ${JSON.stringify({
+      repo: `${opts.owner}/${opts.repo}`,
+      target: opts.target,
+      seat: opts.event.seat,
+      action: result.action,
+      ...opts.extraOk,
+    })}`,
+  );
 }
 
 async function main() {
@@ -75,44 +98,30 @@ async function main() {
   if (!slug && !owner) usage();
 
   const dry = process.env.AGENT_START_DRY_RUN === "1";
-  let ticketLine = "";
-  let body = "";
+  const isPr = target.startsWith("pr:");
+  const at = new Date();
+
+  const ticketLineFor = (ownerName: string, repoName: string, slugName: string) =>
+    isPr
+      ? `**PR:** ${ownerName}/${repoName}#${target.slice(3)}`
+      : `**Ticket:** ${slugName}#${target}`;
 
   // Explicit --repo → always GitHub
   if (owner && repo) {
-    if (target.startsWith("pr:")) {
-      const num = target.slice(3);
-      ticketLine = `**PR:** ${owner}/${repo}#${num}`;
-      body = buildBody({ seat, ticketLine, mode, doing });
-      console.log(body);
-      console.log("-----");
-      if (dry) {
-        console.log("AGENT_START_DRY_RUN ok");
-        return;
-      }
-      execFileSync(
-        "gh",
-        ["pr", "comment", num, "-R", `${owner}/${repo}`, "--body", body],
-        { stdio: "inherit" },
-      );
-    } else {
-      ticketLine = `**Ticket:** ${slug}#${target}`;
-      body = buildBody({ seat, ticketLine, mode, doing });
-      console.log(body);
-      console.log("-----");
-      if (dry) {
-        console.log("AGENT_START_DRY_RUN ok");
-        return;
-      }
-      execFileSync(
-        "gh",
-        ["issue", "comment", target, "-R", `${owner}/${repo}`, "--body", body],
-        { stdio: "inherit" },
-      );
+    const event: AgentStartEvent = {
+      seat,
+      ticketLine: ticketLineFor(owner, repo, slug),
+      mode,
+      doing,
+      at,
+    };
+    console.log(buildChatBanner(event));
+    console.log("-----");
+    if (dry) {
+      console.log("AGENT_START_DRY_RUN ok");
+      return;
     }
-    console.log(
-      `AGENT_START_OK ${JSON.stringify({ repo: `${owner}/${repo}`, target, seat })}`,
-    );
+    await postGithub({ owner, repo, target, slug, event });
     return;
   }
 
@@ -122,39 +131,27 @@ async function main() {
   if (tracker === "github_issues") {
     owner = config.git.workspace;
     repo = config.git.repo;
-    if (target.startsWith("pr:")) {
-      const num = target.slice(3);
-      ticketLine = `**PR:** ${owner}/${repo}#${num}`;
-      body = buildBody({ seat, ticketLine, mode, doing });
-      console.log(body);
-      console.log("-----");
-      if (dry) {
-        console.log("AGENT_START_DRY_RUN ok");
-        return;
-      }
-      execFileSync(
-        "gh",
-        ["pr", "comment", num, "-R", `${owner}/${repo}`, "--body", body],
-        { stdio: "inherit" },
-      );
-    } else {
-      ticketLine = `**Ticket:** ${slug}#${target}`;
-      body = buildBody({ seat, ticketLine, mode, doing });
-      console.log(body);
-      console.log("-----");
-      if (dry) {
-        console.log("AGENT_START_DRY_RUN ok");
-        return;
-      }
-      execFileSync(
-        "gh",
-        ["issue", "comment", target, "-R", `${owner}/${repo}`, "--body", body],
-        { stdio: "inherit" },
-      );
+    const event: AgentStartEvent = {
+      seat,
+      ticketLine: ticketLineFor(owner, repo, slug),
+      mode,
+      doing,
+      at,
+    };
+    console.log(buildChatBanner(event));
+    console.log("-----");
+    if (dry) {
+      console.log("AGENT_START_DRY_RUN ok");
+      return;
     }
-    console.log(
-      `AGENT_START_OK ${JSON.stringify({ tracker, repo: `${owner}/${repo}`, target, seat })}`,
-    );
+    await postGithub({
+      owner,
+      repo,
+      target,
+      slug,
+      event,
+      extraOk: { tracker },
+    });
     return;
   }
 
@@ -165,28 +162,31 @@ async function main() {
     );
     process.exit(1);
   }
-  ticketLine = `**Ticket:** ${target}`;
-  body = buildBody({ seat, ticketLine, mode, doing });
-  console.log(body);
+  const event: AgentStartEvent = {
+    seat,
+    ticketLine: `**Ticket:** ${target}`,
+    mode,
+    doing,
+    at,
+  };
+  console.log(buildChatBanner(event));
   console.log("-----");
   if (dry) {
     console.log("AGENT_START_DRY_RUN ok");
     return;
   }
-  const commentRes = await jiraFetch(`/rest/api/3/issue/${target}/comment`, {
-    method: "POST",
-    body: JSON.stringify({ body: markdownToAdf(body) }),
+  const result = await upsertJiraAgentStarted({
+    issueKey: target,
+    event,
+    targetKey: target,
   });
-  if (!commentRes.ok) {
-    console.error(
-      "AGENT_START_FAIL Jira comment:",
-      commentRes.status,
-      await commentRes.text(),
-    );
-    process.exit(1);
-  }
   console.log(
-    `AGENT_START_OK ${JSON.stringify({ tracker: "jira", key: target, seat })}`,
+    `AGENT_START_OK ${JSON.stringify({
+      tracker: "jira",
+      key: target,
+      seat,
+      action: result.action,
+    })}`,
   );
 }
 

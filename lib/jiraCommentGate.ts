@@ -1,30 +1,16 @@
 // Jira comment gates — respect QA agent returns before Validate/Testing.
 
+import { adfToPlainText } from "./jiraClient.ts";
+
 export type JiraCommentLike = {
   created: string;
   body: string;
   author?: string;
 };
 
+/** Flatten ADF to searchable text — same walker as seat-start stacking. */
 export function jiraAdfToPlainText(body: unknown): string {
-  if (typeof body === "string") return body;
-  if (!body || typeof body !== "object") return "";
-  const doc = body as { content?: unknown[] };
-  const lines: string[] = [];
-  for (const block of doc.content ?? []) {
-    if (!block || typeof block !== "object") continue;
-    const b = block as { type?: string; content?: unknown[] };
-    if (b.type === "paragraph" || b.type === "heading") {
-      let line = "";
-      for (const item of b.content ?? []) {
-        if (item && typeof item === "object" && "text" in item) {
-          line += String((item as { text?: string }).text ?? "");
-        }
-      }
-      lines.push(line);
-    }
-  }
-  return lines.join("\n").trim();
+  return adfToPlainText(body).trim();
 }
 
 export function qaReturnedToDev(commentText: string): boolean {

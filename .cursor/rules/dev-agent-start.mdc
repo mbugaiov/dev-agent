@@ -41,8 +41,13 @@ bash scripts/post_agent_started.sh <slug> <JIRA_KEY> <Seat> "<Mode>" "<Doing>"
 bash scripts/post_agent_started.sh --repo owner/repo pr:<N> <Seat> "<Mode>" "<Doing>"
 ```
 
-`pickup_github_ticket` / `pickup_jira_ticket` already post `### Hephaestus started`.
-BA / UX / QA kicks must post their own seat banner via the helper (tracker-aware).
+`pickup_github_ticket` / `pickup_jira_ticket` already post `### Hephaestus started`
+via the same helper (upsert — one living comment per seat+ticket).
+
+**Tracker stacking (not a second comment):** GitHub/Jira cannot Slack-thread.
+The helper keeps **one** `### <Seat> started` comment per seat+ticket for 6h:
+identical Mode+Doing is skipped (Kairos K11); a new plan PATCHes and lists
+prior starts under `Also started`. Override TTL with `AGENT_START_SESSION_TTL_MS`.
 
 **Forbidden:** silent seat switches; implementing / reviewing / closing with no start banner;
 status-only “working on it” without the `### … started` heading.
