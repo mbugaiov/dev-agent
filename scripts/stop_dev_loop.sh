@@ -22,6 +22,8 @@ killed_agent=0
 
 # shellcheck disable=SC1091
 source "$ROOT/scripts/lib/kill_tree.sh"
+# shellcheck disable=SC1091
+source "$ROOT/scripts/lib/oneshot_cmd.sh"
 
 # Scheduler via pid file — only if cmdline still matches this slug
 if [[ -f "$PID_FILE" ]]; then
@@ -86,14 +88,14 @@ fi
 if [[ -f "$AGENT_PID_FILE" ]]; then
   AOLD="$(tr -d '[:space:]' <"$AGENT_PID_FILE" || true)"
   if [[ -n "$AOLD" ]] && kill -0 "$AOLD" 2>/dev/null; then
-    acmd="$(ps -p "$AOLD" -o args= 2>/dev/null || true)"
-    if [[ "$acmd" =~ DEV_FACTORY_SLUG=${SLUG}([^a-z0-9-]|$) ]]; then
+    if agent_oneshot_tree_matches_slug "$AOLD" "$SLUG" "hephaestus"; then
       if kill_tree "$AOLD" "agent-oneshot"; then
         killed_agent=1
       fi
     else
-      printf 'LOOP_STOP_SKIP {"slug":"%s","kind":"agent-oneshot","pid":%s,"reason":"cmdline-mismatch"}\n' \
-        "$SLUG" "$AOLD"
+      acmd="$(ps -p "$AOLD" -o args= 2>/dev/null || true)"
+      printf 'LOOP_STOP_SKIP {"slug":"%s","kind":"agent-oneshot","pid":%s,"reason":"cmdline-mismatch","cmd":%s}\n' \
+        "$SLUG" "$AOLD" "$(printf '%q' "${acmd:0:120}")"
     fi
   fi
   rm -f "$AGENT_PID_FILE"
@@ -105,13 +107,12 @@ fi
 # DEV_FACTORY_SLUG=<slug> token in argv (including prompt text) is in scope.
 while read -r pid; do
   [ -z "$pid" ] && continue
-  acmd="$(ps -p "$pid" -o args= 2>/dev/null || true)"
-  if [[ "$acmd" =~ DEV_FACTORY_SLUG=${SLUG}([^a-z0-9-]|$) ]]; then
+  if agent_oneshot_tree_matches_slug "$pid" "$SLUG" "hephaestus"; then
     if kill_tree "$pid" "agent-oneshot"; then
       killed_agent=1
     fi
   fi
-done < <(pgrep -f "DEV_FACTORY_SLUG=${SLUG}" 2>/dev/null || true)
+done < <(pgrep -f "DEV_FACTORY_SLUG=${SLUG}([^a-z0-9-]|$)|Hephaestus oneshot for ${SLUG}([^a-z0-9-]|$)" 2>/dev/null || true)
 
 
 printf 'LOOP_STOPPED {"slug":"%s","schedulerKilled":%s,"watcherKilled":%s,"agentKilled":%s}\n' \

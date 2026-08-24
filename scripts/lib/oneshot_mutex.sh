@@ -11,31 +11,16 @@
 # KIND=hephaestus matches DEV_FACTORY_SLUG=<slug> or "Hephaestus oneshot for <slug>"
 # KIND=argus       matches QA_FACTORY_SLUG=<slug> or "Argus qa-loop oneshot for <slug>"
 
+# shellcheck disable=SC1091
+source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/oneshot_cmd.sh"
+
 oneshot_lock_dir() {
   printf '%s/oneshot.lock' "${FACTORY:?}"
 }
 
-oneshot_cmd_matches_slug() {
-  local cmd="$1" slug="$2" kind="${3:-hephaestus}"
-  case "$kind" in
-    argus)
-      [[ "$cmd" =~ QA_FACTORY_SLUG=${slug}([^a-z0-9-]|$) ]] && return 0
-      [[ "$cmd" =~ Argus\ qa-loop\ oneshot\ for\ ${slug}([^a-z0-9-]|$) ]] && return 0
-      ;;
-    *)
-      [[ "$cmd" =~ DEV_FACTORY_SLUG=${slug}([^a-z0-9-]|$) ]] && return 0
-      [[ "$cmd" =~ Hephaestus\ oneshot\ for\ ${slug}([^a-z0-9-]|$) ]] && return 0
-      ;;
-  esac
-  return 1
-}
-
 oneshot_pid_is_ours() {
   local pid="$1"
-  [[ -n "$pid" ]] && kill -0 "$pid" 2>/dev/null || return 1
-  local cmd
-  cmd="$(ps -p "$pid" -o args= 2>/dev/null || true)"
-  oneshot_cmd_matches_slug "$cmd" "$SLUG" "${ONESHOT_KIND:-hephaestus}"
+  agent_oneshot_tree_matches_slug "$pid" "$SLUG" "${ONESHOT_KIND:-hephaestus}"
 }
 
 # Print a live pid for this slug, or empty. Prefers PID_FILE, then pgrep.

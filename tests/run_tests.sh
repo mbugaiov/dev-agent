@@ -531,7 +531,23 @@ else
 fi
 kill "$ORPHAN_PREF_PID" 2>/dev/null || true
 
-# K14: print_oneshot_stall detects reconnect stall from factory artifacts
+# K14 wrapper: stop must kill bash -c / hephaestus_oneshot_runner tree
+WRAP_PID=$$
+# simulate ensure outer bash -c with quoted export (macOS ps truncates long lines)
+bash -c "export DEV_FACTORY_SLUG=\"${SLUG}\"; export HEPHAESTUS_LOG=projects/${SLUG}/factory/hephaestus-oneshot.out; exec bash scripts/lib/hephaestus_oneshot_runner.sh /bin/sleep 120" &
+WRAP_CHILD=$!
+echo "$WRAP_CHILD" > "projects/$SLUG/factory/hephaestus-oneshot.pid"
+sleep 0.3
+WRAP_STOP=$(bash scripts/stop_dev_loop.sh "$SLUG" 2>&1)
+if kill -0 "$WRAP_CHILD" 2>/dev/null; then
+  no "stop must kill hephaestus_oneshot_runner wrapper (pid=$WRAP_CHILD out=$WRAP_STOP)"
+else
+  echo "$WRAP_STOP" | grep -q '"agentKilled":1' && ok "stop kills hephaestus_oneshot_runner wrapper" \
+    || no "wrapper stop agentKilled (out=$WRAP_STOP)"
+fi
+kill "$WRAP_CHILD" 2>/dev/null || true
+rm -f "projects/$SLUG/factory/hephaestus-oneshot.pid"
+
 STALL_DIR="projects/$SLUG/factory"
 sleep 30 &
 STALL_LIVE=$!
