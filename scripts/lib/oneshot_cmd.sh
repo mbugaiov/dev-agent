@@ -45,14 +45,31 @@ oneshot_runner_in_cmd() {
   [[ "$cmd" == *hephaestus_oneshot_runner.sh* ]]
 }
 
+# Linux: pid-file often points at runner; slug is in inherited environ, not argv.
+oneshot_environ_matches_slug() {
+  local pid="$1" slug="$2"
+  local blob line
+  [[ -r "/proc/$pid/environ" ]] || return 1
+  blob="$(tr '\0' '\n' <"/proc/$pid/environ" 2>/dev/null || true)"
+  [[ -n "$blob" ]] || return 1
+  while IFS= read -r line; do
+    [[ "$line" == "DEV_FACTORY_SLUG=$slug" ]] && return 0
+    [[ "$line" == "DEV_FACTORY_SLUG=\"$slug\"" ]] && return 0
+    [[ "$line" == HEPHAESTUS_LOG=*projects/${slug}/factory* ]] && return 0
+    [[ "$line" == HEPHAESTUS_HEARTBEAT=*projects/${slug}/factory* ]] && return 0
+  done <<<"$blob"
+  return 1
+}
+
 # Linux ps often attributes hephaestus-oneshot.pid to the runner child; slug lives on
-# the parent bash -c (DEV_FACTORY_SLUG / HEPHAESTUS_LOG).
+# the parent bash -c (DEV_FACTORY_SLUG / HEPHAESTUS_LOG) or inherited environ.
 oneshot_ancestors_match_slug() {
   local pid="$1" slug="$2" kind="${3:-hephaestus}"
   local ppid cmd i
   for i in 1 2 3 4 5 6; do
     ppid="$(ps -p "$pid" -o ppid= 2>/dev/null | tr -d '[:space:]' || true)"
     [[ -z "$ppid" || "$ppid" == "0" || "$ppid" == "1" ]] && break
+    if oneshot_environ_matches_slug "$ppid" "$slug"; then return 0; fi
     cmd="$(ps -p "$ppid" -o args= 2>/dev/null || true)"
     if oneshot_cmd_conflicts_slug "$cmd" "$slug" "$kind"; then return 1; fi
     if oneshot_cmd_matches_slug "$cmd" "$slug" "$kind"; then return 0; fi
@@ -62,24 +79,30 @@ oneshot_ancestors_match_slug() {
   return 1
 }
 
-# Pid from hephaestus-oneshot.pid may be outer bash -c (ps truncates on macOS).
-agent_oneshot_tree_matches_slug() {
+oneshot_process_matches_slug() {
   local pid="$1" slug="$2" kind="${3:-hephaestus}"
-  local cmd child cmd2
-  [[ -n "$pid" ]] && kill -0 "$pid" 2>/dev/null || return 1
+  local cmd
+  if oneshot_environ_matches_slug "$pid" "$slug"; then return 0; fi
   cmd="$(ps -p "$pid" -o args= 2>/dev/null || true)"
   if oneshot_cmd_conflicts_slug "$cmd" "$slug" "$kind"; then return 1; fi
   if oneshot_cmd_matches_slug "$cmd" "$slug" "$kind"; then return 0; fi
   if oneshot_factory_path_in_cmd "$cmd" "$slug"; then return 0; fi
-  if oneshot_runner_in_cmd "$cmd" && oneshot_ancestors_match_slug "$pid" "$slug" "$kind"; then
-    return 0
+  if oneshot_runner_in_cmd "$cmd"; then
+    if oneshot_ancestors_match_slug "$pid" "$slug" "$kind"; then return 0; fi
+    if oneshot_environ_matches_slug "$pid" "$slug"; then return 0; fi
   fi
+  return 1
+}
+
+# Pid from hephaestus-oneshot.pid may be outer bash -c (ps truncates on macOS).
+agent_oneshot_tree_matches_slug() {
+  local pid="$1" slug="$2" kind="${3:-hephaestus}"
+  local child
+  [[ -n "$pid" ]] && kill -0 "$pid" 2>/dev/null || return 1
+  if oneshot_process_matches_slug "$pid" "$slug" "$kind"; then return 0; fi
   while read -r child; do
     [[ -z "$child" ]] && continue
-    cmd2="$(ps -p "$child" -o args= 2>/dev/null || true)"
-    if oneshot_cmd_conflicts_slug "$cmd2" "$slug" "$kind"; then continue; fi
-    if oneshot_cmd_matches_slug "$cmd2" "$slug" "$kind"; then return 0; fi
-    if oneshot_factory_path_in_cmd "$cmd2" "$slug"; then return 0; fi
+    if oneshot_process_matches_slug "$child" "$slug" "$kind"; then return 0; fi
   done < <(pgrep -P "$pid" 2>/dev/null || true)
   return 1
 }

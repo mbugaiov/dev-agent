@@ -538,15 +538,20 @@ CLAIM="projects/$SLUG/factory/hephaestus-oneshot.claim.json"
 printf '{"slug":"%s","issuedAt":"2026-08-24T00:00:00Z","mode":"cursor-agent-oneshot"}\n' "$SLUG" >"$CLAIM"
 bash -c "export DEV_FACTORY_SLUG=\"${SLUG}\"; export HEPHAESTUS_LOG=${LOG}; export HEPHAESTUS_HEARTBEAT=${HB}; bash scripts/lib/hephaestus_oneshot_runner.sh sleep 120" &
 WRAP_CHILD=$!
-echo "$WRAP_CHILD" > "projects/$SLUG/factory/hephaestus-oneshot.pid"
 sleep 0.3
+# Linux often stores runner pid, not outer bash -c (cmdline lacks DEV_FACTORY_SLUG).
+RUNNER_PID="$(pgrep -P "$WRAP_CHILD" 2>/dev/null | head -1 || true)"
+[[ -n "$RUNNER_PID" ]] && echo "$RUNNER_PID" > "projects/$SLUG/factory/hephaestus-oneshot.pid" \
+  || echo "$WRAP_CHILD" > "projects/$SLUG/factory/hephaestus-oneshot.pid"
+TARGET_PID="$(tr -d '[:space:]' <"projects/$SLUG/factory/hephaestus-oneshot.pid" || true)"
 WRAP_STOP=$(bash scripts/stop_dev_loop.sh "$SLUG" 2>&1)
-if kill -0 "$WRAP_CHILD" 2>/dev/null; then
-  no "stop must kill hephaestus_oneshot_runner (pid=$WRAP_CHILD out=$WRAP_STOP)"
+if kill -0 "$WRAP_CHILD" 2>/dev/null || kill -0 "$TARGET_PID" 2>/dev/null; then
+  no "stop must kill hephaestus_oneshot_runner (wrap=$WRAP_CHILD runner=$TARGET_PID out=$WRAP_STOP)"
 else
   ok "stop kills hephaestus_oneshot_runner wrapper"
 fi
 kill "$WRAP_CHILD" 2>/dev/null || true
+kill "$TARGET_PID" 2>/dev/null || true
 rm -f "projects/$SLUG/factory/hephaestus-oneshot.pid" "$HB" "$LOG" "$CLAIM"
 
 STALL_DIR="projects/$SLUG/factory"
@@ -564,6 +569,10 @@ rm -f "$STALL_DIR/hephaestus-oneshot.pid" "$STALL_DIR/hephaestus-oneshot.claim.j
 echo "$STALL_PROBE" | grep -q ONESHOT_STALLED \
   && ok "print_oneshot_stall flags reconnect stall" \
   || no "print_oneshot_stall must detect stall (got $STALL_PROBE)"
+
+bash scripts/smoke_k14_process.sh selftest >/dev/null 2>&1 \
+  && ok "smoke_k14_process selftest" \
+  || no "smoke_k14_process selftest"
 
 grep -q 'agentKilled' scripts/stop_dev_loop.sh \
   && grep -q 'hephaestus-oneshot.pid' scripts/stop_dev_loop.sh \

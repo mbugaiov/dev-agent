@@ -37,14 +37,18 @@ LOG="$FACTORY/hephaestus-oneshot.out"
 printf '{"slug":"%s"}\n' "$SLUG" >"$FACTORY/hephaestus-oneshot.claim.json"
 bash -c "export DEV_FACTORY_SLUG=\"${SLUG}\"; export HEPHAESTUS_LOG=${LOG}; export HEPHAESTUS_HEARTBEAT=${HB}; sleep 120" &
 wrap=$!
-echo "$wrap" >"$FACTORY/hephaestus-oneshot.pid"
 sleep 0.3
+runner="$(pgrep -P "$wrap" 2>/dev/null | head -1 || true)"
+[[ -n "$runner" ]] && echo "$runner" >"$FACTORY/hephaestus-oneshot.pid" || echo "$wrap" >"$FACTORY/hephaestus-oneshot.pid"
+target="$(tr -d '[:space:]' <"$FACTORY/hephaestus-oneshot.pid" || true)"
 stop_out="$(bash scripts/stop_dev_loop.sh "$SLUG" 2>&1)"
-if kill -0 "$wrap" 2>/dev/null; then
+if kill -0 "$wrap" 2>/dev/null || kill -0 "$target" 2>/dev/null; then
   no "stop_dev_loop must kill wrapper (out=$stop_out)"
 else
   ok "stop_dev_loop kills ensure-style wrapper"
 fi
+kill "$wrap" 2>/dev/null || true
+kill "$target" 2>/dev/null || true
 [[ ! -f "$FACTORY/hephaestus-oneshot.claim.json" ]] && ok "claim.json cleared on stop" \
   || no "claim.json should be removed on stop"
 rm -f "$FACTORY/hephaestus-oneshot.pid" "$HB" "$LOG"

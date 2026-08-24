@@ -97,7 +97,10 @@ if [[ -f "$AGENT_PID_FILE" ]]; then
       acmd="$(ps -p "$AOLD" -o args= 2>/dev/null || true)"
       if ! oneshot_cmd_conflicts_slug "$acmd" "$SLUG" "hephaestus"; then
         if oneshot_factory_path_in_cmd "$acmd" "$SLUG" \
-          || { oneshot_runner_in_cmd "$acmd" && oneshot_ancestors_match_slug "$AOLD" "$SLUG" "hephaestus"; }; then
+          || oneshot_environ_matches_slug "$AOLD" "$SLUG" \
+          || { oneshot_runner_in_cmd "$acmd" \
+            && { oneshot_ancestors_match_slug "$AOLD" "$SLUG" "hephaestus" \
+              || oneshot_environ_matches_slug "$AOLD" "$SLUG"; }; }; then
           should_kill=1
         fi
       fi
@@ -106,13 +109,14 @@ if [[ -f "$AGENT_PID_FILE" ]]; then
       if kill_tree "$AOLD" "agent-oneshot"; then
         killed_agent=1
       fi
+      rm -f "$FACTORY_DIR/hephaestus-oneshot.claim.json"
     else
       acmd="$(ps -p "$AOLD" -o args= 2>/dev/null || true)"
       printf 'LOOP_STOP_SKIP {"slug":"%s","kind":"agent-oneshot","pid":%s,"reason":"cmdline-mismatch","cmd":%s}\n' \
         "$SLUG" "$AOLD" "$(printf '%q' "${acmd:0:120}")"
     fi
   fi
-  rm -f "$AGENT_PID_FILE" "$FACTORY_DIR/hephaestus-oneshot.claim.json"
+  rm -f "$AGENT_PID_FILE"
 fi
 
 # Orphan slug-bound agent oneshot (no pid file / stale file already removed).
