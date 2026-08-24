@@ -216,6 +216,7 @@ grep -q 'cursor-agent' scripts/ensure_hephaestus_agent.sh \
   && grep -q 'oneshot_mutex.sh' scripts/ensure_hephaestus_agent.sh \
   && grep -q 'oneshot_lock_acquire' scripts/ensure_hephaestus_agent.sh \
   && grep -q 'GITHUB_HANDOFF_SKIP' scripts/post_github_handoff.ts \
+  && grep -q 'JIRA_HANDOFF_SKIP' scripts/post_jira_handoff.ts \
   && grep -q 'scripts/lib/kill_tree.sh' scripts/stop_dev_loop.sh \
   && ! grep -q -- '--api-key' scripts/ensure_hephaestus_agent.sh \
   && ok "ensure_hephaestus_agent is cursor-agent oneshot (K13)" \

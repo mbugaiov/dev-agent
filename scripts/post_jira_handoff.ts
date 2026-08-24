@@ -35,6 +35,7 @@ import {
   validateTestingTransitionId,
 } from "../lib/jiraClient.ts";
 import { commentsAlreadyHaveStgHandoff } from "../lib/handoffCommentDedup.ts";
+import { loadProjectConfig } from "../lib/loadProject.ts";
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..");
 
