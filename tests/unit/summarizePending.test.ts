@@ -73,6 +73,7 @@ describe("stop hook summarize followup", () => {
       argusPending: null,
       summarizePending: pending,
       consumeSummarizeOnEmit: false,
+      factorySession: true,
     });
     expect(res.followup_message).toBeTruthy();
     expect(res.followup_message!.startsWith("/summarize")).toBe(true);
@@ -98,6 +99,7 @@ describe("stop hook summarize followup", () => {
       currentBranch: "main",
       hasWorkingTreeChanges: false,
       hasOpenPr: false,
+      factorySession: true,
     });
     // Without project yaml, still may force drain — must not be /summarize first
     if (res.followup_message) {

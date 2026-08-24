@@ -1,4 +1,4 @@
-/** Resolve qa-agent checkout + fire hard handoff kick (writes pending + prints wake). */
+/** Resolve qa-agent checkout + fire hard handoff kick (pending + isolated oneshot). */
 
 import { existsSync, mkdirSync, writeFileSync } from "node:fs";
 import { dirname, isAbsolute, join, resolve } from "node:path";
@@ -78,6 +78,7 @@ export type FireQaHandoffKickResult =
       ok: true;
       qaAgentRoot: string;
       stdout: string;
+      oneshot?: "armed" | "already" | "skipped" | "failed" | "unknown";
     }
   | {
       ok: false;
@@ -86,8 +87,8 @@ export type FireQaHandoffKickResult =
     };
 
 /**
- * Hard-kick Argus: write qa-pending-execute.json under qa-agent + print QA_WAKE_EXECUTE.
- * Prefer calling qa-agent CLI when available; always fall back to direct write.
+ * Hard-kick Argus: write qa-pending-execute.json + ensure isolated oneshot.
+ * Never relies on workspace sessionStart/stop hooks (those hit ambient chats).
  */
 export function fireQaHandoffKick(input: {
   engineRoot: string;
@@ -109,6 +110,7 @@ export function fireQaHandoffKick(input: {
     };
   }
 
+  const parts: string[] = [];
   const script = join(qaRoot, "scripts/qa_handoff_kick.ts");
   if (existsSync(script)) {
     try {
@@ -130,7 +132,7 @@ export function fireQaHandoffKick(input: {
           env: input.env ?? process.env,
         },
       );
-      return { ok: true, qaAgentRoot: qaRoot, stdout };
+      parts.push(stdout.trimEnd());
     } catch (err) {
       const detail = err instanceof Error ? err.message : String(err);
       console.error(
@@ -140,34 +142,114 @@ export function fireQaHandoffKick(input: {
           detail,
         })}`,
       );
-      /* fall through to direct write */
     }
   }
 
-  try {
-    const state = buildQaWakePayload({
-      slug: input.slug,
-      ticketKey: input.ticketKey,
-      source: "handoff",
-    });
-    const path = join(qaRoot, QA_PENDING_EXECUTE_PATH);
-    mkdirSync(dirname(path), { recursive: true });
-    writeFileSync(path, JSON.stringify(state, null, 2) + "\n", "utf8");
-    const line = formatQaWakeExecuteLine(state);
-    const stdout =
-      `${line}\n` +
-      `QA_PENDING_EXECUTE_WRITTEN ${JSON.stringify({
+  if (parts.length === 0) {
+    try {
+      const state = buildQaWakePayload({
+        slug: input.slug,
+        ticketKey: input.ticketKey,
+        source: "handoff",
+      });
+      const path = join(qaRoot, QA_PENDING_EXECUTE_PATH);
+      mkdirSync(dirname(path), { recursive: true });
+      writeFileSync(path, JSON.stringify(state, null, 2) + "\n", "utf8");
+      const line = formatQaWakeExecuteLine(state);
+      parts.push(
+        `${line}\n` +
+          `QA_PENDING_EXECUTE_WRITTEN ${JSON.stringify({
+            slug: input.slug,
+            ticket: input.ticketKey,
+            path: QA_PENDING_EXECUTE_PATH,
+          })}`,
+      );
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      return {
+        ok: false,
+        qaAgentRoot: qaRoot,
+        reason: `failed to write qa pending: ${msg}`,
+      };
+    }
+  }
+
+  const oneshot = ensureArgusOneshot({
+    qaAgentRoot: qaRoot,
+    slug: input.slug,
+    ticketKey: input.ticketKey,
+    env: input.env ?? process.env,
+  });
+  parts.push(oneshot.line);
+
+  return {
+    ok: true,
+    qaAgentRoot: qaRoot,
+    stdout: parts.join("\n") + "\n",
+    oneshot: oneshot.status,
+  };
+}
+
+export type ArgusOneshotStatus =
+  | "armed"
+  | "already"
+  | "skipped"
+  | "failed"
+  | "unknown";
+
+/** Pure classifier for ensure_argus.sh last stdout line (testable without exec). */
+export function classifyArgusOneshotLine(line: string): ArgusOneshotStatus {
+  const text = line.trim();
+  if (text.includes("ARGUS_ONESHOT_ARMED")) return "armed";
+  if (text.includes("ALREADY_RUNNING")) return "already";
+  if (text.includes("ARGUS_ONESHOT_SKIP")) return "skipped";
+  if (text.includes("ARGUS_ONESHOT_FAIL")) return "failed";
+  return text ? "unknown" : "unknown";
+}
+
+export function ensureArgusOneshot(input: {
+  qaAgentRoot: string;
+  slug: string;
+  ticketKey: string;
+  env?: NodeJS.ProcessEnv;
+}): { status: "armed" | "already" | "skipped" | "failed" | "unknown"; line: string } {
+  const ensure = join(input.qaAgentRoot, "scripts/ensure_argus.sh");
+  if (!existsSync(ensure)) {
+    return {
+      status: "skipped",
+      line: `ARGUS_ONESHOT_SKIP ${JSON.stringify({
         slug: input.slug,
         ticket: input.ticketKey,
-        path: QA_PENDING_EXECUTE_PATH,
-      })}\n`;
-    return { ok: true, qaAgentRoot: qaRoot, stdout };
+        reason: "ensure_argus.sh-missing",
+      })}`,
+    };
+  }
+  try {
+    const out = execFileSync(
+      "bash",
+      [ensure, input.slug, "--ticket", input.ticketKey],
+      {
+        cwd: input.qaAgentRoot,
+        encoding: "utf8",
+        env: input.env ?? process.env,
+        timeout: 30_000,
+      },
+    ).trim();
+    const line = out.split("\n").filter(Boolean).at(-1) ?? out;
+    return { status: classifyArgusOneshotLine(line), line };
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
-    return {
-      ok: false,
-      qaAgentRoot: qaRoot,
-      reason: `failed to write qa pending: ${msg}`,
-    };
+    const stdout =
+      err && typeof err === "object" && "stdout" in err
+        ? String((err as { stdout?: string }).stdout ?? "")
+        : "";
+    const line =
+      stdout.trim().split("\n").filter(Boolean).at(-1) ||
+      `ARGUS_ONESHOT_FAIL ${JSON.stringify({
+        slug: input.slug,
+        ticket: input.ticketKey,
+        reason: msg.slice(0, 200),
+      })}`;
+    return { status: classifyArgusOneshotLine(line), line };
   }
 }

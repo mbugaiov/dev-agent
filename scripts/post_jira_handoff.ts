@@ -27,6 +27,7 @@ import { QA_KICK_YES, resolveQaHandoffKick } from "../lib/qaSubagentKick.ts";
 import { fireQaHandoffKick } from "../lib/qaHandoffKickBridge.ts";
 import {
   buildPendingArgusKickState,
+  consumePendingArgusKickState,
   PENDING_ARGUS_KICK_PATH,
 } from "../lib/argusKickPending.ts";
 import {
@@ -290,6 +291,7 @@ async function main() {
           slug: config.slug,
           ticket: args.key,
           qaAgentRoot: fired.qaAgentRoot,
+          oneshot: fired.oneshot ?? "unknown",
         })}`,
       );
     } else {
@@ -307,17 +309,30 @@ async function main() {
       ticket: args.key,
       qaAgentRoot: fired.qaAgentRoot,
     });
+    const oneshotOk =
+      fired.ok &&
+      (fired.oneshot === "armed" || fired.oneshot === "already");
     const pendingPath = join(ROOT, PENDING_ARGUS_KICK_PATH);
     mkdirSync(dirname(pendingPath), { recursive: true });
     writeFileSync(
       pendingPath,
-      JSON.stringify(pendingArgus, null, 2) + "\n",
+      JSON.stringify(
+        oneshotOk ? consumePendingArgusKickState(pendingArgus) : pendingArgus,
+        null,
+        2,
+      ) + "\n",
       "utf8",
     );
     console.log(
-      `ARGUS_KICK → wake qa-agent for ${config.slug} (${args.key}) — skill dev-qa-subagent; pending ${PENDING_ARGUS_KICK_PATH}`,
+      oneshotOk
+        ? `ARGUS_KICK_ACK_OK ${JSON.stringify({
+            ticket: args.key,
+            slug: config.slug,
+            via: "ensure_argus_oneshot",
+          })}`
+        : `ARGUS_KICK → ensure oneshot for ${config.slug} (${args.key}) failed/skipped — pending ${PENDING_ARGUS_KICK_PATH}; run bash ../qa-agent/scripts/ensure_argus.sh ${config.slug} --ticket ${args.key}`,
     );
-    console.log(pendingArgus.executePrompt);
+    if (!oneshotOk) console.log(pendingArgus.executePrompt);
   }
 }
 

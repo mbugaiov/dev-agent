@@ -1,4 +1,4 @@
-/** Hephaestus latch — force Argus Task after handoff until acked. */
+/** Hephaestus latch — Argus oneshot after handoff until acked. */
 
 export const PENDING_ARGUS_KICK_PATH = ".cursor/dev-factory-pending-argus-kick.json";
 
@@ -7,7 +7,6 @@ export type PendingArgusKickState = {
   ticket: string;
   issuedAt: string;
   consumed: boolean;
-  /** Path to qa-agent root used for the hard kick (informational). */
   qaAgentRoot?: string;
   executePrompt: string;
 };
@@ -32,13 +31,11 @@ export function formatArgusKickPrompt(input: {
   ticket: string;
 }): string {
   return (
-    `ARGUS_KICK_EXECUTE: After handoff, wake Argus NOW for ${input.ticket} ` +
-    `(slug ${input.slug}). Spawn Cursor Task → qa-agent skill qa-loop / ` +
-    `BACKLOG_WAKE_EXECUTE equivalent: ` +
-    `cd qa-agent → eval "$(bash scripts/qa_scope.sh ${input.slug} --log --shell)" → ` +
-    `drain validate-testing → backlog_drained. ` +
-    `Then: npx tsx scripts/ack_argus_kick.ts --ticket ${input.ticket}. ` +
-    `Forbidden: end turn on GITHUB_HANDOFF_OK / label-only without Argus wake.`
+    `ARGUS_KICK_EXECUTE: After handoff, ensure isolated Argus oneshot for ${input.ticket} ` +
+    `(slug ${input.slug}) via qa-agent scripts/ensure_argus.sh — NOT Task/hooks in ambient IDE chats. ` +
+    `Pending latch is auto-acked when oneshot arms (or ack: npx tsx scripts/ack_argus_kick.ts --ticket ${input.ticket}). ` +
+    `Forbidden: end turn on GITHUB_HANDOFF_OK / label-only without ensure_argus; ` +
+    `forbidden: inject ARGUS_KICK into personal/neighbor Composer sessions.`
   );
 }
 
@@ -52,7 +49,9 @@ export function shouldForceArgusKickFollowup(input: {
   pending: PendingArgusKickState | null;
   loopCount: number;
   maxFollowups?: number;
+  enableHookFollowup?: boolean;
 }): { force: true; message: string } | { force: false } {
+  if (!input.enableHookFollowup) return { force: false };
   const max = input.maxFollowups ?? 5;
   if (!input.pending || input.pending.consumed) return { force: false };
   if (input.loopCount >= max) return { force: false };
@@ -61,6 +60,6 @@ export function shouldForceArgusKickFollowup(input: {
     message:
       `${input.pending.executePrompt} ` +
       `Handoff already moved ${input.pending.ticket} to validate-testing. ` +
-      `Spawn Argus Task this turn — do not wait for arm_qa_loop timer.`,
+      `Run ensure_argus oneshot this turn — do not wait for arm_qa_loop timer.`,
   };
 }

@@ -1,6 +1,6 @@
 ---
 name: dev-qa-subagent
-description: When and how Hephaestus wakes Argus (qa-agent) immediately after Validate/Testing handoff — same pattern as Hermes/Athena kicks, not timer-only arm_qa_loop.
+description: When and how Hephaestus wakes Argus (qa-agent) immediately after Validate/Testing handoff — isolated oneshot via ensure_argus, not ambient IDE hooks or in-chat Task.
 ---
 
 # Dev → QA subagent kick (after handoff)
@@ -9,16 +9,20 @@ After **`post_jira_handoff.ts`** / **`post_github_handoff.ts`** succeeds, the ti
 `Validate/Testing` (or GitHub `validate-testing`). **Do not wait** for
 `arm_qa_loop.sh` / the next `AGENT_LOOP_WAKE_<slug>qa` timer.
 
-Handoff now **hard-kicks** Argus:
+Handoff now **hard-kicks** Argus as an **isolated oneshot**:
 
 1. Prints `QA_KICK_YES` + `QA_WAKE_EXECUTE` (via `fireQaHandoffKick` → qa-agent
    `qa_handoff_kick.ts` / pending write).
 2. Writes qa-agent `.cursor/qa-pending-execute.json` (`consumed: false`).
-3. Writes Hephaestus `.cursor/dev-factory-pending-argus-kick.json` — stop/session
-   hooks force followup until `npx tsx scripts/ack_argus_kick.ts` runs.
+3. Runs `qa-agent/scripts/ensure_argus.sh <slug> --ticket <KEY>` — detached
+   `cursor-agent` oneshot (background session). Dedupes on
+   `projects/<slug>/factory/argus-oneshot.pid`.
+4. On `ARGUS_ONESHOT_ARMED` / `ALREADY_RUNNING`: auto-acks Hephaestus
+   `.cursor/dev-factory-pending-argus-kick.json` (`consumed: true`).
+5. qa-agent close/return scripts ack `qa-pending-execute` per ticket (see qa-agent #43).
 
-Hephaestus **must** wake Argus in this session (Cursor **Task** subagent), same
-as BA/UX kicks — unless `--no-kick` / operator explicitly deferred.
+**Forbidden:** workspace `sessionStart`/`stop` hooks injecting `ARGUS_KICK` into
+personal or neighbor Composer sessions; spawning Argus as a Task inside those chats.
 
 ## Detect
 
@@ -26,55 +30,32 @@ as BA/UX kicks — unless `--no-kick` / operator explicitly deferred.
 # Prefer lines printed by handoff scripts:
 #   QA_KICK_YES …
 #   QA_WAKE_EXECUTE …
-#   ARGUS_HARD_KICK_OK …
-
-# Or:
-npx tsx scripts/should_kick_qa.ts <slug> --ticket <KEY> --handoff-ok
-# QA_KICK_YES → wake Argus; QA_KICK_NO → skip
+#   ARGUS_HARD_KICK_OK … "oneshot":"armed"
+#   ARGUS_ONESHOT_ARMED …
+#   ARGUS_KICK_ACK_OK … "via":"ensure_argus_oneshot"
 ```
 
-## How to wake (mandatory shape)
+## If oneshot skipped (no CURSOR_API_KEY / cursor-agent)
 
-Use the **Task** tool (`subagent_type: generalPurpose` or explore+shell as needed).
-Prompt must include:
+```bash
+cd ../qa-agent   # or QA_AGENT_ROOT
+bash scripts/ensure_argus.sh <slug> --ticket <KEY>
+npx tsx scripts/ack_argus_kick.ts --ticket <KEY>
+```
 
-0. **Start banner (mandatory):** before scope/smoke —
-   `bash scripts/post_agent_started.sh <slug> <KEY|N> Argus "STG retest" "<Doing>"`
-   (GitHub Issues or Jira per project; rule `dev-agent-start.mdc`).
-1. Role: **Argus / QA** — skill **`qa-loop`** in **`qa-agent`** checkout
-   (`../qa-agent` or `QA_AGENT_ROOT`). Project slug **`<slug>`** only.
-2. Sentinel: **`QA_WAKE_EXECUTE`** / **`BACKLOG_WAKE_EXECUTE`** (or `QA_LOOP_ARMED` execute contract) —
-   **no notify-only / status-only**.
-3. First steps:
-   - `cd <qa-agent-root>`
-   - `npx tsx scripts/ack_qa_pending.ts` (or ack after first scope scan starts)
-   - `eval "$(bash scripts/qa_scope.sh <slug> --log --shell)"`
-   - Drain **all** `validate-testing` / Validate/Testing keys (not only the one
-     just handed off), oldest first.
-4. Per ticket: handoff parse → OpenSpec/TC → STG retest → evidence →
-   **qa-verdict-review** → close (`github_close_issue.py` / `jira_close_issue.py`)
-   or `QA RETURN`.
-5. End with `backlog_drained` when scope count=0.
-6. Hephaestus: `npx tsx scripts/ack_argus_kick.ts --ticket <KEY>` after Argus Task is spawned.
-
-**Isolation:** never hit another product STG under this `<slug>` (one slug = one tenant).
+Do **not** paste `ARGUS_KICK_EXECUTE` into an ambient IDE chat as a substitute.
 
 ## Ordering
 
 ```
 … → merge → STG buildId MATCH → post_*_handoff
-  → QA_KICK_YES + QA_WAKE_EXECUTE + pending latches
-  → Task Argus (drain validate-testing) + ack_argus_kick
+  → QA_KICK_YES + QA_WAKE_EXECUTE + ensure_argus oneshot + ack latch
   → Hephaestus continues drain of impl-dev backlog (next ticket)
 ```
 
-Hephaestus may start the **next** impl-dev ticket in parallel **after** spawning
-the Argus Task (do not block the whole factory on QA), but **must not** skip the
-kick or leave `dev-factory-pending-argus-kick.json` unconsumed.
-
 ## Forbidden
 
-- Ending the handoff turn with only `GITHUB_HANDOFF_OK` / `HANDOFF_POSTED` and no Argus wake
-- Assuming `arm_qa_loop.sh <slug>` is running (it may not be — timer wake is not required for the kick)
-- Asking the human to decide whether QA should run — kick is mandatory after handoff
-- Treating `QA_KICK_YES` as notify-only — hard kick + Task + ack are required
+- Ending handoff with only `GITHUB_HANDOFF_OK` and no ensure_argus attempt
+- Injecting kick into personal/neighbor chats via hooks or paste
+- Spawning Argus Task in the Hephaestus Composer session as the primary wake
+- Leaving `qa-pending-execute` / `dev-factory-pending-argus-kick` unconsumed after PASS/RETURN

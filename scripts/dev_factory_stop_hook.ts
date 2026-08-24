@@ -109,6 +109,7 @@ function main() {
     hasWorkingTreeChanges: workingTree,
     hasOpenPr: openPr,
     pending,
+    factorySession: process.env.CURSOR_FACTORY_SESSION === "1",
   });
   console.log(JSON.stringify(decision));
 }
