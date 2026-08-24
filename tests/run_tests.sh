@@ -536,7 +536,7 @@ HB="projects/$SLUG/factory/hephaestus-oneshot.heartbeat"
 LOG="projects/$SLUG/factory/hephaestus-oneshot.out"
 CLAIM="projects/$SLUG/factory/hephaestus-oneshot.claim.json"
 printf '{"slug":"%s","issuedAt":"2026-08-24T00:00:00Z","mode":"cursor-agent-oneshot"}\n' "$SLUG" >"$CLAIM"
-bash -c "export DEV_FACTORY_SLUG=\"${SLUG}\"; export HEPHAESTUS_LOG=${LOG}; export HEPHAESTUS_HEARTBEAT=${HB}; exec sleep 120" &
+bash -c "export DEV_FACTORY_SLUG=\"${SLUG}\"; export HEPHAESTUS_LOG=${LOG}; export HEPHAESTUS_HEARTBEAT=${HB}; sleep 120" &
 WRAP_CHILD=$!
 echo "$WRAP_CHILD" > "projects/$SLUG/factory/hephaestus-oneshot.pid"
 sleep 0.3

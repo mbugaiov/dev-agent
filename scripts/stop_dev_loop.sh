@@ -94,8 +94,12 @@ if [[ -f "$AGENT_PID_FILE" ]]; then
     elif [[ -f "$FACTORY_DIR/hephaestus-oneshot.claim.json" ]] \
       && grep -q "\"slug\"[[:space:]]*:[[:space:]]*\"${SLUG}\"" \
         "$FACTORY_DIR/hephaestus-oneshot.claim.json" 2>/dev/null; then
-      # K14: outer bash -c may exec — slug-scoped pid file + claim is authoritative
-      should_kill=1
+      acmd="$(ps -p "$AOLD" -o args= 2>/dev/null || true)"
+      if [[ "$acmd" == bash* ]] \
+        || [[ "$acmd" == *projects/${slug}/factory* ]] \
+        || [[ "$acmd" == *hephaestus_oneshot_runner* ]]; then
+        should_kill=1
+      fi
     fi
     if [[ "$should_kill" -eq 1 ]]; then
       if kill_tree "$AOLD" "agent-oneshot"; then
