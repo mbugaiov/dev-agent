@@ -88,7 +88,16 @@ fi
 if [[ -f "$AGENT_PID_FILE" ]]; then
   AOLD="$(tr -d '[:space:]' <"$AGENT_PID_FILE" || true)"
   if [[ -n "$AOLD" ]] && kill -0 "$AOLD" 2>/dev/null; then
+    should_kill=0
     if agent_oneshot_tree_matches_slug "$AOLD" "$SLUG" "hephaestus"; then
+      should_kill=1
+    elif [[ -f "$FACTORY_DIR/hephaestus-oneshot.claim.json" ]] \
+      && grep -q "\"slug\"[[:space:]]*:[[:space:]]*\"${SLUG}\"" \
+        "$FACTORY_DIR/hephaestus-oneshot.claim.json" 2>/dev/null; then
+      # K14: outer bash -c may exec — slug-scoped pid file + claim is authoritative
+      should_kill=1
+    fi
+    if [[ "$should_kill" -eq 1 ]]; then
       if kill_tree "$AOLD" "agent-oneshot"; then
         killed_agent=1
       fi
