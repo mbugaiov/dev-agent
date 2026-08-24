@@ -27,6 +27,8 @@ FACTORY="$ROOT/projects/$SLUG/factory"
 mkdir -p "$FACTORY"
 PID_FILE="$FACTORY/hephaestus-oneshot.pid"
 LOG="$FACTORY/hephaestus-oneshot.out"
+HEARTBEAT="$FACTORY/hephaestus-oneshot.heartbeat"
+STALL_FILE="$FACTORY/hephaestus-oneshot.stall.json"
 CLAIM="$FACTORY/hephaestus-oneshot.claim.json"
 LOOP_PID_FILE="$FACTORY/loop.pid"
 STOP="$ROOT/scripts/stop_dev_loop.sh"
@@ -78,10 +80,41 @@ reap_blind_bash_if_needed() {
   fi
 }
 
+record_stall_recovery() {
+  local detail="${1:-}"
+  printf '{"slug":"%s","recordedAt":"%s","detail":%s}\n' \
+    "$SLUG" "$(date -u +%Y-%m-%dT%H:%M:%SZ)" "${detail:-null}" >"$STALL_FILE"
+}
+
+kill_stalled_oneshot() {
+  local detail="${1:-}"
+  printf 'HEPHAESTUS_ONESHOT_STALLED {"slug":"%s","detail":%s}\n' "$SLUG" "${detail:-null}"
+  record_stall_recovery "${detail:-null}"
+  if [[ -f "$STOP" ]]; then
+    bash "$STOP" "$SLUG" >/dev/null 2>&1 || true
+  fi
+  rm -f "$PID_FILE" "$HEARTBEAT"
+}
+
+hephaestus_stalled() {
+  local out line detail
+  if ! out="$(npx tsx "$ROOT/scripts/print_oneshot_stall.ts" "$SLUG" 2>/dev/null)"; then
+    return 1
+  fi
+  line="$(printf '%s' "$out" | tail -1)"
+  [[ "$line" == ONESHOT_STALLED* ]] || return 1
+  detail="${line#ONESHOT_STALLED }"
+  kill_stalled_oneshot "$detail"
+  return 0
+}
+
 hephaestus_already_running() {
   local live
   live="$(oneshot_find_live_pid || true)"
   [[ -n "$live" ]] || return 1
+  if hephaestus_stalled; then
+    return 1
+  fi
   echo "$live" >"$PID_FILE"
   reap_blind_bash_if_needed 1
   printf 'ALREADY_RUNNING {"slug":"%s","pid":%s,"mode":"cursor-agent-oneshot"}\n' \
@@ -114,6 +147,10 @@ reap_blind_bash_if_needed 0
 
 # No apostrophes in PROMPT — nested bash -c quoting hazard (see qa-agent arm_qa_loop).
 PROMPT="EXECUTE Hephaestus oneshot for ${SLUG}. Isolated oneshot — not an ambient IDE chat. Set CURSOR_FACTORY_SESSION=1 and DEV_FACTORY_SLUG=${SLUG}. Drain impl-dev backlog (oldest first): pickup → OpenSpec/gates → implement → app gate → MR → wait_pr_pipeline → handoff; stay while open PR/MR remains; exit only when backlog idle AND no open MRs (DEV_FACTORY_IDLE). Skills: dev-factory-loop, dev-mr-pipeline. Forbidden: notify-only / status-only; do not leave a bash-only dev-loop without executing tickets. Prefer direct ticket pickup over silent watch_dev_loop."
+if [[ -f "$STALL_FILE" ]]; then
+  PROMPT="STALL_RECOVERY: Previous Hephaestus oneshot stalled (Cursor API reconnect or silent timeout). Continue from existing git branch and open MR if any — run wait_pr_pipeline before new implementation. ${PROMPT}"
+  rm -f "$STALL_FILE"
+fi
 
 if ! command -v cursor-agent >/dev/null 2>&1; then
   printf 'HEPHAESTUS_ONESHOT_SKIP {"slug":"%s","reason":"cursor-agent-missing"}\n' "$SLUG"
@@ -153,9 +190,10 @@ if hephaestus_already_running; then
   exit 0
 fi
 
-: >"$LOG"
 printf '{"slug":"%s","issuedAt":"%s","mode":"cursor-agent-oneshot"}\n' \
   "$SLUG" "$(date -u +%Y-%m-%dT%H:%M:%SZ)" >"$CLAIM"
+RUNNER="$ROOT/scripts/lib/hephaestus_oneshot_runner.sh"
+QUOTED_RUNNER=$(printf '%q' "$RUNNER")
 
 # Auth: inherit CURSOR_API_KEY from this process env into the child.
 # Do NOT interpolate the key into bash -c text (ps/cmdline leakage).
@@ -165,8 +203,10 @@ nohup bash -c "
   cd \"$ROOT\"
   export CURSOR_FACTORY_SESSION=1
   export DEV_FACTORY_SLUG=\"$SLUG\"
-  ${QUOTED_BIN} --force${MODEL_ARGS_Q} \
-    --output-format text -p ${QUOTED_PROMPT} >>\"$LOG\" 2>&1
+  export HEPHAESTUS_LOG=\"$LOG\"
+  export HEPHAESTUS_HEARTBEAT=\"$HEARTBEAT\"
+  bash ${QUOTED_RUNNER} ${QUOTED_BIN} --force${MODEL_ARGS_Q} \
+    --output-format text -p ${QUOTED_PROMPT}
   rm -f \"$PID_FILE\"
 " >/dev/null 2>&1 &
 ONESHOT_PID=$!
