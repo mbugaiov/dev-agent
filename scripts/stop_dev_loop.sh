@@ -96,7 +96,7 @@ if [[ -f "$AGENT_PID_FILE" ]]; then
         "$FACTORY_DIR/hephaestus-oneshot.claim.json" 2>/dev/null; then
       acmd="$(ps -p "$AOLD" -o args= 2>/dev/null || true)"
       if [[ "$acmd" == bash* ]] \
-        || [[ "$acmd" == *projects/${slug}/factory* ]] \
+        || [[ "$acmd" == *projects/${SLUG}/factory* ]] \
         || [[ "$acmd" == *hephaestus_oneshot_runner* ]]; then
         should_kill=1
       fi
