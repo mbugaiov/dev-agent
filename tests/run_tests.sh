@@ -531,11 +531,12 @@ else
 fi
 kill "$ORPHAN_PREF_PID" 2>/dev/null || true
 
-# K14 wrapper: stop must kill hephaestus_oneshot_runner tree
+# K14 wrapper: stop must kill ensure-style bash -c tree (factory path in cmdline)
 HB="projects/$SLUG/factory/hephaestus-oneshot.heartbeat"
 LOG="projects/$SLUG/factory/hephaestus-oneshot.out"
-export HEPHAESTUS_LOG="$LOG" HEPHAESTUS_HEARTBEAT="$HB"
-bash scripts/lib/hephaestus_oneshot_runner.sh sleep 120 &
+CLAIM="projects/$SLUG/factory/hephaestus-oneshot.claim.json"
+printf '{"slug":"%s","issuedAt":"2026-08-24T00:00:00Z","mode":"cursor-agent-oneshot"}\n' "$SLUG" >"$CLAIM"
+bash -c "export DEV_FACTORY_SLUG=\"${SLUG}\"; export HEPHAESTUS_LOG=${LOG}; export HEPHAESTUS_HEARTBEAT=${HB}; bash scripts/lib/hephaestus_oneshot_runner.sh sleep 120" &
 WRAP_CHILD=$!
 echo "$WRAP_CHILD" > "projects/$SLUG/factory/hephaestus-oneshot.pid"
 sleep 0.3
@@ -546,7 +547,7 @@ else
   ok "stop kills hephaestus_oneshot_runner wrapper"
 fi
 kill "$WRAP_CHILD" 2>/dev/null || true
-rm -f "projects/$SLUG/factory/hephaestus-oneshot.pid" "$HB" "$LOG"
+rm -f "projects/$SLUG/factory/hephaestus-oneshot.pid" "$HB" "$LOG" "$CLAIM"
 
 STALL_DIR="projects/$SLUG/factory"
 sleep 30 &

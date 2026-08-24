@@ -95,9 +95,8 @@ if [[ -f "$AGENT_PID_FILE" ]]; then
       && grep -q "\"slug\"[[:space:]]*:[[:space:]]*\"${SLUG}\"" \
         "$FACTORY_DIR/hephaestus-oneshot.claim.json" 2>/dev/null; then
       acmd="$(ps -p "$AOLD" -o args= 2>/dev/null || true)"
-      if [[ "$acmd" == bash* ]] \
-        || [[ "$acmd" == *projects/${SLUG}/factory* ]] \
-        || [[ "$acmd" == *hephaestus_oneshot_runner* ]]; then
+      if oneshot_factory_path_in_cmd "$acmd" "$SLUG" \
+        && ! oneshot_cmd_conflicts_slug "$acmd" "$SLUG" "hephaestus"; then
         should_kill=1
       fi
     fi
@@ -111,7 +110,7 @@ if [[ -f "$AGENT_PID_FILE" ]]; then
         "$SLUG" "$AOLD" "$(printf '%q' "${acmd:0:120}")"
     fi
   fi
-  rm -f "$AGENT_PID_FILE"
+  rm -f "$AGENT_PID_FILE" "$FACTORY_DIR/hephaestus-oneshot.claim.json"
 fi
 
 # Orphan slug-bound agent oneshot (no pid file / stale file already removed).
