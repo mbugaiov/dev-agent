@@ -206,12 +206,17 @@ have "scripts/stop_dev_loop.sh"
 
 have "scripts/ensure_hephaestus_agent.sh"
 have "scripts/lib/kill_tree.sh"
+have "scripts/lib/oneshot_mutex.sh"
 grep -q 'cursor-agent' scripts/ensure_hephaestus_agent.sh \
   && grep -q 'HEPHAESTUS_ONESHOT_ARMED' scripts/ensure_hephaestus_agent.sh \
   && grep -q 'HEPHAESTUS_REAP_BLIND' scripts/ensure_hephaestus_agent.sh \
   && grep -q 'CURSOR_FACTORY_SESSION=1' scripts/ensure_hephaestus_agent.sh \
   && grep -q 'DEV_FACTORY_SLUG' scripts/ensure_hephaestus_agent.sh \
   && grep -q 'scripts/lib/kill_tree.sh' scripts/ensure_hephaestus_agent.sh \
+  && grep -q 'oneshot_mutex.sh' scripts/ensure_hephaestus_agent.sh \
+  && grep -q 'oneshot_lock_acquire' scripts/ensure_hephaestus_agent.sh \
+  && grep -q 'GITHUB_HANDOFF_SKIP' scripts/post_github_handoff.ts \
+  && grep -q 'JIRA_HANDOFF_SKIP' scripts/post_jira_handoff.ts \
   && grep -q 'scripts/lib/kill_tree.sh' scripts/stop_dev_loop.sh \
   && ! grep -q -- '--api-key' scripts/ensure_hephaestus_agent.sh \
   && ok "ensure_hephaestus_agent is cursor-agent oneshot (K13)" \
@@ -271,10 +276,27 @@ kill "$BLIND_SKIP_PID" 2>/dev/null || true
 rm -f "projects/$SLUG/factory/loop.pid"
 _ea_kill() {
   local pf="projects/$SLUG/factory/hephaestus-oneshot.pid"
+  local pid cmd
   if [[ -f "$pf" ]]; then
-    kill "$(tr -d '[:space:]' <"$pf")" 2>/dev/null || true
+    pid="$(tr -d '[:space:]' <"$pf" || true)"
+    if [[ -n "$pid" ]]; then
+      pkill -9 -P "$pid" 2>/dev/null || true
+      kill -9 "$pid" 2>/dev/null || true
+    fi
     rm -f "$pf"
   fi
+  while read -r pid; do
+    [[ -z "$pid" ]] && continue
+    cmd="$(ps -p "$pid" -o args= 2>/dev/null || true)"
+    [[ "$cmd" == *ensure_hephaestus_agent.sh* ]] && continue
+    if [[ "$cmd" =~ DEV_FACTORY_SLUG=${SLUG}([^a-z0-9-]|$) ]] \
+      || [[ "$cmd" =~ Hephaestus\ oneshot\ for\ ${SLUG}([^a-z0-9-]|$) ]]; then
+      pkill -9 -P "$pid" 2>/dev/null || true
+      kill -9 "$pid" 2>/dev/null || true
+    fi
+  done < <(pgrep -f "oneshot for ${SLUG}|DEV_FACTORY_SLUG=${SLUG}" 2>/dev/null || true)
+  rm -rf "projects/$SLUG/factory/oneshot.lock"
+  sleep 0.15
 }
 _ea_kill
 # Stub asserts CURSOR_API_KEY is inherited into the child (not argv --api-key).
@@ -318,6 +340,21 @@ OUT2=$(PATH="$EA_STUB:/usr/bin:/bin" CURSOR_API_KEY=test-key-not-real \
 echo "$OUT2" | grep -q ALREADY_RUNNING && [[ "$EC2" -eq 0 ]] \
   && ok "ensure_hephaestus_agent ALREADY_RUNNING on live pid" \
   || no "ensure_hephaestus_agent should short-circuit live pid (ec=$EC2: $OUT2)"
+# Parallel ensure: mutex → exactly one ARMED
+_ea_kill
+mkdir -p "projects/$SLUG/factory"
+PAR_OUT=$(
+  PATH="$EA_STUB:/usr/bin:/bin" CURSOR_API_KEY=test-key-not-real \
+    bash scripts/ensure_hephaestus_agent.sh "$SLUG" &
+  PATH="$EA_STUB:/usr/bin:/bin" CURSOR_API_KEY=test-key-not-real \
+    bash scripts/ensure_hephaestus_agent.sh "$SLUG" &
+  wait
+)
+PAR_ARMED=$(printf '%s\n' "$PAR_OUT" | grep -c HEPHAESTUS_ONESHOT_ARMED || true)
+PAR_ALREADY=$(printf '%s\n' "$PAR_OUT" | grep -c ALREADY_RUNNING || true)
+[[ "$PAR_ARMED" -eq 1 ]] && [[ "$PAR_ALREADY" -ge 1 ]] \
+  && ok "parallel ensure_hephaestus: one ARMED, rest ALREADY_RUNNING" \
+  || no "parallel ensure must arm once (armed=$PAR_ARMED already=$PAR_ALREADY out=$PAR_OUT)"
 perl -e "\$0 = \"bash scripts/dev-loop.sh ${SLUG}\"; sleep 45" &
 BLIND_AR_PID=$!
 echo "$BLIND_AR_PID" > "projects/$SLUG/factory/loop.pid"

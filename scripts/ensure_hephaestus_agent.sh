@@ -30,10 +30,13 @@ LOG="$FACTORY/hephaestus-oneshot.out"
 CLAIM="$FACTORY/hephaestus-oneshot.claim.json"
 LOOP_PID_FILE="$FACTORY/loop.pid"
 STOP="$ROOT/scripts/stop_dev_loop.sh"
+ONESHOT_KIND=hephaestus
 
 # Do not rewrite PATH before command -v — tests stub cursor-agent via PATH.
 # shellcheck disable=SC1091
 source "$ROOT/scripts/lib/kill_tree.sh"
+# shellcheck disable=SC1091
+source "$ROOT/scripts/lib/oneshot_mutex.sh"
 
 # Reap blind bash schedulers. When preserve_agent=1 (ALREADY_RUNNING path),
 # kill only matching `scripts/dev-loop.sh <slug>` trees via shared kill_tree —
@@ -75,19 +78,20 @@ reap_blind_bash_if_needed() {
   fi
 }
 
-if [[ -f "$PID_FILE" ]]; then
-  OLD="$(tr -d '[:space:]' <"$PID_FILE" || true)"
-  if [[ -n "${OLD:-}" ]] && kill -0 "$OLD" 2>/dev/null; then
-    acmd="$(ps -p "$OLD" -o args= 2>/dev/null || true)"
-    # Slug-bound only — recycled PID of another tenant must not short-circuit.
-    if [[ "$acmd" =~ DEV_FACTORY_SLUG=${SLUG}([^a-z0-9-]|$) ]]; then
-      reap_blind_bash_if_needed 1
-      printf 'ALREADY_RUNNING {"slug":"%s","pid":%s,"mode":"cursor-agent-oneshot"}\n' \
-        "$SLUG" "$OLD"
-      exit 0
-    fi
-    rm -f "$PID_FILE"
-  fi
+hephaestus_already_running() {
+  local live
+  live="$(oneshot_find_live_pid || true)"
+  [[ -n "$live" ]] || return 1
+  echo "$live" >"$PID_FILE"
+  reap_blind_bash_if_needed 1
+  printf 'ALREADY_RUNNING {"slug":"%s","pid":%s,"mode":"cursor-agent-oneshot"}\n' \
+    "$SLUG" "$live"
+  return 0
+}
+
+# Pid file + pgrep (orphans when two ensures raced and last-write won).
+if hephaestus_already_running; then
+  exit 0
 fi
 
 # Secrets: engine-wide first, then per-slug (per-slug wins).
@@ -134,6 +138,21 @@ fi
 QUOTED_PROMPT=$(printf '%q' "$PROMPT")
 QUOTED_BIN=$(printf '%q' "$CURSOR_AGENT_BIN")
 
+if ! oneshot_lock_acquire; then
+  if hephaestus_already_running; then
+    exit 0
+  fi
+  printf 'HEPHAESTUS_ONESHOT_FAIL {"slug":"%s","reason":"lock-busy"}\n' "$SLUG"
+  exit 5
+fi
+trap oneshot_lock_release EXIT
+
+if hephaestus_already_running; then
+  trap - EXIT
+  oneshot_lock_release
+  exit 0
+fi
+
 : >"$LOG"
 printf '{"slug":"%s","issuedAt":"%s","mode":"cursor-agent-oneshot"}\n' \
   "$SLUG" "$(date -u +%Y-%m-%dT%H:%M:%SZ)" >"$CLAIM"
@@ -160,9 +179,13 @@ if ! kill -0 "$ONESHOT_PID" 2>/dev/null; then
   printf 'HEPHAESTUS_ONESHOT_FAIL {"slug":"%s","reason":"exited-immediately","log":"%s"}\n' \
     "$SLUG" "$LOG"
   rm -f "$PID_FILE"
+  trap - EXIT
+  oneshot_lock_release
   exit 5
 fi
 
+trap - EXIT
+oneshot_lock_release
 printf 'HEPHAESTUS_ONESHOT_ARMED {"slug":"%s","pid":%s,"log":"%s","mode":"cursor-agent-oneshot"}\n' \
   "$SLUG" "$ONESHOT_PID" "$LOG"
 exit 0

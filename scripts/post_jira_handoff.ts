@@ -34,6 +34,7 @@ import {
   markdownToAdf,
   validateTestingTransitionId,
 } from "../lib/jiraClient.ts";
+import { commentsAlreadyHaveStgHandoff } from "../lib/handoffCommentDedup.ts";
 import { loadProjectConfig } from "../lib/loadProject.ts";
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..");
@@ -218,6 +219,15 @@ async function main() {
 
   if (args.dryRun) {
     console.log("DRY_RUN — not posting to Jira");
+    return;
+  }
+
+  const existing = await fetchIssueComments(args.key);
+  if (commentsAlreadyHaveStgHandoff(existing, args.stgBuildId)) {
+    consumePendingExecuteForHandoff(args.key);
+    console.log(
+      `JIRA_HANDOFF_SKIP {"issue":"${args.key}","reason":"stg-handoff-already-posted"}`,
+    );
     return;
   }
 
