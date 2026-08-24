@@ -531,23 +531,22 @@ else
 fi
 kill "$ORPHAN_PREF_PID" 2>/dev/null || true
 
-# K14 wrapper: stop must kill bash -c / hephaestus_oneshot_runner tree
+# K14 wrapper: stop must kill hephaestus_oneshot_runner tree
 HB="projects/$SLUG/factory/hephaestus-oneshot.heartbeat"
 LOG="projects/$SLUG/factory/hephaestus-oneshot.out"
-CLAIM="projects/$SLUG/factory/hephaestus-oneshot.claim.json"
-printf '{"slug":"%s","issuedAt":"2026-08-24T00:00:00Z","mode":"cursor-agent-oneshot"}\n' "$SLUG" >"$CLAIM"
-bash -c "export DEV_FACTORY_SLUG=\"${SLUG}\"; export HEPHAESTUS_LOG=${LOG}; export HEPHAESTUS_HEARTBEAT=${HB}; sleep 120" &
+export HEPHAESTUS_LOG="$LOG" HEPHAESTUS_HEARTBEAT="$HB"
+bash scripts/lib/hephaestus_oneshot_runner.sh sleep 120 &
 WRAP_CHILD=$!
 echo "$WRAP_CHILD" > "projects/$SLUG/factory/hephaestus-oneshot.pid"
 sleep 0.3
 WRAP_STOP=$(bash scripts/stop_dev_loop.sh "$SLUG" 2>&1)
 if kill -0 "$WRAP_CHILD" 2>/dev/null; then
-  no "stop must kill hephaestus wrapper bash -c (pid=$WRAP_CHILD out=$WRAP_STOP)"
+  no "stop must kill hephaestus_oneshot_runner (pid=$WRAP_CHILD out=$WRAP_STOP)"
 else
-  ok "stop kills hephaestus wrapper bash -c"
+  ok "stop kills hephaestus_oneshot_runner wrapper"
 fi
 kill "$WRAP_CHILD" 2>/dev/null || true
-rm -f "projects/$SLUG/factory/hephaestus-oneshot.pid" "$HB" "$LOG" "$CLAIM"
+rm -f "projects/$SLUG/factory/hephaestus-oneshot.pid" "$HB" "$LOG"
 
 STALL_DIR="projects/$SLUG/factory"
 sleep 30 &
