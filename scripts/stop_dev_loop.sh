@@ -95,9 +95,11 @@ if [[ -f "$AGENT_PID_FILE" ]]; then
       && grep -q "\"slug\"[[:space:]]*:[[:space:]]*\"${SLUG}\"" \
         "$FACTORY_DIR/hephaestus-oneshot.claim.json" 2>/dev/null; then
       acmd="$(ps -p "$AOLD" -o args= 2>/dev/null || true)"
-      if oneshot_factory_path_in_cmd "$acmd" "$SLUG" \
-        && ! oneshot_cmd_conflicts_slug "$acmd" "$SLUG" "hephaestus"; then
-        should_kill=1
+      if ! oneshot_cmd_conflicts_slug "$acmd" "$SLUG" "hephaestus"; then
+        if oneshot_factory_path_in_cmd "$acmd" "$SLUG" \
+          || { oneshot_runner_in_cmd "$acmd" && oneshot_ancestors_match_slug "$AOLD" "$SLUG" "hephaestus"; }; then
+          should_kill=1
+        fi
       fi
     fi
     if [[ "$should_kill" -eq 1 ]]; then
