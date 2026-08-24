@@ -190,6 +190,23 @@ export function fireQaHandoffKick(input: {
   };
 }
 
+export type ArgusOneshotStatus =
+  | "armed"
+  | "already"
+  | "skipped"
+  | "failed"
+  | "unknown";
+
+/** Pure classifier for ensure_argus.sh last stdout line (testable without exec). */
+export function classifyArgusOneshotLine(line: string): ArgusOneshotStatus {
+  const text = line.trim();
+  if (text.includes("ARGUS_ONESHOT_ARMED")) return "armed";
+  if (text.includes("ALREADY_RUNNING")) return "already";
+  if (text.includes("ARGUS_ONESHOT_SKIP")) return "skipped";
+  if (text.includes("ARGUS_ONESHOT_FAIL")) return "failed";
+  return text ? "unknown" : "unknown";
+}
+
 export function ensureArgusOneshot(input: {
   qaAgentRoot: string;
   slug: string;
@@ -219,19 +236,7 @@ export function ensureArgusOneshot(input: {
       },
     ).trim();
     const line = out.split("\n").filter(Boolean).at(-1) ?? out;
-    if (line.includes("ARGUS_ONESHOT_ARMED")) {
-      return { status: "armed", line };
-    }
-    if (line.includes("ALREADY_RUNNING")) {
-      return { status: "already", line };
-    }
-    if (line.includes("ARGUS_ONESHOT_SKIP")) {
-      return { status: "skipped", line };
-    }
-    if (line.includes("ARGUS_ONESHOT_FAIL")) {
-      return { status: "failed", line };
-    }
-    return { status: "unknown", line };
+    return { status: classifyArgusOneshotLine(line), line };
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
     const stdout =
@@ -245,8 +250,6 @@ export function ensureArgusOneshot(input: {
         ticket: input.ticketKey,
         reason: msg.slice(0, 200),
       })}`;
-    if (line.includes("ALREADY_RUNNING")) return { status: "already", line };
-    if (line.includes("ARGUS_ONESHOT_SKIP")) return { status: "skipped", line };
-    return { status: "failed", line };
+    return { status: classifyArgusOneshotLine(line), line };
   }
 }

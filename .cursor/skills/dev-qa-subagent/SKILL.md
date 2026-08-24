@@ -19,8 +19,7 @@ Handoff now **hard-kicks** Argus as an **isolated oneshot**:
    `projects/<slug>/factory/argus-oneshot.pid`.
 4. On `ARGUS_ONESHOT_ARMED` / `ALREADY_RUNNING`: auto-acks Hephaestus
    `.cursor/dev-factory-pending-argus-kick.json` (`consumed: true`).
-5. Close/return scripts ack `qa-pending-execute` for that ticket so latches
-   never stick and re-wake ambient chats.
+5. qa-agent close/return scripts ack `qa-pending-execute` per ticket (see qa-agent #43).
 
 **Forbidden:** workspace `sessionStart`/`stop` hooks injecting `ARGUS_KICK` into
 personal or neighbor Composer sessions; spawning Argus as a Task inside those chats.

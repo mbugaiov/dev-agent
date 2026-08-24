@@ -347,6 +347,22 @@ describe("devFactoryHookRuntime", () => {
     expect(res.followup_message).toContain("/summarize");
   });
 
+  it("HK-11b ambient session suppresses summarize followup", () => {
+    const root = fakeEngine();
+    const res = decideDevFactoryStopHook({
+      engineRoot: root,
+      status: "completed",
+      loopCount: 0,
+      factorySession: false,
+      summarizePending: {
+        armedAt: new Date().toISOString(),
+        consumed: false,
+        reason: "DEV_FACTORY_IDLE",
+      },
+    });
+    expect(res).toEqual({});
+  });
+
   it("HK-12 isFactoryHookSession detects background and env", () => {
     expect(isFactoryHookSession({ isBackgroundAgent: true })).toBe(true);
     expect(isFactoryHookSession({ factorySessionEnv: true })).toBe(true);
