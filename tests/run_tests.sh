@@ -207,6 +207,13 @@ have "scripts/stop_dev_loop.sh"
 have "scripts/ensure_hephaestus_agent.sh"
 have "scripts/lib/kill_tree.sh"
 have "scripts/lib/oneshot_mutex.sh"
+have "scripts/check_oneshot_stall.sh"
+have "lib/oneshotStall.ts"
+grep -q 'hephaestus_oneshot_runner' scripts/ensure_hephaestus_agent.sh \
+  && grep -q 'HEPHAESTUS_ONESHOT_STALLED' scripts/ensure_hephaestus_agent.sh \
+  && grep -q 'STALL_RECOVERY' scripts/ensure_hephaestus_agent.sh \
+  && ok "ensure_hephaestus_agent K14 stall recovery wiring" \
+  || no "ensure must wire K14 stall recovery"
 grep -q 'cursor-agent' scripts/ensure_hephaestus_agent.sh \
   && grep -q 'HEPHAESTUS_ONESHOT_ARMED' scripts/ensure_hephaestus_agent.sh \
   && grep -q 'HEPHAESTUS_REAP_BLIND' scripts/ensure_hephaestus_agent.sh \
@@ -523,6 +530,23 @@ else
   no "stop must not kill orphan slug-prefix neighbor (pid=$ORPHAN_PREF_PID out=$STOP_OUT)"
 fi
 kill "$ORPHAN_PREF_PID" 2>/dev/null || true
+
+# K14: print_oneshot_stall detects reconnect stall from factory artifacts
+STALL_DIR="projects/$SLUG/factory"
+sleep 30 &
+STALL_LIVE=$!
+echo "$STALL_LIVE" > "$STALL_DIR/hephaestus-oneshot.pid"
+printf '{"issuedAt":"2020-01-01T00:00:00Z","mode":"cursor-agent-oneshot"}\n' > "$STALL_DIR/hephaestus-oneshot.claim.json"
+printf 'Connection lost, reconnecting to https://agentn.global.api5.cursor.sh\n' > "$STALL_DIR/hephaestus-oneshot.out"
+date -u -r 1 +%s > "$STALL_DIR/hephaestus-oneshot.heartbeat" 2>/dev/null || echo 1 > "$STALL_DIR/hephaestus-oneshot.heartbeat"
+STALL_PROBE=$(ONESHOT_STALL_SILENT_SEC=60 ONESHOT_STALL_RECONNECT_GRACE_SEC=30 \
+  npx tsx scripts/print_oneshot_stall.ts "$SLUG" 2>&1 | tail -1)
+kill "$STALL_LIVE" 2>/dev/null || true
+rm -f "$STALL_DIR/hephaestus-oneshot.pid" "$STALL_DIR/hephaestus-oneshot.claim.json" \
+  "$STALL_DIR/hephaestus-oneshot.out" "$STALL_DIR/hephaestus-oneshot.heartbeat"
+echo "$STALL_PROBE" | grep -q ONESHOT_STALLED \
+  && ok "print_oneshot_stall flags reconnect stall" \
+  || no "print_oneshot_stall must detect stall (got $STALL_PROBE)"
 
 grep -q 'agentKilled' scripts/stop_dev_loop.sh \
   && grep -q 'hephaestus-oneshot.pid' scripts/stop_dev_loop.sh \
