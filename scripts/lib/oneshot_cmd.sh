@@ -29,7 +29,7 @@ agent_oneshot_tree_matches_slug() {
   cmd="$(ps -p "$pid" -o args= 2>/dev/null || true)"
   if oneshot_cmd_matches_slug "$cmd" "$slug" "$kind"; then return 0; fi
   if [[ "$cmd" == *hephaestus_oneshot_runner* ]] \
-    || [[ "$cmd" == *HEPHAESTUS_LOG=projects/${slug}/factory* ]]; then
+    || [[ "$cmd" == *projects/${slug}/factory* ]]; then
     return 0
   fi
   if [[ "$kind" == "argus" && "$cmd" == *argus-oneshot.out* ]]; then
