@@ -35,7 +35,7 @@ rm -f "$FACTORY/hephaestus-oneshot.pid" "$FACTORY/hephaestus-oneshot.out" "$FACT
 HB="$FACTORY/hephaestus-oneshot.heartbeat"
 LOG="$FACTORY/hephaestus-oneshot.out"
 printf '{"slug":"%s"}\n' "$SLUG" >"$FACTORY/hephaestus-oneshot.claim.json"
-bash -c "export DEV_FACTORY_SLUG=\"${SLUG}\"; export HEPHAESTUS_LOG=${LOG}; export HEPHAESTUS_HEARTBEAT=${HB}; sleep 120" &
+bash -c "export DEV_FACTORY_SLUG=\"${SLUG}\"; export HEPHAESTUS_LOG=${LOG}; export HEPHAESTUS_HEARTBEAT=${HB}; bash scripts/lib/hephaestus_oneshot_runner.sh sleep 120" &
 wrap=$!
 sleep 0.3
 runner="$(pgrep -P "$wrap" 2>/dev/null | head -1 || true)"
