@@ -11,12 +11,28 @@ import {
 } from "../../lib/qaHandoffKickBridge.ts";
 
 describe("argusKickPending", () => {
-  it("forces followup while unconsumed", () => {
+  it("does not force hook followup by default (oneshot-only)", () => {
     const pending = buildPendingArgusKickState({
       slug: "selftest",
       ticket: "selftest#1",
     });
-    const d = shouldForceArgusKickFollowup({ pending, loopCount: 0 });
+    expect(
+      shouldForceArgusKickFollowup({ pending, loopCount: 0 }).force,
+    ).toBe(false);
+    expect(pending.executePrompt).toContain("ensure_argus");
+    expect(pending.executePrompt).toContain("NOT Task/hooks");
+  });
+
+  it("forces followup only when enableHookFollowup", () => {
+    const pending = buildPendingArgusKickState({
+      slug: "selftest",
+      ticket: "selftest#1",
+    });
+    const d = shouldForceArgusKickFollowup({
+      pending,
+      loopCount: 0,
+      enableHookFollowup: true,
+    });
     expect(d.force).toBe(true);
     if (d.force) {
       expect(d.message).toContain("ARGUS_KICK_EXECUTE");
@@ -33,10 +49,15 @@ describe("argusKickPending", () => {
       shouldForceArgusKickFollowup({
         pending: { ...pending, consumed: true },
         loopCount: 0,
+        enableHookFollowup: true,
       }).force,
     ).toBe(false);
     expect(
-      shouldForceArgusKickFollowup({ pending, loopCount: 5 }).force,
+      shouldForceArgusKickFollowup({
+        pending,
+        loopCount: 5,
+        enableHookFollowup: true,
+      }).force,
     ).toBe(false);
   });
 });

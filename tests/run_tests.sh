@@ -221,6 +221,12 @@ grep -q 'cursor-agent' scripts/ensure_hephaestus_agent.sh \
   && ! grep -q -- '--api-key' scripts/ensure_hephaestus_agent.sh \
   && ok "ensure_hephaestus_agent is cursor-agent oneshot (K13)" \
   || no "ensure_hephaestus_agent must arm cursor-agent oneshot and reap blind bash"
+grep -q 'ensureArgusOneshot' lib/qaHandoffKickBridge.ts \
+  && grep -q 'ARGUS_KICK_ACK_OK' scripts/post_github_handoff.ts \
+  && grep -q 'ARGUS_KICK_ACK_OK' scripts/post_jira_handoff.ts \
+  && grep -q 'consumePendingArgusKickState' scripts/post_github_handoff.ts \
+  && ok "handoff fires ensure_argus oneshot + auto-ack latch" \
+  || no "handoff must call ensureArgusOneshot and ack pending on ARMED"
 # usage / slug / skip matrix (mirror ensure_argus)
 OUT=$(bash scripts/ensure_hephaestus_agent.sh 2>&1); EC=$?
 [[ "$EC" -eq 1 ]] && echo "$OUT" | grep -qi Usage \
