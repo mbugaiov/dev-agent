@@ -15,6 +15,7 @@ import {
   handoffCommentValid,
   stgBuildIdMatchesMain,
 } from "../lib/projectConfig.ts";
+import { commentsAlreadyHaveStgHandoff } from "../lib/handoffCommentDedup.ts";
 import {
   qaReturnBlocksValidateTesting,
   type JiraCommentLike,
@@ -124,6 +125,14 @@ if (gate.blocked) {
     `QA_RETURN_BLOCKS_HANDOFF ${ticketKey}: ${gate.reason ?? "unresolved QA RETURN"}`,
   );
   process.exit(1);
+}
+
+if (commentsAlreadyHaveStgHandoff(comments, stg)) {
+  consumePendingExecuteForHandoff(ticketKey);
+  console.log(
+    `GITHUB_HANDOFF_SKIP ${repoRef}#${num} stg-handoff-already-posted`,
+  );
+  process.exit(0);
 }
 
 const body = formatHandoffComment({
