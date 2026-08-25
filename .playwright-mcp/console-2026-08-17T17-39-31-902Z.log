@@ -1,4 +1,0 @@
-[   28953ms] [WARNING] Image with src "/agents/agent_asclepius.png" was detected as the Largest Contentful Paint (LCP). Please add the "priority" property if this image is above the fold.
-Read more: https://nextjs.org/docs/api-reference/next/image#priority @ webpack-internal:///(app-pages-browser)/./node_modules/next/dist/shared/lib/utils/warn-once.js:15
-[   60765ms] [LOG] [Fast Refresh] rebuilding @ webpack-internal:///(app-pages-browser)/./node_modules/next/dist/client/dev/hot-reloader/app/hot-reloader-app.js:196
-[   61093ms] [LOG] [Fast Refresh] done in 328ms @ webpack-internal:///(app-pages-browser)/./node_modules/next/dist/client/dev/report-hmr-latency.js:13
