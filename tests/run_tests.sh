@@ -212,8 +212,10 @@ have "lib/oneshotStall.ts"
 grep -q 'hephaestus_oneshot_runner' scripts/ensure_hephaestus_agent.sh \
   && grep -q 'HEPHAESTUS_ONESHOT_STALLED' scripts/ensure_hephaestus_agent.sh \
   && grep -q 'STALL_RECOVERY' scripts/ensure_hephaestus_agent.sh \
+  && grep -q 'stream-json' scripts/ensure_hephaestus_agent.sh \
+  && grep -q 'stream-partial-output' scripts/ensure_hephaestus_agent.sh \
   && ok "ensure_hephaestus_agent K14 stall recovery wiring" \
-  || no "ensure must wire K14 stall recovery"
+  || no "ensure must wire K14 stall recovery + stream-json liveness"
 grep -q 'cursor-agent' scripts/ensure_hephaestus_agent.sh \
   && grep -q 'HEPHAESTUS_ONESHOT_ARMED' scripts/ensure_hephaestus_agent.sh \
   && grep -q 'HEPHAESTUS_REAP_BLIND' scripts/ensure_hephaestus_agent.sh \

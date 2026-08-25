@@ -205,7 +205,7 @@ nohup bash -c "
   export HEPHAESTUS_LOG=\"$LOG\"
   export HEPHAESTUS_HEARTBEAT=\"$HEARTBEAT\"
   bash ${QUOTED_RUNNER} ${QUOTED_BIN} --force${MODEL_ARGS_Q} \
-    --output-format text -p ${QUOTED_PROMPT}
+    --output-format stream-json --stream-partial-output -p ${QUOTED_PROMPT}
   rm -f \"$PID_FILE\"
 " >/dev/null 2>&1 &
 ONESHOT_PID=$!
