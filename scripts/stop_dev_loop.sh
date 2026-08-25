@@ -130,7 +130,7 @@ while read -r pid; do
       killed_agent=1
     fi
   fi
-done < <(pgrep -f "DEV_FACTORY_SLUG=${SLUG}([^a-z0-9-]|$)|Hephaestus oneshot for ${SLUG}([^a-z0-9-]|$)" 2>/dev/null || true)
+done < <(pgrep -f 'DEV_FACTORY_SLUG=|Hephaestus oneshot for ' 2>/dev/null || true)
 
 
 printf 'LOOP_STOPPED {"slug":"%s","schedulerKilled":%s,"watcherKilled":%s,"agentKilled":%s}\n' \

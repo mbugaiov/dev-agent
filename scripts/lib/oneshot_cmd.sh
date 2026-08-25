@@ -1,37 +1,51 @@
 # Shared oneshot cmdline matching (stop_dev_loop + oneshot_mutex).
 # Source after setting SLUG.
 
-oneshot_cmd_matches_slug() {
-  local cmd="$1" slug="$2" kind="${3:-hephaestus}"
+oneshot_cmd_factory_slug_from_cmd() {
+  local cmd="$1" kind="${2:-hephaestus}"
   local re
-  case "$kind" in
-    argus)
-      re="QA_FACTORY_SLUG=(\"?)${slug}([^a-z0-9-]|$)"
-      [[ "$cmd" =~ $re ]] && return 0
-      re="Argus qa-loop oneshot for ${slug}([^a-z0-9-]|$)"
-      [[ "$cmd" =~ $re ]] && return 0
-      ;;
-    *)
-      re="DEV_FACTORY_SLUG=(\"?)${slug}([^a-z0-9-]|$)"
-      [[ "$cmd" =~ $re ]] && return 0
-      re="Hephaestus oneshot for ${slug}([^a-z0-9-]|$)"
-      [[ "$cmd" =~ $re ]] && return 0
-      ;;
-  esac
-  return 1
-}
-
-oneshot_cmd_conflicts_slug() {
-  local cmd="$1" slug="$2" kind="${3:-hephaestus}"
-  local re other
   case "$kind" in
     argus) re='QA_FACTORY_SLUG=("?)([a-z0-9][a-z0-9-]*)' ;;
     *) re='DEV_FACTORY_SLUG=("?)([a-z0-9][a-z0-9-]*)' ;;
   esac
   if [[ "$cmd" =~ $re ]]; then
-    other="${BASH_REMATCH[2]}"
-    [[ -n "$other" && "$other" != "$slug" ]] && return 0
+    printf '%s' "${BASH_REMATCH[2]}"
+    return 0
   fi
+  return 1
+}
+
+oneshot_prompt_slug_from_cmd() {
+  local cmd="$1" kind="${2:-hephaestus}"
+  local re
+  case "$kind" in
+    argus) re='Argus qa-loop oneshot for ([a-z0-9][a-z0-9-]*)' ;;
+    *) re='Hephaestus oneshot for ([a-z0-9][a-z0-9-]*)' ;;
+  esac
+  if [[ "$cmd" =~ $re ]]; then
+    printf '%s' "${BASH_REMATCH[1]}"
+    return 0
+  fi
+  return 1
+}
+
+oneshot_cmd_matches_slug() {
+  local cmd="$1" slug="$2" kind="${3:-hephaestus}"
+  local found
+  found="$(oneshot_cmd_factory_slug_from_cmd "$cmd" "$kind" || true)"
+  [[ -n "$found" && "$found" == "$slug" ]] && return 0
+  found="$(oneshot_prompt_slug_from_cmd "$cmd" "$kind" || true)"
+  [[ -n "$found" && "$found" == "$slug" ]] && return 0
+  return 1
+}
+
+oneshot_cmd_conflicts_slug() {
+  local cmd="$1" slug="$2" kind="${3:-hephaestus}"
+  local found
+  found="$(oneshot_cmd_factory_slug_from_cmd "$cmd" "$kind" || true)"
+  [[ -n "$found" && "$found" != "$slug" ]] && return 0
+  found="$(oneshot_prompt_slug_from_cmd "$cmd" "$kind" || true)"
+  [[ -n "$found" && "$found" != "$slug" ]] && return 0
   return 1
 }
 

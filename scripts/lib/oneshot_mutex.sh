@@ -38,11 +38,11 @@ oneshot_find_live_pid() {
     cmd="$(ps -p "$pid" -o args= 2>/dev/null || true)"
     # Ignore this ensure script itself.
     [[ "$cmd" == *ensure_hephaestus_agent.sh* || "$cmd" == *ensure_argus.sh* ]] && continue
-    if oneshot_cmd_matches_slug "$cmd" "$SLUG" "${ONESHOT_KIND:-hephaestus}"; then
+    if agent_oneshot_tree_matches_slug "$pid" "$SLUG" "${ONESHOT_KIND:-hephaestus}"; then
       printf '%s' "$pid"
       return 0
     fi
-  done < <(pgrep -f "oneshot for ${SLUG}([^a-z0-9-]|$)|DEV_FACTORY_SLUG=${SLUG}([^a-z0-9-]|$)|QA_FACTORY_SLUG=${SLUG}([^a-z0-9-]|$)" 2>/dev/null || true)
+  done < <(pgrep -f 'DEV_FACTORY_SLUG=|QA_FACTORY_SLUG=|oneshot for ' 2>/dev/null || true)
   return 1
 }
 
