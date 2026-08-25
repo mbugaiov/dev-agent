@@ -33,8 +33,19 @@ out="$(ONESHOT_STALL_SILENT_SEC=60 ONESHOT_STALL_RECONNECT_GRACE_SEC=30 \
   npx tsx scripts/print_oneshot_stall.ts "$SLUG" 2>/dev/null | tail -1)"
 [[ "$out" == ONESHOT_STALLED* ]] && ok "stall probe detects reconnect stall" || no "expected ONESHOT_STALLED got $out"
 
-# 3) stop_dev_loop kills ensure-style wrapper (factory path in cmdline)
+# 2b) no_output stall (empty log + aged claim)
+: >"$FACTORY/hephaestus-oneshot.out"
+ISSUED_AT="$(date -u -v-700S +%Y-%m-%dT%H:%M:%SZ 2>/dev/null || date -u -d '700 seconds ago' +%Y-%m-%dT%H:%M:%SZ)"
+printf '{"slug":"%s","issuedAt":"%s"}\n' "$SLUG" "$ISSUED_AT" >"$FACTORY/hephaestus-oneshot.claim.json"
+date -u +%s >"$FACTORY/hephaestus-oneshot.heartbeat"
+out="$(ONESHOT_STALL_NO_OUTPUT_SEC=600 ONESHOT_STALL_MAX_WALL_SEC=14400 \
+  npx tsx scripts/print_oneshot_stall.ts "$SLUG" 2>/dev/null | tail -1)"
+echo "$out" | grep -q '"reason":"no_output"' \
+  && ok "stall probe detects no_output" \
+  || no "expected no_output got $out"
 kill "$fake" 2>/dev/null || true
+
+# 3) stop_dev_loop kills ensure-style wrapper (factory path in cmdline)
 rm -f "$FACTORY/hephaestus-oneshot.pid" "$FACTORY/hephaestus-oneshot.out" "$FACTORY/hephaestus-oneshot.heartbeat"
 HB="$FACTORY/hephaestus-oneshot.heartbeat"
 LOG="$FACTORY/hephaestus-oneshot.out"
@@ -57,6 +68,28 @@ kill "$target" 2>/dev/null || true
   || no "claim.json should be removed on stop"
 rm -f "$FACTORY/hephaestus-oneshot.pid" "$HB" "$LOG"
 
+# 3b) runner mid-run capture (heartbeat + log growth)
+CAP="$(mktemp -d "${TMPDIR:-/tmp}/k14-cap.XXXXXX")"
+HEPHAESTUS_LOG="$CAP/out" HEPHAESTUS_HEARTBEAT="$CAP/hb" HEPHAESTUS_HEARTBEAT_POLL_SEC=1 \
+  bash scripts/lib/hephaestus_oneshot_runner.sh bash -c 'echo MID; sleep 0.3; echo END' &
+cap_pid=$!
+for _ in 1 2 3 4 5 6 7 8 9 10; do
+  grep -q MID "$CAP/out" 2>/dev/null && break
+  sleep 0.2
+done
+if grep -q MID "$CAP/out" 2>/dev/null && [[ -s "$CAP/hb" ]]; then
+  ok "runner captures MID before exit"
+else
+  no "runner must show MID mid-run (log=$(wc -c <"$CAP/out" 2>/dev/null || echo 0))"
+fi
+wait "$cap_pid" 2>/dev/null || true
+grep -q END "$CAP/out" 2>/dev/null && ok "runner captures END at finish" \
+  || no "runner missing END"
+! grep -E '2>&1[[:space:]]*\|[[:space:]]*while' scripts/lib/hephaestus_oneshot_runner.sh \
+  && ok "runner source forbids pipe|while" \
+  || no "runner must not pipe into while read"
+rm -rf "$CAP"
+
 # 4) Cross-tenant guard — sleep pid on wrong slug pid file must not kill
 sleep 45 &
 wrong=$!
@@ -70,7 +103,13 @@ fi
 kill "$wrong" 2>/dev/null || true
 rm -f "$FACTORY/hephaestus-oneshot.pid"
 
-# 5) ensure_hephaestus — skip without cursor-agent is OK for smoke
+# 5) ensure wiring — stream-json + runner
+grep -q 'stream-json' scripts/ensure_hephaestus_agent.sh \
+  && grep -q 'hephaestus_oneshot_runner' scripts/ensure_hephaestus_agent.sh \
+  && ok "ensure arms stream-json via runner" \
+  || no "ensure missing stream-json/runner"
+
+# 6) ensure_hephaestus — skip without cursor-agent is OK for smoke
 if ! command -v cursor-agent >/dev/null 2>&1; then
   out="$(bash scripts/ensure_hephaestus_agent.sh "$SLUG" 2>&1 | tail -1)"
   [[ "$out" == *HEPHAESTUS_ONESHOT_SKIP* ]] && ok "ensure skips cleanly without cursor-agent" \
