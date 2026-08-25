@@ -570,7 +570,8 @@ echo "$STALL_PROBE" | grep -q ONESHOT_STALLED \
   && ok "print_oneshot_stall flags reconnect stall" \
   || no "print_oneshot_stall must detect stall (got $STALL_PROBE)"
 
-bash scripts/smoke_k14_process.sh selftest >/tmp/smoke_k14_selftest.log 2>&1 \
+env -u DEV_FACTORY_SLUG -u DEV_AGENT_SLUG -u HEPHAESTUS_LOG -u HEPHAESTUS_HEARTBEAT \
+  bash scripts/smoke_k14_process.sh selftest >/tmp/smoke_k14_selftest.log 2>&1 \
   && ok "smoke_k14_process selftest" \
   || no "smoke_k14_process selftest ($(tail -3 /tmp/smoke_k14_selftest.log 2>/dev/null || true))"
 

@@ -96,7 +96,6 @@ oneshot_ancestors_match_slug() {
 oneshot_process_matches_slug() {
   local pid="$1" slug="$2" kind="${3:-hephaestus}"
   local cmd
-  if oneshot_environ_matches_slug "$pid" "$slug"; then return 0; fi
   cmd="$(ps -p "$pid" -o args= 2>/dev/null || true)"
   if oneshot_cmd_conflicts_slug "$cmd" "$slug" "$kind"; then return 1; fi
   if oneshot_cmd_matches_slug "$cmd" "$slug" "$kind"; then return 0; fi
@@ -104,6 +103,9 @@ oneshot_process_matches_slug() {
   if oneshot_runner_in_cmd "$cmd"; then
     if oneshot_ancestors_match_slug "$pid" "$slug" "$kind"; then return 0; fi
     if oneshot_environ_matches_slug "$pid" "$slug"; then return 0; fi
+  fi
+  if [[ "$cmd" == *cursor-agent* ]] && oneshot_environ_matches_slug "$pid" "$slug"; then
+    return 0
   fi
   return 1
 }
