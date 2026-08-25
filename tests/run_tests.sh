@@ -61,6 +61,12 @@ grep -q 'post_progress_best_effort' scripts/wait_pr_pipeline.sh \
   && grep -q 'pipeline_green' scripts/wait_pr_pipeline.sh \
   && ok "wait_pr_pipeline posts mid-flight progress" \
   || no "wait_pr_pipeline must call post_progress_best_effort"
+grep -q 'post_progress_best_effort' scripts/wait_github_pr_pipeline.sh \
+  && grep -q 'pipeline_waiting' scripts/wait_github_pr_pipeline.sh \
+  && grep -q 'pipeline_failed' scripts/wait_github_pr_pipeline.sh \
+  && grep -q 'pipeline_green' scripts/wait_github_pr_pipeline.sh \
+  && ok "wait_github_pr_pipeline posts mid-flight progress" \
+  || no "wait_github_pr_pipeline must call post_progress_best_effort"
 grep -q 'writeProgressTicketKey' scripts/pickup_jira_ticket.ts \
   && grep -q 'writeProgressTicketKey' scripts/pickup_github_ticket.ts \
   && grep -q 'clearProgressTicketKey' scripts/post_jira_handoff.ts \
