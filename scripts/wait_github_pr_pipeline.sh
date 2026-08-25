@@ -20,6 +20,12 @@ REPO="${GITHUB_REPOSITORY:-$(gh repo view --json nameWithOwner -q .nameWithOwner
 REQUIRED=("test" "review (Themis)" "isolation (Themis)")
 echo "Waiting on PR #$PR in $REPO (required: ${REQUIRED[*]}; poll ${POLL}s)..."
 
+# Mid-flight progress on engine issues when latch / env set (slug defaults to repo name).
+PROGRESS_SLUG="${DEV_PROGRESS_SLUG:-${REPO##*/}}"
+# shellcheck disable=SC1091
+bash "$ROOT/scripts/lib/post_progress_best_effort.sh" "$PROGRESS_SLUG" pipeline_waiting \
+  "PR #${PR} (${REPO}) — wait_github_pr_pipeline armed" || true
+
 while true; do
   OUT="$(gh pr checks "$PR" -R "$REPO" 2>&1 || true)"
   echo "$OUT"
@@ -51,6 +57,8 @@ while true; do
   if [[ "$FAIL" -eq 1 ]]; then
     echo "PR_PIPELINE_FAILED {\"pr\":${PR},\"repo\":\"${REPO}\"}"
     echo "Do NOT merge — fix review Blocking issues / CI, then push and wait again."
+    bash "$ROOT/scripts/lib/post_progress_best_effort.sh" "$PROGRESS_SLUG" pipeline_failed \
+      "PR #${PR} (${REPO}) — required check failed" || true
     exit 1
   fi
   if [[ "$PENDING" -eq 0 ]]; then
@@ -60,9 +68,13 @@ while true; do
     if ! THEMIS_FOLLOWUP_REPO="$REPO" bash "$ROOT/scripts/check_review_followups_disposed.sh" "$PR"; then
       echo "PR_PIPELINE_FAILED {\"pr\":${PR},\"repo\":\"${REPO}\",\"reason\":\"followups_undisposed\"}"
       echo "File/fix Suggestions·Risks then re-run: bash scripts/wait_github_pr_pipeline.sh $PR"
+      bash "$ROOT/scripts/lib/post_progress_best_effort.sh" "$PROGRESS_SLUG" pipeline_failed \
+        "PR #${PR} (${REPO}) — Themis follow-ups undisposed" || true
       exit 1
     fi
     echo "PR_PIPELINE_GREEN {\"pr\":${PR},\"repo\":\"${REPO}\"}"
+    bash "$ROOT/scripts/lib/post_progress_best_effort.sh" "$PROGRESS_SLUG" pipeline_green \
+      "PR #${PR} (${REPO}) — required checks green" || true
     exit 0
   fi
   sleep "$POLL"

@@ -37,6 +37,7 @@ import {
 } from "../lib/jiraClient.ts";
 import { commentsAlreadyHaveStgHandoff } from "../lib/handoffCommentDedup.ts";
 import { loadProjectConfig } from "../lib/loadProject.ts";
+import { clearProgressTicketKey } from "../lib/progressTicketLatch.ts";
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..");
 
@@ -241,6 +242,7 @@ async function main() {
     process.exit(1);
   }
   console.log(`HANDOFF_POSTED {"issue":"${args.key}"}`);
+  clearProgressTicketKey(ROOT, args.slug);
 
   if (args.transition) {
     const afterPost = await fetchIssueComments(args.key);

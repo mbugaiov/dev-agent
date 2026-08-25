@@ -10,6 +10,7 @@ import { githubTargetKey } from "../lib/agentStartedStack.ts";
 import { upsertGithubAgentStarted } from "../lib/agentStartedTracker.ts";
 import { parseGithubIssueNumber } from "../lib/githubIssuesBacklog.ts";
 import { loadProjectConfig } from "../lib/loadProject.ts";
+import { writeProgressTicketKey } from "../lib/progressTicketLatch.ts";
 import { resolveTrackerProvider } from "../lib/projectConfig.ts";
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..");
@@ -129,6 +130,7 @@ function main() {
   }
 
   actions.push("scope comment");
+  const key = `${config.slug}#${num}`;
   if (!args.dryRun) {
     const result = upsertGithubAgentStarted({
       owner,
@@ -144,9 +146,10 @@ function main() {
       },
     });
     actions.push(`banner ${result.action}`);
+    writeProgressTicketKey(ROOT, args.slug, key);
+    actions.push("progress-ticket latch");
   }
 
-  const key = `${config.slug}#${num}`;
   console.log(
     `PICKUP_OK {"issue":"${key}","status":"${issue.state}","actions":[${actions
       .map((a) => `"${a}"`)

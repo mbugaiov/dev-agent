@@ -20,6 +20,7 @@ import { upsertJiraAgentStarted } from "../lib/agentStartedTracker.ts";
 import { jiraFetch } from "../lib/jiraClient.ts";
 import type { ProjectConfig } from "../lib/projectConfig.ts";
 import { loadProjectConfig } from "../lib/loadProject.ts";
+import { writeProgressTicketKey } from "../lib/progressTicketLatch.ts";
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..");
 
@@ -196,6 +197,8 @@ async function main() {
         },
       });
       actions.push(`banner ${result.action}`);
+      writeProgressTicketKey(ROOT, args.slug, args.key);
+      actions.push("progress-ticket latch");
     } catch (e) {
       console.error(
         "Jira scope comment failed:",

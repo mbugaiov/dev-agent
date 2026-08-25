@@ -41,11 +41,56 @@ have "scripts/verify_stack_skills.sh"
 have "docs/STACK-SKILLS.md"
 have "scripts/post_agent_started.sh"
 have "scripts/post_agent_started.ts"
+have "scripts/post_agent_progress.sh"
+have "scripts/post_agent_progress.ts"
+have "lib/agentProgressStack.ts"
+have "scripts/lib/post_progress_best_effort.sh"
 have ".cursor/rules/dev-agent-start.mdc"
 AGENT_START_OUT=$(AGENT_START_DRY_RUN=1 bash scripts/post_agent_started.sh --repo example/dev-agent pr:1 Hephaestus "pickup" "smoke" 2>&1 || true)
 grep -q '### Hephaestus started' <<<"$AGENT_START_OUT" \
   && ok "post_agent_started dry-run banner" \
   || no "post_agent_started must print ### Hephaestus started (got: $AGENT_START_OUT)"
+AGENT_PROG_OUT=$(AGENT_PROGRESS_DRY_RUN=1 bash scripts/post_agent_progress.sh --repo example/dev-agent 1 Hephaestus pipeline_waiting "PR #1 waiting" 2>&1 || true)
+grep -q '### Hephaestus progress' <<<"$AGENT_PROG_OUT" \
+  && grep -q 'pipeline waiting' <<<"$AGENT_PROG_OUT" \
+  && ok "post_agent_progress dry-run banner" \
+  || no "post_agent_progress must print ### Hephaestus progress (got: $AGENT_PROG_OUT)"
+grep -q 'post_progress_best_effort' scripts/wait_pr_pipeline.sh \
+  && grep -q 'pipeline_waiting' scripts/wait_pr_pipeline.sh \
+  && grep -q 'pipeline_failed' scripts/wait_pr_pipeline.sh \
+  && grep -q 'pipeline_green' scripts/wait_pr_pipeline.sh \
+  && ok "wait_pr_pipeline posts mid-flight progress" \
+  || no "wait_pr_pipeline must call post_progress_best_effort"
+grep -q 'post_progress_best_effort' scripts/wait_github_pr_pipeline.sh \
+  && grep -q 'pipeline_waiting' scripts/wait_github_pr_pipeline.sh \
+  && grep -q 'pipeline_failed' scripts/wait_github_pr_pipeline.sh \
+  && grep -q 'pipeline_green' scripts/wait_github_pr_pipeline.sh \
+  && ok "wait_github_pr_pipeline posts mid-flight progress" \
+  || no "wait_github_pr_pipeline must call post_progress_best_effort"
+grep -q 'writeProgressTicketKey' scripts/pickup_jira_ticket.ts \
+  && grep -q 'writeProgressTicketKey' scripts/pickup_github_ticket.ts \
+  && grep -q 'clearProgressTicketKey' scripts/post_jira_handoff.ts \
+  && grep -q 'clearProgressTicketKey' scripts/post_github_handoff.ts \
+  && ok "pickup/handoff progress-ticket latch" \
+  || no "pickup must write and handoff must clear progress-ticket.key"
+# Guard: best-effort helper ROOT must be engine root (scripts/lib → ../..)
+PROG_BE="$(mktemp -d "${TMPDIR:-/tmp}/prog-be.XXXXXX")"
+mkdir -p "$PROG_BE/projects/demo/factory" "$PROG_BE/scripts/lib"
+echo TST-99 >"$PROG_BE/projects/demo/factory/progress-ticket.key"
+cp scripts/lib/post_progress_best_effort.sh "$PROG_BE/scripts/lib/"
+printf '%s\n' '#!/bin/bash' ':' >"$PROG_BE/scripts/source_project_secrets.sh"
+printf '%s\n' '#!/bin/bash' 'echo "ROOT_OK=$1 $2 $3 $4 $5" >"$0.probe"' \
+  >"$PROG_BE/scripts/post_agent_progress.sh"
+chmod +x "$PROG_BE/scripts/post_agent_progress.sh" "$PROG_BE/scripts/lib/post_progress_best_effort.sh" \
+  "$PROG_BE/scripts/source_project_secrets.sh"
+( cd "$PROG_BE" && bash scripts/lib/post_progress_best_effort.sh demo pipeline_waiting "detail" )
+if [[ -f "$PROG_BE/scripts/post_agent_progress.sh.probe" ]] \
+  && grep -q 'ROOT_OK=demo TST-99 Hephaestus pipeline_waiting detail' "$PROG_BE/scripts/post_agent_progress.sh.probe"; then
+  ok "post_progress_best_effort resolves engine ROOT + latch"
+else
+  no "post_progress_best_effort ROOT/latch broken (probe=$(cat "$PROG_BE/scripts/post_agent_progress.sh.probe" 2>/dev/null || echo missing))"
+fi
+rm -rf "$PROG_BE"
 grep -q 'upsertGithubAgentStarted' scripts/pickup_github_ticket.ts \
   && grep -q 'upsertJiraAgentStarted' scripts/pickup_jira_ticket.ts \
   && grep -q 'upsertGithubAgentStarted' scripts/post_agent_started.ts \
