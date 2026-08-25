@@ -10,10 +10,14 @@ export type StallSignals = {
   issuedAtSec?: number;
   heartbeatSec?: number;
   logMtimeSec?: number;
+  /** Bytes in hephaestus-oneshot.out — 0 means runner never received agent output. */
+  logBytes?: number;
   logTail?: string;
   silentSec?: number;
   reconnectGraceSec?: number;
   maxWallSec?: number;
+  /** Alive + empty log past this → stalled (pipe/buffer hang). Default 600s. */
+  noOutputSec?: number;
 };
 
 export type StallResult = {
@@ -28,6 +32,7 @@ export function defaultStallThresholds(): {
   silentSec: number;
   reconnectGraceSec: number;
   maxWallSec: number;
+  noOutputSec: number;
 } {
   const env = (k: string, fallback: number) => {
     const v = process.env[k];
@@ -39,6 +44,7 @@ export function defaultStallThresholds(): {
     silentSec: env("ONESHOT_STALL_SILENT_SEC", 900),
     reconnectGraceSec: env("ONESHOT_STALL_RECONNECT_GRACE_SEC", 300),
     maxWallSec: env("ONESHOT_STALL_MAX_WALL_SEC", 14400),
+    noOutputSec: env("ONESHOT_STALL_NO_OUTPUT_SEC", 600),
   };
 }
 
@@ -54,17 +60,28 @@ export function lastActivitySec(signals: StallSignals): number {
 export function decideOneshotStall(signals: StallSignals): StallResult {
   if (!signals.alive) return { stalled: false };
 
-  const { silentSec, reconnectGraceSec, maxWallSec } = {
+  const { silentSec, reconnectGraceSec, maxWallSec, noOutputSec } = {
     silentSec: signals.silentSec ?? defaultStallThresholds().silentSec,
     reconnectGraceSec:
       signals.reconnectGraceSec ?? defaultStallThresholds().reconnectGraceSec,
     maxWallSec: signals.maxWallSec ?? defaultStallThresholds().maxWallSec,
+    noOutputSec: signals.noOutputSec ?? defaultStallThresholds().noOutputSec,
   };
   const now = signals.nowSec;
   const last = lastActivitySec(signals);
 
   if (signals.issuedAtSec && now - signals.issuedAtSec > maxWallSec) {
     return { stalled: true, reason: "max_wall_sec" };
+  }
+
+  // Empty log while pid lives = runner never received output (classic pipe hang).
+  const logBytes = signals.logBytes ?? -1;
+  if (
+    logBytes === 0 &&
+    signals.issuedAtSec &&
+    now - signals.issuedAtSec > noOutputSec
+  ) {
+    return { stalled: true, reason: "no_output" };
   }
 
   const tail = signals.logTail ?? "";
@@ -116,6 +133,15 @@ export function readLogTail(path: string, maxBytes = 4096): string {
   }
 }
 
+export function readLogBytes(path: string): number | undefined {
+  try {
+    if (!existsSync(path)) return undefined;
+    return statSync(path).size;
+  } catch {
+    return undefined;
+  }
+}
+
 export function collectOneshotStallSignals(input: {
   pidFile: string;
   logFile: string;
@@ -131,9 +157,11 @@ export function collectOneshotStallSignals(input: {
     issuedAtSec: readClaimIssuedAtSec(input.claimFile),
     heartbeatSec: readFileMtimeSec(input.heartbeatFile),
     logMtimeSec: readFileMtimeSec(input.logFile),
+    logBytes: readLogBytes(input.logFile),
     logTail: readLogTail(input.logFile),
     silentSec: thresholds.silentSec,
     reconnectGraceSec: thresholds.reconnectGraceSec,
     maxWallSec: thresholds.maxWallSec,
+    noOutputSec: thresholds.noOutputSec,
   };
 }
