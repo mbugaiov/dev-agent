@@ -37,4 +37,4 @@ __pycache__/
 
 .playwright-mcp/
 evidence-*.png
-pantheon-*-process.png
+*-process.png

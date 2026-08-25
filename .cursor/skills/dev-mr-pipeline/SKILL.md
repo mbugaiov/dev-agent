@@ -18,10 +18,11 @@ Generic flow; **app repo** holds product code and CI. Read `projects/<slug>/proj
    `bash scripts/post_agent_progress.sh <slug> <KEY|N> Hephaestus <milestone> "<Detail>"`.
    Milestones: `mr_opened` | `pipeline_waiting` | `pipeline_failed` | `pipeline_retry` |
    `pipeline_green` | `stg_verify` | `handoff`.
-   Pickup writes `projects/<slug>/factory/progress-ticket.key`; `wait_pr_pipeline.sh` /
-   `wait_github_pr_pipeline.sh` auto-post waiting/failed/green when the latch exists.
-   Still post explicitly on MR open / retry push / STG / handoff. Dedup skips identical
-   status+detail (no poll spam).
+   Pickup writes `projects/<slug>/factory/progress-ticket.key`; `wait_pr_pipeline.sh <slug>`
+   auto-posts waiting/failed/green when the latch exists. Engine
+   `wait_github_pr_pipeline.sh` needs `DEV_PROGRESS_TICKET` (+ `DEV_PROGRESS_SLUG` when
+   the GitHub repo name ≠ factory slug). Still post explicitly on MR open / retry /
+   STG / handoff. Dedup skips identical status+detail (no poll spam).
 0b. **Pickup** (from `tracker.provider`):
    - **jira:** `bash scripts/pickup_jira_ticket.sh <slug> <KEY> --scope "<plan>" --points <n>` — transition, assign, estimate, scope comment (`jira.pickup`).
    - **github_issues:** `bash scripts/pickup_github_ticket.sh <slug> <KEY> --scope "<plan>"` — ensure pickup label, scope comment (no story points).

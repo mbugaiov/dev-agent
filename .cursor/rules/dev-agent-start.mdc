@@ -49,8 +49,25 @@ The helper keeps **one** `### <Seat> started` comment per seat+ticket for 6h:
 identical Mode+Doing is skipped (Kairos K11); a new plan PATCHes and lists
 prior starts under `Also started`. Override TTL with `AGENT_START_SESSION_TTL_MS`.
 
+## Mid-flight progress (mandatory while a ticket is mid-pipeline)
+
+While Hephaestus is mid-ticket (MR open, CI waiting/failed/retry, STG, handoff),
+keep the tracker from looking idle with a living **progress** comment:
+
+```bash
+bash scripts/post_agent_progress.sh <slug> <KEY|N> Hephaestus <milestone> "<Detail>"
+# milestones: mr_opened | pipeline_waiting | pipeline_failed | pipeline_retry |
+#             pipeline_green | stg_verify | handoff
+```
+
+Pickup writes `projects/<slug>/factory/progress-ticket.key`. Product waiter
+`wait_pr_pipeline.sh <slug> <PR>` auto-posts waiting/failed/green from that latch.
+Engine `wait_github_pr_pipeline.sh` posts when `DEV_PROGRESS_TICKET` (and usually
+`DEV_PROGRESS_SLUG`) are set — do not assume repo basename equals factory slug.
+
 **Forbidden:** silent seat switches; implementing / reviewing / closing with no start banner;
-status-only “working on it” without the `### … started` heading.
+status-only “working on it” without the `### … started` heading; long CI waits with
+no `### … progress` update after MR open / pipeline state change.
 
 Applies to **every** factory slug (not only Pantheon). Product app rules may repeat this;
 the engine rule is authoritative.
