@@ -7,6 +7,9 @@ cd "$ROOT"
 SLUG="${1:-selftest}"
 FACTORY="projects/$SLUG/factory"
 mkdir -p "$FACTORY"
+rm -f "$FACTORY/hephaestus-oneshot.pid" "$FACTORY/hephaestus-oneshot.claim.json" \
+  "$FACTORY/hephaestus-oneshot.out" "$FACTORY/hephaestus-oneshot.heartbeat" \
+  "$FACTORY/hephaestus-oneshot.stall.json"
 
 pass=0
 fail=0
@@ -24,7 +27,7 @@ sleep 30 &
 fake=$!
 echo "$fake" >"$FACTORY/hephaestus-oneshot.pid"
 printf '{"slug":"%s","issuedAt":"2020-01-01T00:00:00Z"}\n' "$SLUG" >"$FACTORY/hephaestus-oneshot.claim.json"
-printf 'Connection lost, reconnecting to https://agentn.global.api5.cursor.sh\n' >"$FACTORY/hephaestus-oneshot.out"
+printf 'Connection lost, reconnecting to https://agent.example.cursor.sh\n' >"$FACTORY/hephaestus-oneshot.out"
 echo 1 >"$FACTORY/hephaestus-oneshot.heartbeat"
 out="$(ONESHOT_STALL_SILENT_SEC=60 ONESHOT_STALL_RECONNECT_GRACE_SEC=30 \
   npx tsx scripts/print_oneshot_stall.ts "$SLUG" 2>/dev/null | tail -1)"

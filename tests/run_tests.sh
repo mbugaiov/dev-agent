@@ -573,7 +573,7 @@ echo "$STALL_PROBE" | grep -q ONESHOT_STALLED \
 env -u DEV_FACTORY_SLUG -u DEV_AGENT_SLUG -u HEPHAESTUS_LOG -u HEPHAESTUS_HEARTBEAT \
   bash scripts/smoke_k14_process.sh selftest >/tmp/smoke_k14_selftest.log 2>&1 \
   && ok "smoke_k14_process selftest" \
-  || no "smoke_k14_process selftest ($(tail -3 /tmp/smoke_k14_selftest.log 2>/dev/null || true))"
+  || no "smoke_k14_process selftest ($(cat /tmp/smoke_k14_selftest.log 2>/dev/null | grep FAIL || true))"
 
 grep -q 'agentKilled' scripts/stop_dev_loop.sh \
   && grep -q 'hephaestus-oneshot.pid' scripts/stop_dev_loop.sh \

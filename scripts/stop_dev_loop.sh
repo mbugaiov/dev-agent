@@ -112,8 +112,8 @@ if [[ -f "$AGENT_PID_FILE" ]]; then
       rm -f "$FACTORY_DIR/hephaestus-oneshot.claim.json"
     else
       acmd="$(ps -p "$AOLD" -o args= 2>/dev/null || true)"
-      printf 'LOOP_STOP_SKIP {"slug":"%s","kind":"agent-oneshot","pid":%s,"reason":"cmdline-mismatch","cmd":%s}\n' \
-        "$SLUG" "$AOLD" "$(printf '%q' "${acmd:0:120}")"
+      printf 'LOOP_STOP_SKIP {"slug":"%s","kind":"agent-oneshot","pid":%s,"reason":"cmdline-mismatch"}\n' \
+        "$SLUG" "$AOLD"
     fi
   fi
   rm -f "$AGENT_PID_FILE"

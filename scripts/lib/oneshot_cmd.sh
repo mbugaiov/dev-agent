@@ -62,16 +62,22 @@ oneshot_runner_in_cmd() {
 # Linux: pid-file often points at runner; slug is in inherited environ, not argv.
 oneshot_environ_matches_slug() {
   local pid="$1" slug="$2"
-  local blob line
+  local blob line factory_slug="" path_ok=0
   [[ -r "/proc/$pid/environ" ]] || return 1
   blob="$(tr '\0' '\n' <"/proc/$pid/environ" 2>/dev/null || true)"
   [[ -n "$blob" ]] || return 1
   while IFS= read -r line; do
-    [[ "$line" == "DEV_FACTORY_SLUG=$slug" ]] && return 0
-    [[ "$line" == "DEV_FACTORY_SLUG=\"$slug\"" ]] && return 0
-    [[ "$line" == HEPHAESTUS_LOG=*projects/${slug}/factory* ]] && return 0
-    [[ "$line" == HEPHAESTUS_HEARTBEAT=*projects/${slug}/factory* ]] && return 0
+    if [[ "$line" == DEV_FACTORY_SLUG=* ]]; then
+      factory_slug="${line#DEV_FACTORY_SLUG=}"
+      factory_slug="${factory_slug#\"}"
+      factory_slug="${factory_slug%\"}"
+    fi
+    [[ "$line" == HEPHAESTUS_LOG=*projects/${slug}/factory* ]] && path_ok=1
+    [[ "$line" == HEPHAESTUS_HEARTBEAT=*projects/${slug}/factory* ]] && path_ok=1
   done <<<"$blob"
+  if [[ -n "$factory_slug" && "$factory_slug" != "$slug" ]]; then return 1; fi
+  [[ "$factory_slug" == "$slug" ]] && return 0
+  [[ "$path_ok" -eq 1 && -z "$factory_slug" ]] && return 0
   return 1
 }
 
