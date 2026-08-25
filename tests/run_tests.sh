@@ -41,11 +41,32 @@ have "scripts/verify_stack_skills.sh"
 have "docs/STACK-SKILLS.md"
 have "scripts/post_agent_started.sh"
 have "scripts/post_agent_started.ts"
+have "scripts/post_agent_progress.sh"
+have "scripts/post_agent_progress.ts"
+have "lib/agentProgressStack.ts"
+have "scripts/lib/post_progress_best_effort.sh"
 have ".cursor/rules/dev-agent-start.mdc"
 AGENT_START_OUT=$(AGENT_START_DRY_RUN=1 bash scripts/post_agent_started.sh --repo example/dev-agent pr:1 Hephaestus "pickup" "smoke" 2>&1 || true)
 grep -q '### Hephaestus started' <<<"$AGENT_START_OUT" \
   && ok "post_agent_started dry-run banner" \
   || no "post_agent_started must print ### Hephaestus started (got: $AGENT_START_OUT)"
+AGENT_PROG_OUT=$(AGENT_PROGRESS_DRY_RUN=1 bash scripts/post_agent_progress.sh --repo example/dev-agent 1 Hephaestus pipeline_waiting "PR #1 waiting" 2>&1 || true)
+grep -q '### Hephaestus progress' <<<"$AGENT_PROG_OUT" \
+  && grep -q 'pipeline waiting' <<<"$AGENT_PROG_OUT" \
+  && ok "post_agent_progress dry-run banner" \
+  || no "post_agent_progress must print ### Hephaestus progress (got: $AGENT_PROG_OUT)"
+grep -q 'post_progress_best_effort' scripts/wait_pr_pipeline.sh \
+  && grep -q 'pipeline_waiting' scripts/wait_pr_pipeline.sh \
+  && grep -q 'pipeline_failed' scripts/wait_pr_pipeline.sh \
+  && grep -q 'pipeline_green' scripts/wait_pr_pipeline.sh \
+  && ok "wait_pr_pipeline posts mid-flight progress" \
+  || no "wait_pr_pipeline must call post_progress_best_effort"
+grep -q 'writeProgressTicketKey' scripts/pickup_jira_ticket.ts \
+  && grep -q 'writeProgressTicketKey' scripts/pickup_github_ticket.ts \
+  && grep -q 'clearProgressTicketKey' scripts/post_jira_handoff.ts \
+  && grep -q 'clearProgressTicketKey' scripts/post_github_handoff.ts \
+  && ok "pickup/handoff progress-ticket latch" \
+  || no "pickup must write and handoff must clear progress-ticket.key"
 grep -q 'upsertGithubAgentStarted' scripts/pickup_github_ticket.ts \
   && grep -q 'upsertJiraAgentStarted' scripts/pickup_jira_ticket.ts \
   && grep -q 'upsertGithubAgentStarted' scripts/post_agent_started.ts \

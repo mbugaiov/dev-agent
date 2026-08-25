@@ -33,6 +33,7 @@ import {
   consumePendingArgusKickState,
   PENDING_ARGUS_KICK_PATH,
 } from "../lib/argusKickPending.ts";
+import { clearProgressTicketKey } from "../lib/progressTicketLatch.ts";
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..");
 const slug = process.argv[2] ?? "";
@@ -180,6 +181,7 @@ execFileSync(
 );
 consumePendingExecuteForHandoff(ticketKey);
 console.log(`GITHUB_HANDOFF_OK ${repoRef}#${num} → ${validateLabel} (−${pickupLabel})`);
+clearProgressTicketKey(ROOT, slug);
 const qaKick = resolveQaHandoffKick({
   handoffOk: true,
   suppress: hasFlag("--no-kick"),
