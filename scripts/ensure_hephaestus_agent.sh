@@ -68,13 +68,12 @@ reap_blind_bash_if_needed() {
 
   if [[ "$blind_bash" -eq 1 ]]; then
     printf 'HEPHAESTUS_REAP_BLIND {"slug":"%s","reason":"bash-scheduler-without-agent-oneshot"}\n' "$SLUG"
-    if [[ "$preserve_agent" -eq 1 ]]; then
-      local p
-      for p in "${blind_pids[@]}"; do
-        kill_tree "$p" "scheduler" || true
-      done
-      rm -f "$LOOP_PID_FILE"
-    elif [[ -f "$STOP" ]]; then
+    local p
+    for p in "${blind_pids[@]}"; do
+      kill_tree "$p" "scheduler" || true
+    done
+    rm -f "$LOOP_PID_FILE"
+    if [[ "$preserve_agent" -eq 0 && -f "$STOP" ]]; then
       bash "$STOP" "$SLUG" >/dev/null 2>&1 || true
     fi
   fi
