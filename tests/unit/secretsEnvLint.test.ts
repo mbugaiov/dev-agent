@@ -134,10 +134,10 @@ describe("secretsEnvLint", () => {
       "bash",
       [
         "-c",
-        'export DEV_AGENT_SLUG=lrm; source scripts/source_project_secrets.sh mahogany; echo "SLUG=$SLUG"',
+        'export DEV_AGENT_SLUG=stale-slug; source scripts/source_project_secrets.sh probe-slug; echo "SLUG=$SLUG"',
       ],
       { cwd: ROOT, encoding: "utf8" },
     );
-    expect(out.trim()).toBe("SLUG=mahogany");
+    expect(out.trim()).toBe("SLUG=probe-slug");
   });
 });
