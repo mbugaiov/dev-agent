@@ -22,7 +22,7 @@ export type StallResult = {
 };
 
 const RECONNECT_RE =
-  /Connection lost|reconnecting to https:\/\/agentn\.global\.api/i;
+  /Connection lost|reconnecting to https:\/\/agent/i;
 
 export function defaultStallThresholds(): {
   silentSec: number;

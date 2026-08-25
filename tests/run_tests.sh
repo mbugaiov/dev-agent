@@ -559,7 +559,7 @@ sleep 30 &
 STALL_LIVE=$!
 echo "$STALL_LIVE" > "$STALL_DIR/hephaestus-oneshot.pid"
 printf '{"issuedAt":"2020-01-01T00:00:00Z","mode":"cursor-agent-oneshot"}\n' > "$STALL_DIR/hephaestus-oneshot.claim.json"
-printf 'Connection lost, reconnecting to https://agentn.global.api5.cursor.sh\n' > "$STALL_DIR/hephaestus-oneshot.out"
+printf 'Connection lost, reconnecting to https://agent.example.cursor.sh\n' > "$STALL_DIR/hephaestus-oneshot.out"
 date -u -r 1 +%s > "$STALL_DIR/hephaestus-oneshot.heartbeat" 2>/dev/null || echo 1 > "$STALL_DIR/hephaestus-oneshot.heartbeat"
 STALL_PROBE=$(ONESHOT_STALL_SILENT_SEC=60 ONESHOT_STALL_RECONNECT_GRACE_SEC=30 \
   npx tsx scripts/print_oneshot_stall.ts "$SLUG" 2>&1 | tail -1)
