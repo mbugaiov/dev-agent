@@ -8,8 +8,10 @@
 #
 # Lint rules mirror lib/secretsEnvLint.ts (unit-tested source of truth).
 #
-# Usage: DEV_AGENT_SLUG=<slug> source scripts/source_project_secrets.sh
-SLUG="${DEV_AGENT_SLUG:-${1:-}}"
+# Usage: source scripts/source_project_secrets.sh <slug>
+# Explicit $1 wins — stale DEV_AGENT_SLUG from another factory session must not
+# clobber Kairos probe / tick slug (false WORK for wrong product).
+SLUG="${1:-${DEV_AGENT_SLUG:-}}"
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 if [[ -z "$SLUG" ]]; then
   echo "source_project_secrets: DEV_AGENT_SLUG or slug arg required" >&2

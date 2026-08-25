@@ -128,4 +128,16 @@ describe("secretsEnvLint", () => {
     }
     expect(status).toBe(1);
   });
+
+  it("SE-10 explicit slug arg wins over stale DEV_AGENT_SLUG", () => {
+    const out = execFileSync(
+      "bash",
+      [
+        "-c",
+        'export DEV_AGENT_SLUG=lrm; source scripts/source_project_secrets.sh mahogany; echo "SLUG=$SLUG"',
+      ],
+      { cwd: ROOT, encoding: "utf8" },
+    );
+    expect(out.trim()).toBe("SLUG=mahogany");
+  });
 });
