@@ -570,6 +570,39 @@ echo "$STALL_PROBE" | grep -q ONESHOT_STALLED \
   && ok "print_oneshot_stall flags reconnect stall" \
   || no "print_oneshot_stall must detect stall (got $STALL_PROBE)"
 
+# Runner must capture agent stdout without pipe+read (empty-log hang root cause).
+RUNNER_CAP_DIR="$(mktemp -d "${TMPDIR:-/tmp}/heph-runner-cap.XXXXXX")"
+RUNNER_LOG="$RUNNER_CAP_DIR/out"
+RUNNER_HB="$RUNNER_CAP_DIR/hb"
+HEPHAESTUS_LOG="$RUNNER_LOG" HEPHAESTUS_HEARTBEAT="$RUNNER_HB" HEPHAESTUS_HEARTBEAT_POLL_SEC=1 \
+  bash scripts/lib/hephaestus_oneshot_runner.sh bash -c 'echo CAPTURE_OK; sleep 0.2' \
+  && grep -q CAPTURE_OK "$RUNNER_LOG" \
+  && [[ -s "$RUNNER_HB" ]] \
+  && ok "hephaestus_oneshot_runner captures stdout (no pipe-read)" \
+  || no "runner must write agent stdout to log (log=$(wc -c <"$RUNNER_LOG" 2>/dev/null || echo 0))"
+# Guard: runner must not use while-read on agent stdout.
+! grep -E '2>&1[[:space:]]*\|[[:space:]]*while' scripts/lib/hephaestus_oneshot_runner.sh \
+  && ok "runner forbids pipe|while read heartbeat" \
+  || no "runner must not pipe agent into while read"
+rm -rf "$RUNNER_CAP_DIR"
+
+# Empty-log stall (pipe hang signature) — issuedAt recent enough to avoid max_wall
+: > "$STALL_DIR/hephaestus-oneshot.out"
+sleep 30 &
+STALL_EMPTY=$!
+echo "$STALL_EMPTY" > "$STALL_DIR/hephaestus-oneshot.pid"
+ISSUED_AT="$(date -u -v-700S +%Y-%m-%dT%H:%M:%SZ 2>/dev/null || date -u -d '700 seconds ago' +%Y-%m-%dT%H:%M:%SZ)"
+printf '{"issuedAt":"%s","mode":"cursor-agent-oneshot"}\n' "$ISSUED_AT" > "$STALL_DIR/hephaestus-oneshot.claim.json"
+date -u +%s > "$STALL_DIR/hephaestus-oneshot.heartbeat"
+EMPTY_PROBE=$(ONESHOT_STALL_NO_OUTPUT_SEC=600 ONESHOT_STALL_MAX_WALL_SEC=14400 \
+  npx tsx scripts/print_oneshot_stall.ts "$SLUG" 2>&1 | tail -1)
+kill "$STALL_EMPTY" 2>/dev/null || true
+rm -f "$STALL_DIR/hephaestus-oneshot.pid" "$STALL_DIR/hephaestus-oneshot.claim.json" \
+  "$STALL_DIR/hephaestus-oneshot.out" "$STALL_DIR/hephaestus-oneshot.heartbeat"
+echo "$EMPTY_PROBE" | grep -q '"reason":"no_output"' \
+  && ok "print_oneshot_stall flags no_output stall" \
+  || no "print_oneshot_stall must detect no_output (got $EMPTY_PROBE)"
+
 have "scripts/smoke_k14_process.sh" \
   && ok "smoke_k14_process.sh present for manual K14 smoke" \
   || no "missing scripts/smoke_k14_process.sh"
