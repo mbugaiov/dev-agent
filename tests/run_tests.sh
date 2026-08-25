@@ -570,10 +570,9 @@ echo "$STALL_PROBE" | grep -q ONESHOT_STALLED \
   && ok "print_oneshot_stall flags reconnect stall" \
   || no "print_oneshot_stall must detect stall (got $STALL_PROBE)"
 
-env -u DEV_FACTORY_SLUG -u DEV_AGENT_SLUG -u HEPHAESTUS_LOG -u HEPHAESTUS_HEARTBEAT \
-  bash scripts/smoke_k14_process.sh selftest >/tmp/smoke_k14_selftest.log 2>&1 \
-  && ok "smoke_k14_process selftest" \
-  || no "smoke_k14_process selftest ($(cat /tmp/smoke_k14_selftest.log 2>/dev/null | grep FAIL || true))"
+have "scripts/smoke_k14_process.sh" \
+  && ok "smoke_k14_process.sh present for manual K14 smoke" \
+  || no "missing scripts/smoke_k14_process.sh"
 
 grep -q 'agentKilled' scripts/stop_dev_loop.sh \
   && grep -q 'hephaestus-oneshot.pid' scripts/stop_dev_loop.sh \

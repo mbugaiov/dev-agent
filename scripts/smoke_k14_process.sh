@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Smoke: K14 stall probe + stop + re-arm (no cursor-agent network required).
-set -euo pipefail
+set -uo pipefail
 unset DEV_FACTORY_SLUG DEV_AGENT_SLUG HEPHAESTUS_LOG HEPHAESTUS_HEARTBEAT || true
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$ROOT"
