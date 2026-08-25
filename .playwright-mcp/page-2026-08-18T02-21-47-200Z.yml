@@ -1,0 +1,15 @@
+- generic [active] [ref=e1]:
+  - generic [ref=e3]:
+    - img "Pantheon AI" [ref=e5]
+    - heading "Sign in to Pantheon" [level=1] [ref=e6]
+    - paragraph [ref=e7]: Shared operator access for the coordination hub. Use the credentials issued for your team.
+    - generic [ref=e8]:
+      - generic [ref=e9]:
+        - generic [ref=e10]: Username
+        - textbox "Username" [ref=e11]: ux-review
+      - generic [ref=e12]:
+        - generic [ref=e13]: Password
+        - textbox "Password" [ref=e14]: ux-review-local
+      - button "Signing in…" [disabled] [ref=e26]
+  - button "Open Next.js Dev Tools" [ref=e22] [cursor=pointer]
+  - alert [ref=e16]

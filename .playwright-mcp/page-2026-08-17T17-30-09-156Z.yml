@@ -1,0 +1,879 @@
+- generic [active] [ref=f1e1]:
+  - main [ref=f1e2]:
+    - navigation "Primary" [ref=f1e4]:
+      - link "Pantheon home" [ref=f1e5] [cursor=pointer]:
+        - /url: /
+        - img "Pantheon AI" [ref=f1e6]
+        - generic [ref=f1e7]: Pantheon
+      - generic [ref=f1e8]:
+        - button "Agents" [ref=f1e10] [cursor=pointer]:
+          - text: Agents
+          - generic [ref=f1e11]: ▾
+        - link "Projects" [ref=f1e12] [cursor=pointer]:
+          - /url: /projects
+        - link "Concepts" [ref=f1e13] [cursor=pointer]:
+          - /url: /#approaches
+        - link "Integrations" [ref=f1e14] [cursor=pointer]:
+          - /url: /#integrations
+        - link "Factory Scorecard" [ref=f1e15] [cursor=pointer]:
+          - /url: /metis
+        - link "Tokenomics" [ref=f1e16] [cursor=pointer]:
+          - /url: /tokenomics
+        - link "Presentation" [ref=f1e17] [cursor=pointer]:
+          - /url: /presentation
+        - link "GitHub" [ref=f1e18] [cursor=pointer]:
+          - /url: https://github.com/mbugaiov/pantheon
+        - button "Sign out" [ref=f1e19] [cursor=pointer]
+    - generic [ref=f1e21]:
+      - generic [ref=f1e22]:
+        - paragraph [ref=f1e23]: Pantheon AI
+        - heading "One council. Infinite impact." [level=1] [ref=f1e24]
+        - paragraph [ref=f1e25]: Eleven live agents in a Dark Factory — humans set intent; AI Pantheon closes the loop on Live. Iris routes inbound; Kairos dispatches Hephaestus; Plutus accounts spend; the delivery loop ships.
+        - generic [ref=f1e26]:
+          - generic [ref=f1e27]:
+            - link "Explore agents" [ref=f1e28] [cursor=pointer]:
+              - /url: "#agents"
+            - link "AI SDLC presentation" [ref=f1e29] [cursor=pointer]:
+              - /url: /presentation
+          - generic [ref=f1e30]:
+            - link "Factory scorecard" [ref=f1e31] [cursor=pointer]:
+              - /url: /metis
+            - link "Tokenomics" [ref=f1e32] [cursor=pointer]:
+              - /url: /tokenomics
+            - link "View LRM" [ref=f1e33] [cursor=pointer]:
+              - /url: /projects/lrm
+      - figure "Coordination hub with eleven agents on a delivery loop (Iris opens inbound; Kairos dispatches after Chronos; Plutus spend/assess after Metis)" [ref=f1e35]:
+        - generic [ref=f1e37]:
+          - img "Pantheon AI coordination hub" [ref=f1e38]
+          - generic [ref=f1e51]:
+            - paragraph [ref=f1e52]: Pantheon AI
+            - paragraph [ref=f1e53]: · Coordination Hub ·
+        - generic "Iris, Comms" [ref=f1e54]:
+          - paragraph [ref=f1e56]: Iris
+          - paragraph [ref=f1e57]: Comms
+        - generic "Hermes, BA" [ref=f1e58]:
+          - paragraph [ref=f1e60]: Hermes
+          - paragraph [ref=f1e61]: BA
+        - generic "Athena, UX" [ref=f1e62]:
+          - paragraph [ref=f1e64]: Athena
+          - paragraph [ref=f1e65]: UX
+        - generic "Hephaestus, Dev" [ref=f1e66]:
+          - paragraph [ref=f1e68]: Hephaestus
+          - paragraph [ref=f1e69]: Dev
+        - generic "Themis, Review" [ref=f1e70]:
+          - paragraph [ref=f1e72]: Themis
+          - paragraph [ref=f1e73]: Review
+        - generic "Argus, QA" [ref=f1e74]:
+          - paragraph [ref=f1e76]: Argus
+          - paragraph [ref=f1e77]: QA
+        - generic "Chronos, PM" [ref=f1e78]:
+          - paragraph [ref=f1e80]: Chronos
+          - paragraph [ref=f1e81]: PM
+        - generic "Kairos, Dispatch" [ref=f1e82]:
+          - paragraph [ref=f1e84]: Kairos
+          - paragraph [ref=f1e85]: Dispatch
+        - generic "Metis, Assessment" [ref=f1e86]:
+          - paragraph [ref=f1e88]: Metis
+          - paragraph [ref=f1e89]: Assessment
+        - generic "Plutus, Usage / Spend" [ref=f1e90]:
+          - paragraph [ref=f1e92]: Plutus
+          - paragraph [ref=f1e93]: Usage / Spend
+        - generic "Calliope, Decks" [ref=f1e94]:
+          - paragraph [ref=f1e96]: Calliope
+          - paragraph [ref=f1e97]: Decks
+    - generic [ref=f1e99]:
+      - heading "The council" [level=2] [ref=f1e100]
+      - paragraph [ref=f1e101]: "Eleven equal seats on the delivery loop — Iris opens inbound, then Hermes through Calliope, with Kairos dispatch after Chronos and Plutus spend after Metis — plus two Coming soon: Support Engineer and Security Auditor."
+      - generic [ref=f1e102]:
+        - link "Hephaestus Dev Forge of the closed loop Learn more →" [ref=f1e103] [cursor=pointer]:
+          - /url: /agents/hephaestus
+          - generic [ref=f1e107]:
+            - paragraph [ref=f1e108]: Hephaestus
+            - paragraph [ref=f1e109]: Dev
+            - paragraph [ref=f1e110]: Forge of the closed loop
+            - paragraph [ref=f1e111]: Learn more →
+        - link "Athena UX Charter before the chisel Learn more →" [ref=f1e112] [cursor=pointer]:
+          - /url: /agents/athena
+          - generic [ref=f1e116]:
+            - paragraph [ref=f1e117]: Athena
+            - paragraph [ref=f1e118]: UX
+            - paragraph [ref=f1e119]: Charter before the chisel
+            - paragraph [ref=f1e120]: Learn more →
+        - link "Themis Review Two scales on every pull request Learn more →" [ref=f1e121] [cursor=pointer]:
+          - /url: /agents/themis
+          - generic [ref=f1e125]:
+            - paragraph [ref=f1e126]: Themis
+            - paragraph [ref=f1e127]: Review
+            - paragraph [ref=f1e128]: Two scales on every pull request
+            - paragraph [ref=f1e129]: Learn more →
+        - link "Argus QA Many eyes on the live surface Learn more →" [ref=f1e130] [cursor=pointer]:
+          - /url: /agents/argus
+          - generic [ref=f1e134]:
+            - paragraph [ref=f1e135]: Argus
+            - paragraph [ref=f1e136]: QA
+            - paragraph [ref=f1e137]: Many eyes on the live surface
+            - paragraph [ref=f1e138]: Learn more →
+        - link "Hermes BA Ambiguity ends here Learn more →" [ref=f1e139] [cursor=pointer]:
+          - /url: /agents/hermes
+          - generic [ref=f1e143]:
+            - paragraph [ref=f1e144]: Hermes
+            - paragraph [ref=f1e145]: BA
+            - paragraph [ref=f1e146]: Ambiguity ends here
+            - paragraph [ref=f1e147]: Learn more →
+        - link "Metis Assessment Levels without theater Learn more →" [ref=f1e148] [cursor=pointer]:
+          - /url: /agents/metis
+          - generic [ref=f1e152]:
+            - paragraph [ref=f1e153]: Metis
+            - paragraph [ref=f1e154]: Assessment
+            - paragraph [ref=f1e155]: Levels without theater
+            - paragraph [ref=f1e156]: Learn more →
+        - link "Chronos PM Cadence that ships Learn more →" [ref=f1e157] [cursor=pointer]:
+          - /url: /agents/chronos
+          - generic [ref=f1e161]:
+            - paragraph [ref=f1e162]: Chronos
+            - paragraph [ref=f1e163]: PM
+            - paragraph [ref=f1e164]: Cadence that ships
+            - paragraph [ref=f1e165]: Learn more →
+        - link "Kairos Dispatch Portfolio wake at cadence Learn more →" [ref=f1e166] [cursor=pointer]:
+          - /url: /agents/kairos
+          - generic [ref=f1e170]:
+            - paragraph [ref=f1e171]: Kairos
+            - paragraph [ref=f1e172]: Dispatch
+            - paragraph [ref=f1e173]: Portfolio wake at cadence
+            - paragraph [ref=f1e174]: Learn more →
+        - link "Calliope Decks House-styled narrative Learn more →" [ref=f1e175] [cursor=pointer]:
+          - /url: /agents/calliope
+          - generic [ref=f1e179]:
+            - paragraph [ref=f1e180]: Calliope
+            - paragraph [ref=f1e181]: Decks
+            - paragraph [ref=f1e182]: House-styled narrative
+            - paragraph [ref=f1e183]: Learn more →
+        - link "Iris Comms Messenger at the gate Learn more →" [ref=f1e184] [cursor=pointer]:
+          - /url: /agents/iris
+          - generic [ref=f1e188]:
+            - paragraph [ref=f1e189]: Iris
+            - paragraph [ref=f1e190]: Comms
+            - paragraph [ref=f1e191]: Messenger at the gate
+            - paragraph [ref=f1e192]: Learn more →
+        - link "Plutus Usage / Spend Tokens without theater Learn more →" [ref=f1e193] [cursor=pointer]:
+          - /url: /agents/plutus
+          - generic [ref=f1e197]:
+            - paragraph [ref=f1e198]: Plutus
+            - paragraph [ref=f1e199]: Usage / Spend
+            - paragraph [ref=f1e200]: Tokens without theater
+            - paragraph [ref=f1e201]: Learn more →
+        - generic "Incident triage, runbook assist, and STG/PROD support handoffs — outside the delivery tick until the engine ships." [ref=f1e202]:
+          - generic [ref=f1e206]:
+            - paragraph [ref=f1e207]: Asclepius
+            - paragraph [ref=f1e208]: Support Engineer
+            - paragraph [ref=f1e209]: Healing the live loop
+            - paragraph [ref=f1e210]: Coming soon
+        - generic "Threat review, dependency and secret hygiene, and audit evidence packs — complementary to Themis isolation, not a merge gate yet." [ref=f1e211]:
+          - generic [ref=f1e215]:
+            - paragraph [ref=f1e216]: Astraea
+            - paragraph [ref=f1e217]: Security Auditor
+            - paragraph [ref=f1e218]: Justice for the threat surface
+            - paragraph [ref=f1e219]: Coming soon
+    - generic [ref=f1e221]:
+      - heading "How the council ships" [level=2] [ref=f1e222]
+      - paragraph [ref=f1e223]: Five nodes. Nested loops. Shared state.
+      - navigation "Council process" [ref=f1e225]:
+        - figure [ref=f1e226]:
+          - img "Council process as a graph of loops." [ref=f1e227]:
+            - generic [ref=f1e237]: closed loop
+          - generic [ref=f1e238]: Share context
+          - generic [ref=f1e239]: Align decisions
+          - generic [ref=f1e240]: Execute together
+          - generic [ref=f1e241]: Measure outcomes
+          - generic [ref=f1e242]: Evolve continuously
+      - paragraph [ref=f1e243]:
+        - text: Nodes · edges · shared state — Graph Engineering as a community lens, not an Anthropic product name.
+        - link "How the factory is a graph" [ref=f1e244] [cursor=pointer]:
+          - /url: /factory#graph-engineering
+    - generic [ref=f1e246]:
+      - heading "Coordination hub" [level=2] [ref=f1e247]
+      - paragraph [ref=f1e248]: SDLC call order in the center — who follows whom on a ticket — with factory signal panels around it.
+      - region "Hand-drawn Pantheon coordination hub" [ref=f1e250]:
+        - generic [ref=f1e251]:
+          - generic [ref=f1e252]:
+            - article "Hephaestus · OpenSpec → gate → MR → STG" [ref=f1e253]:
+              - heading "Development Pipeline" [level=3] [ref=f1e254]
+              - list [ref=f1e255]:
+                - listitem [ref=f1e256]:
+                  - generic [ref=f1e257]: ✓
+                  - generic [ref=f1e258]: OpenSpec change
+                - listitem [ref=f1e259]:
+                  - generic [ref=f1e260]: ✓
+                  - generic [ref=f1e261]: Local gate:mr
+                - listitem [ref=f1e262]:
+                  - generic [ref=f1e263]: ✓
+                  - generic [ref=f1e264]: STG buildId match
+              - paragraph [ref=f1e265]: Hephaestus · OpenSpec → gate → MR → STG
+            - article "Themis · dual review on every PR" [ref=f1e266]:
+              - heading "Review Gate" [level=3] [ref=f1e267]
+              - list [ref=f1e268]:
+                - listitem [ref=f1e269]:
+                  - generic [ref=f1e270]: Reviewers
+                  - generic [ref=f1e271]: Themis ×2
+                - listitem [ref=f1e273]:
+                  - generic [ref=f1e274]: Blockers
+                  - generic [ref=f1e275]: CI fail-closed
+                - listitem [ref=f1e277]:
+                  - generic [ref=f1e278]: Shortcut
+                  - generic [ref=f1e279]: LGTM line only
+              - paragraph [ref=f1e281]: Themis · dual review on every PR
+          - generic [ref=f1e283]:
+            - generic [ref=f1e284]:
+              - paragraph [ref=f1e285]: SDLC signal flow
+              - paragraph [ref=f1e286]: Call order · who follows whom
+            - paragraph [ref=f1e287]: Inbound
+            - list "Inbound ingress" [ref=f1e288]:
+              - listitem [ref=f1e289]:
+                - link "Iris Inbound" [ref=f1e290] [cursor=pointer]:
+                  - /url: /agents/iris
+                  - generic [ref=f1e292]: Iris
+                  - generic [ref=f1e293]: Inbound
+            - generic [ref=f1e294]:
+              - paragraph [ref=f1e295]: Control plane · required
+              - list "Required portfolio dispatch" [ref=f1e296]:
+                - listitem [ref=f1e297]:
+                  - link "Kairos Dispatch" [ref=f1e298] [cursor=pointer]:
+                    - /url: /agents/kairos
+                    - generic [ref=f1e300]: Kairos
+                    - generic [ref=f1e301]: Dispatch
+              - paragraph [ref=f1e302]: Iris → Kairos → Hephaestus · portfolio wake
+            - paragraph [ref=f1e303]: Ticket hot path
+            - list "SDLC ticket hot path" [ref=f1e304]:
+              - listitem [ref=f1e305]:
+                - link "Hermes BA · when labeled" [ref=f1e306] [cursor=pointer]:
+                  - /url: /agents/hermes
+                  - generic [ref=f1e308]: Hermes
+                  - generic [ref=f1e309]: BA · when labeled
+                - generic [ref=f1e310]: →
+              - listitem [ref=f1e311]:
+                - link "Athena UX · when labeled" [ref=f1e312] [cursor=pointer]:
+                  - /url: /agents/athena
+                  - generic [ref=f1e314]: Athena
+                  - generic [ref=f1e315]: UX · when labeled
+                - generic [ref=f1e316]: →
+              - listitem [ref=f1e317]:
+                - link "Hephaestus Build" [ref=f1e318] [cursor=pointer]:
+                  - /url: /agents/hephaestus
+                  - generic [ref=f1e320]: Hephaestus
+                  - generic [ref=f1e321]: Build
+                - generic [ref=f1e322]: →
+              - listitem [ref=f1e323]:
+                - link "Themis Review" [ref=f1e324] [cursor=pointer]:
+                  - /url: /agents/themis
+                  - generic [ref=f1e326]: Themis
+                  - generic [ref=f1e327]: Review
+                - generic [ref=f1e328]: →
+              - listitem [ref=f1e329]:
+                - link "Argus QA" [ref=f1e330] [cursor=pointer]:
+                  - /url: /agents/argus
+                  - generic [ref=f1e332]: Argus
+                  - generic [ref=f1e333]: QA
+            - paragraph [ref=f1e334]: Argus → Hephaestus · QA RETURN
+            - paragraph [ref=f1e336]: Cadence & assess
+            - list "Cadence and assess seats" [ref=f1e337]:
+              - listitem [ref=f1e338]:
+                - link "Chronos PM" [ref=f1e339] [cursor=pointer]:
+                  - /url: /agents/chronos
+                  - generic [ref=f1e341]: Chronos
+                  - generic [ref=f1e342]: PM
+              - listitem [ref=f1e343]:
+                - link "Metis Assess" [ref=f1e344] [cursor=pointer]:
+                  - /url: /agents/metis
+                  - generic [ref=f1e346]: Metis
+                  - generic [ref=f1e347]: Assess
+              - listitem [ref=f1e348]:
+                - link "Plutus Spend" [ref=f1e349] [cursor=pointer]:
+                  - /url: /agents/plutus
+                  - generic [ref=f1e351]: Plutus
+                  - generic [ref=f1e352]: Spend
+              - listitem [ref=f1e353]:
+                - link "Calliope Decks" [ref=f1e354] [cursor=pointer]:
+                  - /url: /agents/calliope
+                  - generic [ref=f1e356]: Calliope
+                  - generic [ref=f1e357]: Decks
+          - generic [ref=f1e358]:
+            - article "Athena · ux-charter-first / StyleSeed" [ref=f1e359]:
+              - heading "UX Charter" [level=3] [ref=f1e360]
+              - list [ref=f1e361]:
+                - listitem [ref=f1e362]:
+                  - generic [ref=f1e363]: Gate
+                  - generic [ref=f1e364]: ux-charter-first
+                - listitem [ref=f1e366]:
+                  - generic [ref=f1e367]: Polish
+                  - generic [ref=f1e368]: Mode A on branch
+                - listitem [ref=f1e370]:
+                  - generic [ref=f1e371]: Tokens
+                  - generic [ref=f1e372]: StyleSeed lock
+              - paragraph [ref=f1e374]: Athena · ux-charter-first / StyleSeed
+            - article "Argus · STG /api/build-id" [ref=f1e375]:
+              - heading "STG Proof" [level=3] [ref=f1e376]
+              - list [ref=f1e377]:
+                - listitem [ref=f1e378]:
+                  - generic [ref=f1e379]: Proof surface
+                  - generic [ref=f1e380]: Live STG
+                - listitem [ref=f1e382]:
+                  - generic [ref=f1e383]: Build gate
+                  - generic [ref=f1e384]: buildId MATCH
+                - listitem [ref=f1e386]:
+                  - generic [ref=f1e387]: Evidence
+                  - generic [ref=f1e388]: qa-evidence
+              - paragraph [ref=f1e390]: Argus · STG /api/build-id
+          - generic [ref=f1e391]:
+            - article "lib/agents · 11 live" [ref=f1e392]:
+              - heading "Council Roster" [level=3] [ref=f1e393]
+              - list [ref=f1e394]:
+                - listitem [ref=f1e395]:
+                  - generic [ref=f1e396]: Live agents
+                  - generic [ref=f1e397]: "11"
+                - listitem [ref=f1e399]:
+                  - generic [ref=f1e400]: BA entry
+                  - generic [ref=f1e401]: Hermes scope
+                - listitem [ref=f1e403]:
+                  - generic [ref=f1e404]: Intent
+                  - generic [ref=f1e405]: OpenSpec · tracker
+              - paragraph [ref=f1e407]: lib/agents · 11 live
+            - article "projects · maturity factories" [ref=f1e408]:
+              - heading "Delivery Cadence" [level=3] [ref=f1e409]
+              - list [ref=f1e410]:
+                - listitem [ref=f1e411]:
+                  - generic [ref=f1e412]: Case studies
+                  - generic [ref=f1e413]: "6"
+                - listitem [ref=f1e415]:
+                  - generic [ref=f1e416]: Factories scored
+                  - generic [ref=f1e417]: "6"
+                - listitem [ref=f1e419]:
+                  - generic [ref=f1e420]: Aligned
+                  - generic [ref=f1e421]: 2026-08-16
+              - paragraph [ref=f1e423]: projects · maturity factories
+          - generic [ref=f1e424]:
+            - article "Metis · 2026-08-16" [ref=f1e425]:
+              - heading "Metis Scorecard" [level=3] [ref=f1e426]
+              - list [ref=f1e427]:
+                - listitem [ref=f1e428]:
+                  - generic [ref=f1e429]: Pantheon
+                  - generic [ref=f1e430]: 4.79 · L5′
+                - listitem [ref=f1e432]:
+                  - generic [ref=f1e433]: LRM ref
+                  - generic [ref=f1e434]: 4.79 · L5′
+                - listitem [ref=f1e436]:
+                  - generic [ref=f1e437]: Assessed
+                  - generic [ref=f1e438]: 2026-08-16
+              - paragraph [ref=f1e440]: Metis · 2026-08-16
+            - article "presentation.ts · Calliope separate" [ref=f1e441]:
+              - heading "Narrative Deck" [level=3] [ref=f1e442]
+              - list [ref=f1e443]:
+                - listitem [ref=f1e444]:
+                  - generic [ref=f1e445]: Slides
+                  - generic [ref=f1e446]: "60"
+                - listitem [ref=f1e448]:
+                  - generic [ref=f1e449]: Route
+                  - generic [ref=f1e450]: /presentation
+                - listitem [ref=f1e452]:
+                  - generic [ref=f1e453]: Agent
+                  - generic [ref=f1e454]: /agents/calliope
+              - paragraph [ref=f1e456]: presentation.ts · Calliope separate
+        - generic [ref=f1e457]:
+          - paragraph [ref=f1e458]: One council. Infinite impact.
+          - paragraph [ref=f1e459]: Share context · Align decisions · Execute together · Measure outcomes · Evolve continuously ↻
+          - paragraph [ref=f1e460]: Panel figures come from Pantheon catalog data only (agents, projects, Metis scorecard, AI SDLC deck). Invented coverage / ROI / uptime KPIs are not shown.
+    - generic [ref=f1e462]:
+      - paragraph [ref=f1e463]: How we work
+      - heading "Two concepts" [level=2] [ref=f1e464]
+      - paragraph [ref=f1e465]: "Same craft, two shapes: a Dark Factory of composed agents on products you operate, or a human-led agent team you steer on one surface. Every case study marks which concept delivered it."
+      - generic [ref=f1e466]:
+        - article [ref=f1e467]:
+          - paragraph [ref=f1e468]: Concept · dark factory
+          - heading "AI Pantheon" [level=3] [ref=f1e469]
+          - paragraph [ref=f1e470]: Dark Factory — agents close the loop on STG.
+          - paragraph [ref=f1e471]: "Compose named agents around the product you operate. Skills, OpenSpec, PR gates, build-id, and independent QA run as a dark factory: humans set intent and hold exceptions; the council ships until the backlog is idle."
+          - generic [ref=f1e472]:
+            - paragraph [ref=f1e473]: Agents available
+            - list "AI Pantheon agents" [ref=f1e474]:
+              - listitem [ref=f1e475]: BA (Hermes)
+              - listitem [ref=f1e476]: UX (Athena)
+              - listitem [ref=f1e477]: Dev (Hephaestus)
+              - listitem [ref=f1e478]: Review (Themis ×2)
+              - listitem [ref=f1e479]: QA (Argus)
+              - listitem [ref=f1e480]: PM / Metis / Decks
+          - generic [ref=f1e481]:
+            - paragraph [ref=f1e482]: How it works
+            - list [ref=f1e483]:
+              - listitem [ref=f1e484]:
+                - generic [ref=f1e486]: Seat only the agents the product needs; each keeps its own engine and context
+              - listitem [ref=f1e487]:
+                - generic [ref=f1e489]: Ticket → charter → dual review → STG build-id → independent QA verdict
+              - listitem [ref=f1e490]:
+                - generic [ref=f1e492]: Humans own intent and Done exceptions; the factory drains without babysitting
+          - generic [ref=f1e493]:
+            - paragraph [ref=f1e494]: Best for
+            - list [ref=f1e495]:
+              - listitem [ref=f1e496]:
+                - generic [ref=f1e498]: products you operate end-to-end on STG
+              - listitem [ref=f1e499]:
+                - generic [ref=f1e501]: unattended closed-loop delivery (Dark Factory)
+              - listitem [ref=f1e502]:
+                - generic [ref=f1e504]: deep role engines with portable skills
+              - listitem [ref=f1e505]:
+                - generic [ref=f1e507]: custom gates, trackers, and integrations
+          - generic [ref=f1e508]:
+            - link "See SDLC flow" [ref=f1e509] [cursor=pointer]:
+              - /url: /factory
+            - link "LRM case study" [ref=f1e510] [cursor=pointer]:
+              - /url: /projects/lrm
+        - article [ref=f1e511]:
+          - paragraph [ref=f1e512]: Concept · human-led
+          - heading "AI Squad" [level=3] [ref=f1e513]
+          - paragraph [ref=f1e514]: Human-led agents — parallel work you can steer.
+          - paragraph [ref=f1e515]: A lead keeps priorities, reviews, and final calls while agents work the same surface in parallel. Inspectable evidence, clear lanes, and room to cast more agents when the engagement needs them — without pretending one chatbot wears every hat.
+          - generic [ref=f1e516]:
+            - paragraph [ref=f1e517]: Agents available
+            - list "AI Squad agents" [ref=f1e518]:
+              - listitem [ref=f1e519]: Lead / coordinator
+              - listitem [ref=f1e520]: Frontend
+              - listitem [ref=f1e521]: Backend
+              - listitem [ref=f1e522]: Tester
+              - listitem [ref=f1e523]: Scribe
+              - listitem [ref=f1e524]: Additional agents as needed
+          - generic [ref=f1e525]:
+            - paragraph [ref=f1e526]: How it works
+            - list [ref=f1e527]:
+              - listitem [ref=f1e528]:
+                - generic [ref=f1e530]: A human lead routes work and keeps the team aligned to the ask
+              - listitem [ref=f1e531]:
+                - generic [ref=f1e533]: Agents run parallel lanes on one shared surface with inspectable handoffs
+              - listitem [ref=f1e534]:
+                - generic [ref=f1e536]: Evidence packs stay with the engagement so the next run starts smarter
+          - generic [ref=f1e537]:
+            - paragraph [ref=f1e538]: Best for
+            - list [ref=f1e539]:
+              - listitem [ref=f1e540]:
+                - generic [ref=f1e542]: engagements where humans stay in the decision loop
+              - listitem [ref=f1e543]:
+                - generic [ref=f1e545]: parallel coverage across UI, API, and risk
+              - listitem [ref=f1e546]:
+                - generic [ref=f1e548]: dense, reviewable evidence for go / no-go
+              - listitem [ref=f1e549]:
+                - generic [ref=f1e551]: flexible casting when the problem expands
+          - generic [ref=f1e552]:
+            - link "Fidelity case study" [ref=f1e553] [cursor=pointer]:
+              - /url: /projects/squad
+            - link "All projects" [ref=f1e554] [cursor=pointer]:
+              - /url: /projects
+    - generic [ref=f1e556]:
+      - paragraph [ref=f1e557]: Tooling
+      - heading "Integrations" [level=2] [ref=f1e558]
+      - paragraph [ref=f1e559]: Everything the council and Squad engagements already plug into — trackers, CI, STG, runtime, and the app stack from shipped case studies. Open a live card for agent wiring. Coming soon marks the next connectors on the roadmap.
+      - paragraph [ref=f1e560]:
+        - link "Full council overview" [ref=f1e561] [cursor=pointer]:
+          - /url: /integrations/graph
+          - text: Full council overview
+          - generic [ref=f1e562]: →
+      - generic [ref=f1e563]:
+        - generic [ref=f1e564]:
+          - generic [ref=f1e565]:
+            - heading "Trackers" [level=3] [ref=f1e566]
+            - generic [ref=f1e567]: 2 tools
+          - list [ref=f1e568]:
+            - listitem [ref=f1e569]:
+              - link "Jira Wiring → Backlog pickup, Validate/Testing, and sprint boards on LRM / Atlassian tenants. LRM · Chronos" [ref=f1e570] [cursor=pointer]:
+                - /url: /integrations/jira
+                - generic [ref=f1e573]:
+                  - generic [ref=f1e574]:
+                    - paragraph [ref=f1e575]: Jira
+                    - generic [ref=f1e576]: Wiring →
+                  - paragraph [ref=f1e577]: Backlog pickup, Validate/Testing, and sprint boards on LRM / Atlassian tenants.
+                  - paragraph [ref=f1e578]: LRM · Chronos
+            - listitem [ref=f1e579]:
+              - link "GitHub Issues Wiring → Pantheon factory tracker — impl-dev → validate-testing → done labels. Pantheon · Intown · Mahogany" [ref=f1e580] [cursor=pointer]:
+                - /url: /integrations/github-issues
+                - generic [ref=f1e583]:
+                  - generic [ref=f1e584]:
+                    - paragraph [ref=f1e585]: GitHub Issues
+                    - generic [ref=f1e586]: Wiring →
+                  - paragraph [ref=f1e587]: Pantheon factory tracker — impl-dev → validate-testing → done labels.
+                  - paragraph [ref=f1e588]: Pantheon · Intown · Mahogany
+        - generic [ref=f1e589]:
+          - generic [ref=f1e590]:
+            - heading "Source & CI" [level=3] [ref=f1e591]
+            - generic [ref=f1e592]: 4 tools
+          - list [ref=f1e593]:
+            - listitem [ref=f1e594]:
+              - link "GitHub Wiring → Repos, Issues, and Actions for Pantheon and engine repos. Pantheon · engines · Intown · Mahogany" [ref=f1e595] [cursor=pointer]:
+                - /url: /integrations/github
+                - generic [ref=f1e598]:
+                  - generic [ref=f1e599]:
+                    - paragraph [ref=f1e600]: GitHub
+                    - generic [ref=f1e601]: Wiring →
+                  - paragraph [ref=f1e602]: Repos, Issues, and Actions for Pantheon and engine repos.
+                  - paragraph [ref=f1e603]: Pantheon · engines · Intown · Mahogany
+            - listitem [ref=f1e604]:
+              - link "GitHub Actions Wiring → gate + dual Themis (review / isolation) + STG deploy; Mahogany also promotes Prod landing. Pantheon · Intown · Mahogany" [ref=f1e605] [cursor=pointer]:
+                - /url: /integrations/github-actions
+                - generic [ref=f1e608]:
+                  - generic [ref=f1e609]:
+                    - paragraph [ref=f1e610]: GitHub Actions
+                    - generic [ref=f1e611]: Wiring →
+                  - paragraph [ref=f1e612]: gate + dual Themis (review / isolation) + STG deploy; Mahogany also promotes Prod landing.
+                  - paragraph [ref=f1e613]: Pantheon · Intown · Mahogany
+            - listitem [ref=f1e614]:
+              - link "Bitbucket Wiring → PRs, Pipelines, Isolation (Themis) — LRM delivery path. LRM" [ref=f1e615] [cursor=pointer]:
+                - /url: /integrations/bitbucket
+                - generic [ref=f1e618]:
+                  - generic [ref=f1e619]:
+                    - paragraph [ref=f1e620]: Bitbucket
+                    - generic [ref=f1e621]: Wiring →
+                  - paragraph [ref=f1e622]: PRs, Pipelines, Isolation (Themis) — LRM delivery path.
+                  - paragraph [ref=f1e623]: LRM
+            - listitem [ref=f1e624]:
+              - generic [ref=f1e627]:
+                - generic [ref=f1e628]:
+                  - paragraph [ref=f1e629]: GitLab
+                  - generic [ref=f1e630]: Coming soon
+                - paragraph [ref=f1e631]: Merge requests and CI for tenants that standardize on GitLab.
+        - generic [ref=f1e632]:
+          - generic [ref=f1e633]:
+            - heading "Docs & specs" [level=3] [ref=f1e634]
+            - generic [ref=f1e635]: 4 tools
+          - list [ref=f1e636]:
+            - listitem [ref=f1e637]:
+              - link "Confluence Wiring → Sprint / weekly reports published from the Chronos (PM) path. Chronos · LRM" [ref=f1e638] [cursor=pointer]:
+                - /url: /integrations/confluence
+                - generic [ref=f1e641]:
+                  - generic [ref=f1e642]:
+                    - paragraph [ref=f1e643]: Confluence
+                    - generic [ref=f1e644]: Wiring →
+                  - paragraph [ref=f1e645]: Sprint / weekly reports published from the Chronos (PM) path.
+                  - paragraph [ref=f1e646]: Chronos · LRM
+            - listitem [ref=f1e647]:
+              - link "OpenSpec Wiring → Spec-first changes before Hephaestus implements — every Guild product. LRM · Pantheon · Colibri · Intown · Mahogany" [ref=f1e648] [cursor=pointer]:
+                - /url: /integrations/openspec
+                - generic [ref=f1e651]:
+                  - generic [ref=f1e652]:
+                    - paragraph [ref=f1e653]: OpenSpec
+                    - generic [ref=f1e654]: Wiring →
+                  - paragraph [ref=f1e655]: Spec-first changes before Hephaestus implements — every Guild product.
+                  - paragraph [ref=f1e656]: LRM · Pantheon · Colibri · Intown · Mahogany
+            - listitem [ref=f1e657]:
+              - link "Mermaid Wiring → Diagrams in Calliope decks and technical narratives. Calliope" [ref=f1e658] [cursor=pointer]:
+                - /url: /integrations/mermaid
+                - generic [ref=f1e661]:
+                  - generic [ref=f1e662]:
+                    - paragraph [ref=f1e663]: Mermaid
+                    - generic [ref=f1e664]: Wiring →
+                  - paragraph [ref=f1e665]: Diagrams in Calliope decks and technical narratives.
+                  - paragraph [ref=f1e666]: Calliope
+            - listitem [ref=f1e667]:
+              - link "reveal.js Wiring → House-styled slide runtime for Calliope compose / hand decks. Calliope · Presentation" [ref=f1e668] [cursor=pointer]:
+                - /url: /integrations/revealjs
+                - generic [ref=f1e671]:
+                  - generic [ref=f1e672]:
+                    - paragraph [ref=f1e673]: reveal.js
+                    - generic [ref=f1e674]: Wiring →
+                  - paragraph [ref=f1e675]: House-styled slide runtime for Calliope compose / hand decks.
+                  - paragraph [ref=f1e676]: Calliope · Presentation
+        - generic [ref=f1e677]:
+          - generic [ref=f1e678]:
+            - heading "Comms" [level=3] [ref=f1e679]
+            - generic [ref=f1e680]: 4 tools
+          - list [ref=f1e681]:
+            - listitem [ref=f1e682]:
+              - link "MS Teams Wiring → Incoming webhooks — delivery and UX-pass notifies when configured. LRM · Hephaestus · Athena" [ref=f1e683] [cursor=pointer]:
+                - /url: /integrations/teams
+                - generic [ref=f1e686]:
+                  - generic [ref=f1e687]:
+                    - paragraph [ref=f1e688]: MS Teams
+                    - generic [ref=f1e689]: Wiring →
+                  - paragraph [ref=f1e690]: Incoming webhooks — delivery and UX-pass notifies when configured.
+                  - paragraph [ref=f1e691]: LRM · Hephaestus · Athena
+            - listitem [ref=f1e692]:
+              - link "Telegram Wiring → Iris inbound (message → tracker ticket) plus Mahogany community channel/group bots. Chronos still uses Telegram approve for cadence. Iris · Pantheon · Chronos · Mahogany" [ref=f1e693] [cursor=pointer]:
+                - /url: /integrations/telegram
+                - generic [ref=f1e696]:
+                  - generic [ref=f1e697]:
+                    - paragraph [ref=f1e698]: Telegram
+                    - generic [ref=f1e699]: Wiring →
+                  - paragraph [ref=f1e700]: Iris inbound (message → tracker ticket) plus Mahogany community channel/group bots. Chronos still uses Telegram approve for cadence.
+                  - paragraph [ref=f1e701]: Iris · Pantheon · Chronos · Mahogany
+            - listitem [ref=f1e702]:
+              - link "Instagram Wiring → Mahogany scheduled cross-posts — listings, rentals, news, tips (instagrapi; product outbound, not Iris). Mahogany" [ref=f1e703] [cursor=pointer]:
+                - /url: /integrations/instagram
+                - generic [ref=f1e706]:
+                  - generic [ref=f1e707]:
+                    - paragraph [ref=f1e708]: Instagram
+                    - generic [ref=f1e709]: Wiring →
+                  - paragraph [ref=f1e710]: Mahogany scheduled cross-posts — listings, rentals, news, tips (instagrapi; product outbound, not Iris).
+                  - paragraph [ref=f1e711]: Mahogany
+            - listitem [ref=f1e712]:
+              - generic [ref=f1e715]:
+                - generic [ref=f1e716]:
+                  - paragraph [ref=f1e717]: Slack
+                  - generic [ref=f1e718]: Coming soon
+                - paragraph [ref=f1e719]: Channel notifies and approve flows for Slack-first tenants.
+        - generic [ref=f1e720]:
+          - generic [ref=f1e721]:
+            - heading "Cloud & STG" [level=3] [ref=f1e722]
+            - generic [ref=f1e723]: 4 tools
+          - list [ref=f1e724]:
+            - listitem [ref=f1e725]:
+              - link "DigitalOcean Wiring → STG droplets — LRM / Pantheon / Colibri / Mahogany isolated ports + build-id; Mahogany also promotes prod landing. LRM · Pantheon · Colibri · Mahogany" [ref=f1e726] [cursor=pointer]:
+                - /url: /integrations/digitalocean
+                - generic [ref=f1e729]:
+                  - generic [ref=f1e730]:
+                    - paragraph [ref=f1e731]: DigitalOcean
+                    - generic [ref=f1e732]: Wiring →
+                  - paragraph [ref=f1e733]: STG droplets — LRM / Pantheon / Colibri / Mahogany isolated ports + build-id; Mahogany also promotes prod landing.
+                  - paragraph [ref=f1e734]: LRM · Pantheon · Colibri · Mahogany
+            - listitem [ref=f1e735]:
+              - link "Azure Wiring → Fidelity TEST surface; Auth.js / Azure AD options on LRM. Fidelity · LRM" [ref=f1e736] [cursor=pointer]:
+                - /url: /integrations/azure
+                - generic [ref=f1e739]:
+                  - generic [ref=f1e740]:
+                    - paragraph [ref=f1e741]: Azure
+                    - generic [ref=f1e742]: Wiring →
+                  - paragraph [ref=f1e743]: Fidelity TEST surface; Auth.js / Azure AD options on LRM.
+                  - paragraph [ref=f1e744]: Fidelity · LRM
+            - listitem [ref=f1e745]:
+              - link "Docker Wiring → Containerized STG / pipeline images where projects standardize on containers. STG · Intown" [ref=f1e746] [cursor=pointer]:
+                - /url: /integrations/docker
+                - generic [ref=f1e749]:
+                  - generic [ref=f1e750]:
+                    - paragraph [ref=f1e751]: Docker
+                    - generic [ref=f1e752]: Wiring →
+                  - paragraph [ref=f1e753]: Containerized STG / pipeline images where projects standardize on containers.
+                  - paragraph [ref=f1e754]: STG · Intown
+            - listitem [ref=f1e755]:
+              - generic [ref=f1e758]:
+                - generic [ref=f1e759]:
+                  - paragraph [ref=f1e760]: AWS
+                  - generic [ref=f1e761]: Coming soon
+                - paragraph [ref=f1e762]: Cloud + CI targets for AWS-hosted product STG.
+        - generic [ref=f1e763]:
+          - generic [ref=f1e764]:
+            - heading "Agent runtime & QA" [level=3] [ref=f1e765]
+            - generic [ref=f1e766]: 5 tools
+          - list [ref=f1e767]:
+            - listitem [ref=f1e768]:
+              - link "Cursor Wiring → Agent sessions, Task subagents, API review/isolation (Themis). all factories · Intown" [ref=f1e769] [cursor=pointer]:
+                - /url: /integrations/cursor
+                - generic [ref=f1e772]:
+                  - generic [ref=f1e773]:
+                    - paragraph [ref=f1e774]: Cursor
+                    - generic [ref=f1e775]: Wiring →
+                  - paragraph [ref=f1e776]: Agent sessions, Task subagents, API review/isolation (Themis).
+                  - paragraph [ref=f1e777]: all factories · Intown
+            - listitem [ref=f1e778]:
+              - link "GitHub Copilot Wiring → IDE assist beside Cursor on factory branches and PR iteration. Pantheon · engines" [ref=f1e779] [cursor=pointer]:
+                - /url: /integrations/copilot
+                - generic [ref=f1e782]:
+                  - generic [ref=f1e783]:
+                    - paragraph [ref=f1e784]: GitHub Copilot
+                    - generic [ref=f1e785]: Wiring →
+                  - paragraph [ref=f1e786]: IDE assist beside Cursor on factory branches and PR iteration.
+                  - paragraph [ref=f1e787]: Pantheon · engines
+            - listitem [ref=f1e788]:
+              - link "Playwright Wiring → Argus STG evidence, Colibri E2E / WCAG, Calliope PDF export, Squad plans. Argus · Colibri · Fidelity · Calliope" [ref=f1e789] [cursor=pointer]:
+                - /url: /integrations/playwright
+                - generic [ref=f1e792]:
+                  - generic [ref=f1e793]:
+                    - paragraph [ref=f1e794]: Playwright
+                    - generic [ref=f1e795]: Wiring →
+                  - paragraph [ref=f1e796]: Argus STG evidence, Colibri E2E / WCAG, Calliope PDF export, Squad plans.
+                  - paragraph [ref=f1e797]: Argus · Colibri · Fidelity · Calliope
+            - listitem [ref=f1e798]:
+              - link "Vitest Wiring → Unit / catalog gates on Pantheon and engine repos. Pantheon" [ref=f1e799] [cursor=pointer]:
+                - /url: /integrations/vitest
+                - generic [ref=f1e802]:
+                  - generic [ref=f1e803]:
+                    - paragraph [ref=f1e804]: Vitest
+                    - generic [ref=f1e805]: Wiring →
+                  - paragraph [ref=f1e806]: Unit / catalog gates on Pantheon and engine repos.
+                  - paragraph [ref=f1e807]: Pantheon
+            - listitem [ref=f1e808]:
+              - link "Node.js Wiring → Runtime for Next apps, factory CLIs, and agent scripts. LRM · Pantheon · Colibri" [ref=f1e809] [cursor=pointer]:
+                - /url: /integrations/nodejs
+                - generic [ref=f1e812]:
+                  - generic [ref=f1e813]:
+                    - paragraph [ref=f1e814]: Node.js
+                    - generic [ref=f1e815]: Wiring →
+                  - paragraph [ref=f1e816]: Runtime for Next apps, factory CLIs, and agent scripts.
+                  - paragraph [ref=f1e817]: LRM · Pantheon · Colibri
+        - generic [ref=f1e818]:
+          - generic [ref=f1e819]:
+            - heading "App stack" [level=3] [ref=f1e820]
+            - generic [ref=f1e821]: 13 tools
+          - list [ref=f1e822]:
+            - listitem [ref=f1e823]:
+              - link "Next.js Wiring → App Router products — LRM, Pantheon, Colibri. LRM · Pantheon · Colibri" [ref=f1e824] [cursor=pointer]:
+                - /url: /integrations/nextjs
+                - generic [ref=f1e827]:
+                  - generic [ref=f1e828]:
+                    - paragraph [ref=f1e829]: Next.js
+                    - generic [ref=f1e830]: Wiring →
+                  - paragraph [ref=f1e831]: App Router products — LRM, Pantheon, Colibri.
+                  - paragraph [ref=f1e832]: LRM · Pantheon · Colibri
+            - listitem [ref=f1e833]:
+              - link "React Wiring → UI layer on every Next.js case study. LRM · Pantheon · Colibri" [ref=f1e834] [cursor=pointer]:
+                - /url: /integrations/react
+                - generic [ref=f1e837]:
+                  - generic [ref=f1e838]:
+                    - paragraph [ref=f1e839]: React
+                    - generic [ref=f1e840]: Wiring →
+                  - paragraph [ref=f1e841]: UI layer on every Next.js case study.
+                  - paragraph [ref=f1e842]: LRM · Pantheon · Colibri
+            - listitem [ref=f1e843]:
+              - link "TypeScript Wiring → Typed app + factory engine surface across Guild products. LRM · Pantheon · Colibri · engines · Intown" [ref=f1e844] [cursor=pointer]:
+                - /url: /integrations/typescript
+                - generic [ref=f1e847]:
+                  - generic [ref=f1e848]:
+                    - paragraph [ref=f1e849]: TypeScript
+                    - generic [ref=f1e850]: Wiring →
+                  - paragraph [ref=f1e851]: Typed app + factory engine surface across Guild products.
+                  - paragraph [ref=f1e852]: LRM · Pantheon · Colibri · engines · Intown
+            - listitem [ref=f1e853]:
+              - link "Tailwind CSS Wiring → Utility styling on LRM and Pantheon. LRM · Pantheon" [ref=f1e854] [cursor=pointer]:
+                - /url: /integrations/tailwind
+                - generic [ref=f1e857]:
+                  - generic [ref=f1e858]:
+                    - paragraph [ref=f1e859]: Tailwind CSS
+                    - generic [ref=f1e860]: Wiring →
+                  - paragraph [ref=f1e861]: Utility styling on LRM and Pantheon.
+                  - paragraph [ref=f1e862]: LRM · Pantheon
+            - listitem [ref=f1e863]:
+              - link "Prisma Wiring → ORM on LRM with driver adapters. LRM" [ref=f1e864] [cursor=pointer]:
+                - /url: /integrations/prisma
+                - generic [ref=f1e867]:
+                  - generic [ref=f1e868]:
+                    - paragraph [ref=f1e869]: Prisma
+                    - generic [ref=f1e870]: Wiring →
+                  - paragraph [ref=f1e871]: ORM on LRM with driver adapters.
+                  - paragraph [ref=f1e872]: LRM
+            - listitem [ref=f1e873]:
+              - link "SQLite Wiring → Persistent single-file DB on LRM STG host disk. LRM" [ref=f1e874] [cursor=pointer]:
+                - /url: /integrations/sqlite
+                - generic [ref=f1e877]:
+                  - generic [ref=f1e878]:
+                    - paragraph [ref=f1e879]: SQLite
+                    - generic [ref=f1e880]: Wiring →
+                  - paragraph [ref=f1e881]: Persistent single-file DB on LRM STG host disk.
+                  - paragraph [ref=f1e882]: LRM
+            - listitem [ref=f1e883]:
+              - link "Auth.js Wiring → Session auth on LRM — credentials in STG; Azure AD path documented. LRM" [ref=f1e884] [cursor=pointer]:
+                - /url: /integrations/authjs
+                - generic [ref=f1e887]:
+                  - generic [ref=f1e888]:
+                    - paragraph [ref=f1e889]: Auth.js
+                    - generic [ref=f1e890]: Wiring →
+                  - paragraph [ref=f1e891]: Session auth on LRM — credentials in STG; Azure AD path documented.
+                  - paragraph [ref=f1e892]: LRM
+            - listitem [ref=f1e893]:
+              - link "Python Wiring → ddddocr captcha assist and Chronos / Metis / Plutus scoring scripts. Colibri · Chronos · Metis · Plutus · Mahogany" [ref=f1e894] [cursor=pointer]:
+                - /url: /integrations/python
+                - generic [ref=f1e897]:
+                  - generic [ref=f1e898]:
+                    - paragraph [ref=f1e899]: Python
+                    - generic [ref=f1e900]: Wiring →
+                  - paragraph [ref=f1e901]: ddddocr captcha assist and Chronos / Metis / Plutus scoring scripts.
+                  - paragraph [ref=f1e902]: Colibri · Chronos · Metis · Plutus · Mahogany
+            - listitem [ref=f1e903]:
+              - link "ASP.NET Core Wiring → Intown Suits API host — Controllers / minimal APIs on .NET. Intown" [ref=f1e904] [cursor=pointer]:
+                - /url: /integrations/aspnet-core
+                - generic [ref=f1e907]:
+                  - generic [ref=f1e908]:
+                    - paragraph [ref=f1e909]: ASP.NET Core
+                    - generic [ref=f1e910]: Wiring →
+                  - paragraph [ref=f1e911]: Intown Suits API host — Controllers / minimal APIs on .NET.
+                  - paragraph [ref=f1e912]: Intown
+            - listitem [ref=f1e913]:
+              - link "SQL Server Wiring → Intown Suits relational store (MSSQL) behind the ASP.NET Core API. Intown" [ref=f1e914] [cursor=pointer]:
+                - /url: /integrations/sql-server
+                - generic [ref=f1e917]:
+                  - generic [ref=f1e918]:
+                    - paragraph [ref=f1e919]: SQL Server
+                    - generic [ref=f1e920]: Wiring →
+                  - paragraph [ref=f1e921]: Intown Suits relational store (MSSQL) behind the ASP.NET Core API.
+                  - paragraph [ref=f1e922]: Intown
+            - listitem [ref=f1e923]:
+              - link "Ionic Wiring → Intown Suits hybrid client shell — Ionic + Capacitor-ready UI. Intown" [ref=f1e924] [cursor=pointer]:
+                - /url: /integrations/ionic
+                - generic [ref=f1e927]:
+                  - generic [ref=f1e928]:
+                    - paragraph [ref=f1e929]: Ionic
+                    - generic [ref=f1e930]: Wiring →
+                  - paragraph [ref=f1e931]: Intown Suits hybrid client shell — Ionic + Capacitor-ready UI.
+                  - paragraph [ref=f1e932]: Intown
+            - listitem [ref=f1e933]:
+              - link "Angular Wiring → Intown Suits client framework inside the Ionic app. Intown" [ref=f1e934] [cursor=pointer]:
+                - /url: /integrations/angular
+                - generic [ref=f1e937]:
+                  - generic [ref=f1e938]:
+                    - paragraph [ref=f1e939]: Angular
+                    - generic [ref=f1e940]: Wiring →
+                  - paragraph [ref=f1e941]: Intown Suits client framework inside the Ionic app.
+                  - paragraph [ref=f1e942]: Intown
+            - listitem [ref=f1e943]:
+              - link "Supabase Wiring → Intown Suits storage / backend helpers beside the ASP.NET Core API. Intown" [ref=f1e944] [cursor=pointer]:
+                - /url: /integrations/supabase
+                - generic [ref=f1e947]:
+                  - generic [ref=f1e948]:
+                    - paragraph [ref=f1e949]: Supabase
+                    - generic [ref=f1e950]: Wiring →
+                  - paragraph [ref=f1e951]: Intown Suits storage / backend helpers beside the ASP.NET Core API.
+                  - paragraph [ref=f1e952]: Intown
+    - generic [ref=f1e954]:
+      - heading "Your council of experts, always on" [level=2] [ref=f1e955]
+      - generic [ref=f1e956]:
+        - generic [ref=f1e957]:
+          - heading "Collaborative by design" [level=3] [ref=f1e958]
+          - paragraph [ref=f1e959]: Agents hand off through tickets, charters, PRs, and Live — one closed loop, not isolated chats.
+        - generic [ref=f1e960]:
+          - heading "Isolated & portable" [level=3] [ref=f1e961]
+          - paragraph [ref=f1e962]: Engines stay project-agnostic; product secrets and URLs live in per-project config only.
+        - generic [ref=f1e963]:
+          - heading "Gated delivery" [level=3] [ref=f1e964]
+          - paragraph [ref=f1e965]: Local gate, dual Themis checks, build-id verify — merge only when the factory says green.
+        - generic [ref=f1e966]:
+          - heading "Open & extensible" [level=3] [ref=f1e967]
+          - paragraph [ref=f1e968]: Skills, OpenSpec, and CI wiring you can fork — extend the council without rewriting the core.
+    - generic [ref=f1e986]:
+      - heading "Ready to assemble your council?" [level=2] [ref=f1e987]
+      - paragraph [ref=f1e988]: Explore the live agents, see L5′ on LRM, or open the 60-slide AI SDLC presentation.
+      - generic [ref=f1e989]:
+        - link "Explore agents" [ref=f1e990] [cursor=pointer]:
+          - /url: "#agents"
+        - link "Open presentation" [ref=f1e991] [cursor=pointer]:
+          - /url: /presentation
+        - link "GitHub" [ref=f1e992] [cursor=pointer]:
+          - /url: https://github.com/mbugaiov/pantheon
+  - contentinfo [ref=f1e993]:
+    - generic [ref=f1e994]:
+      - generic [ref=f1e995]:
+        - link "Pantheon home" [ref=f1e996] [cursor=pointer]:
+          - /url: /
+          - img "Pantheon AI" [ref=f1e997]
+          - generic [ref=f1e998]: Pantheon
+        - paragraph [ref=f1e999]: Public face of the multi-agent factory. Narrative only — products ship on their own STG.
+      - navigation "Footer" [ref=f1e1000]:
+        - link "Agents" [ref=f1e1001] [cursor=pointer]:
+          - /url: /#agents
+        - link "Projects" [ref=f1e1002] [cursor=pointer]:
+          - /url: /projects
+        - link "Concepts" [ref=f1e1003] [cursor=pointer]:
+          - /url: /#approaches
+        - link "Integrations" [ref=f1e1004] [cursor=pointer]:
+          - /url: /#integrations
+        - link "Factory" [ref=f1e1005] [cursor=pointer]:
+          - /url: /factory
+        - link "Factory Scorecard" [ref=f1e1006] [cursor=pointer]:
+          - /url: /metis
+        - link "Tokenomics" [ref=f1e1007] [cursor=pointer]:
+          - /url: /tokenomics
+        - link "Presentation" [ref=f1e1008] [cursor=pointer]:
+          - /url: /presentation
+        - link "GitHub" [ref=f1e1009] [cursor=pointer]:
+          - /url: https://github.com/mbugaiov/pantheon
+  - alert [ref=f1e1010]

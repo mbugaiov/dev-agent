@@ -31,7 +31,7 @@ function event(
 ): AgentProgressEvent {
   return {
     seat: "Hephaestus",
-    ticketLine: "**Ticket:** RQ-2143",
+    ticketLine: "**Ticket:** TST-2143",
     at: T0,
     ...over,
   };
@@ -60,12 +60,12 @@ describe("agentProgressStack", () => {
         status: "mr opened",
         detail: "https://example/pr/138",
       }),
-      targetKey: "RQ-2143",
+      targetKey: "TST-2143",
       now: T0,
     });
     expect(d.action).toBe("create");
     expect(d.body).toContain("### Hephaestus progress");
-    expect(d.body).toContain(agentProgressMarker("Hephaestus", "RQ-2143"));
+    expect(d.body).toContain(agentProgressMarker("Hephaestus", "TST-2143"));
   });
 
   it("skips identical status+detail (no spam)", () => {
@@ -75,7 +75,7 @@ describe("agentProgressStack", () => {
         status: "pipeline waiting",
         detail: "PR #138 — wait armed",
       }),
-      targetKey: "RQ-2143",
+      targetKey: "TST-2143",
       now: T0,
     });
     const again = decideAgentProgressStack({
@@ -85,7 +85,7 @@ describe("agentProgressStack", () => {
         detail: "PR #138 — wait armed",
         at: T1,
       }),
-      targetKey: "RQ-2143",
+      targetKey: "TST-2143",
       now: T1,
     });
     expect(again.action).toBe("skip");
@@ -98,7 +98,7 @@ describe("agentProgressStack", () => {
         status: "pipeline waiting",
         detail: "PR #138",
       }),
-      targetKey: "RQ-2143",
+      targetKey: "TST-2143",
       now: T0,
     });
     const next = decideAgentProgressStack({
@@ -108,7 +108,7 @@ describe("agentProgressStack", () => {
         detail: "PR #138 — test failed",
         at: T1,
       }),
-      targetKey: "RQ-2143",
+      targetKey: "TST-2143",
       now: T1,
     });
     expect(next.action).toBe("patch");
@@ -121,7 +121,7 @@ describe("agentProgressStack", () => {
     const first = decideAgentProgressStack({
       existing: null,
       event: event({ status: "pipeline waiting", detail: "PR #1" }),
-      targetKey: "RQ-1",
+      targetKey: "TST-1",
       now: T0,
     });
     const late = decideAgentProgressStack({
@@ -131,7 +131,7 @@ describe("agentProgressStack", () => {
         detail: "PR #1",
         at: T_LATE,
       }),
-      targetKey: "RQ-1",
+      targetKey: "TST-1",
       now: T_LATE,
       sessionTtlMs: 6 * 60 * 60 * 1000,
     });
@@ -161,7 +161,7 @@ describe("agentProgressStack", () => {
     const marked = decideAgentProgressStack({
       existing: null,
       event: event({ status: "mr opened", detail: "link" }),
-      targetKey: "RQ-9",
+      targetKey: "TST-9",
       now: T0,
     }).body;
     const hit = findProgressStackableComment(
@@ -173,7 +173,7 @@ describe("agentProgressStack", () => {
         { body: marked, updatedAt: T0 },
       ],
       "Hephaestus",
-      "RQ-9",
+      "TST-9",
       T1,
     );
     expect(hit?.body).toBe(marked);
@@ -184,16 +184,16 @@ describe("progressTicketLatch", () => {
   it("writes reads and clears latch", () => {
     const root = mkdtempSync(join(tmpdir(), "prog-latch-"));
     try {
-      writeProgressTicketKey(root, "lrm", "RQ-2143");
-      expect(readProgressTicketKey(root, "lrm")).toBe("RQ-2143");
+      writeProgressTicketKey(root, "demo", "TST-2143");
+      expect(readProgressTicketKey(root, "demo")).toBe("TST-2143");
       expect(
         readFileSync(
-          join(root, "projects/lrm/factory/progress-ticket.key"),
+          join(root, "projects/demo/factory/progress-ticket.key"),
           "utf8",
         ).trim(),
-      ).toBe("RQ-2143");
-      clearProgressTicketKey(root, "lrm");
-      expect(readProgressTicketKey(root, "lrm")).toBeUndefined();
+      ).toBe("TST-2143");
+      clearProgressTicketKey(root, "demo");
+      expect(readProgressTicketKey(root, "demo")).toBeUndefined();
     } finally {
       rmSync(root, { recursive: true, force: true });
     }

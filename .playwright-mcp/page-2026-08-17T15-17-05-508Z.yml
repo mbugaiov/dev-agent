@@ -1,0 +1,239 @@
+- generic [active] [ref=f2e1]:
+  - button "Open Next.js Dev Tools" [ref=f2e21] [cursor=pointer]
+  - alert [ref=f2e25]: Factory walkthrough · Pantheon AI
+  - banner [ref=f2e26]:
+    - navigation "Primary" [ref=f2e27]:
+      - link "Pantheon home" [ref=f2e28] [cursor=pointer]:
+        - /url: /
+        - img "Pantheon AI" [ref=f2e29]
+        - generic [ref=f2e30]: Pantheon
+      - generic [ref=f2e31]:
+        - button "Agents" [ref=f2e33] [cursor=pointer]:
+          - text: Agents
+          - generic [ref=f2e34]: ▾
+        - link "Projects" [ref=f2e35] [cursor=pointer]:
+          - /url: /projects
+        - link "Concepts" [ref=f2e36] [cursor=pointer]:
+          - /url: /#approaches
+        - link "Integrations" [ref=f2e37] [cursor=pointer]:
+          - /url: /#integrations
+        - link "Factory Scorecard" [ref=f2e38] [cursor=pointer]:
+          - /url: /metis
+        - link "Tokenomics" [ref=f2e39] [cursor=pointer]:
+          - /url: /tokenomics
+        - link "Presentation" [ref=f2e40] [cursor=pointer]:
+          - /url: /presentation
+        - link "GitHub" [ref=f2e41] [cursor=pointer]:
+          - /url: https://github.com/mbugaiov/pantheon
+        - button "Sign out" [ref=f2e42] [cursor=pointer]
+  - main [ref=f2e43]:
+    - generic [ref=f2e44]:
+      - generic [ref=f2e45]:
+        - paragraph [ref=f2e46]: Dark Factory · one long path
+        - heading "One ticket through the factory" [level=1] [ref=f2e47]
+        - paragraph [ref=f2e48]: One vertical story per product — same seats, different wires. Hermes and Athena run when the ticket is labeled; Themis, CI deploy to STG, and Argus QA RETURN close the long loop.
+      - tablist "Factory product" [ref=f2e49]:
+        - tab "Pantheon" [selected] [ref=f2e50] [cursor=pointer]
+        - tab "LRM" [ref=f2e51] [cursor=pointer]
+      - paragraph [ref=f2e52]: "Follow pantheon#161 end-to-end: charter lineage → ship → CI deploy → Argus RETURN → fix → PASS. Hermes/Athena are mandatory when their labels are on the ticket; wires are GitHub."
+      - generic [ref=f2e53]:
+        - paragraph [ref=f2e54]: Case · Pantheon
+        - paragraph [ref=f2e55]: pantheon#161
+        - heading "Static wiring graphs — then clicks broke" [level=2] [ref=f2e56]
+        - paragraph [ref=f2e57]: "Static diagrams shipped, then nodes stopped navigating (pane ate hits). Argus filed #163 and returned #161."
+        - generic [ref=f2e58]:
+          - generic [ref=f2e59]: GitHub Issues · mbugaiov/pantheon
+          - generic [ref=f2e60]: pantheon
+          - generic [ref=f2e61]: impl-dev
+          - generic [ref=f2e62]: pantheon#157
+          - generic [ref=f2e63]: pantheon#159
+          - generic [ref=f2e64]: pantheon#163
+          - generic [ref=f2e65]: "PR #162"
+          - generic [ref=f2e66]: "PR #164"
+      - region [ref=f2e67]:
+        - paragraph [ref=f2e68]: Concept · graph engineering
+        - heading "The factory is a graph of loops" [level=2] [ref=f2e69]
+        - paragraph [ref=f2e70]: Nodes are seats, edges are handoffs, shared state is the ticket and OpenSpec that outlive each step. Graph Engineering is a community lens — not an Anthropic product name.
+        - list [ref=f2e71]:
+          - listitem [ref=f2e72]:
+            - paragraph [ref=f2e73]: Nodes
+            - paragraph [ref=f2e74]: Hermes, Athena, Hephaestus, Themis, Argus — seats; Iris opens; humans set intent.
+          - listitem [ref=f2e75]:
+            - paragraph [ref=f2e76]: Edges
+            - paragraph [ref=f2e77]: Labels, sentinels, CI, handoffs — ba-spec-first, review gates, STG verify.
+          - listitem [ref=f2e78]:
+            - paragraph [ref=f2e79]: Shared state
+            - paragraph [ref=f2e80]: Issue, OpenSpec, STG build-id, evidence — durable across seats, not in-process demo.
+        - paragraph [ref=f2e81]: Org-scale delivery graph — Issues, OpenSpec, STG build-id, dual Themis, Argus close.
+        - generic [ref=f2e82]:
+          - link "See the live spine" [ref=f2e83] [cursor=pointer]:
+            - /url: /integrations/graph
+          - link "Walk the ticket path" [ref=f2e84] [cursor=pointer]:
+            - /url: "#factory-spine"
+      - region [ref=f2e85]:
+        - paragraph [ref=f2e86]: Control plane · required
+        - heading "Kairos wakes the forge on cadence" [level=3] [ref=f2e87]
+        - paragraph [ref=f2e88]: "Iris opens tickets into product trackers. Kairos is required Dispatch: polls allowlisted products on interval, then arms oneshot Hephaestus(slug) when backlog or open MRs exist — without passing a ticket list. Hephaestus still owns pickup and the implement loop."
+        - link "Meet Kairos" [ref=f2e89] [cursor=pointer]:
+          - /url: /agents/kairos
+      - region "Pantheon factory path" [ref=f2e90]:
+        - generic [ref=f2e91]:
+          - generic [ref=f2e92]:
+            - heading "How it works · Pantheon" [level=2] [ref=f2e93]
+            - paragraph [ref=f2e94]: One ticket through labeled seats → CI STG → Argus. Select a node for detail.
+            - paragraph [ref=f2e95]: The factory loop verifies STG buildId after merge. Prod promotion is a separate human/ops gate — Pantheon has no automated Prod deploy step in this loop.
+          - paragraph [ref=f2e96]: "Fail: Argus → QA RETURN → Hephaestus"
+        - generic "Factory path diagram" [ref=f2e97]:
+          - generic "Ordered factory path" [ref=f2e98]:
+            - list [ref=f2e99]:
+              - listitem [ref=f2e100]:
+                - button "Hu Human Intent" [pressed] [ref=f2e101] [cursor=pointer]:
+                  - generic [ref=f2e102]: Hu
+                  - generic [ref=f2e103]: Human
+                  - generic [ref=f2e104]: Intent
+                - generic [ref=f2e105]: →
+              - listitem [ref=f2e106]:
+                - button "CI Ticket Queue" [ref=f2e107] [cursor=pointer]:
+                  - generic [ref=f2e108]: CI
+                  - generic [ref=f2e109]: Ticket
+                  - generic [ref=f2e110]: Queue
+                - generic [ref=f2e111]: →
+              - listitem [ref=f2e112]:
+                - button "Hermes BA when labeled" [ref=f2e113] [cursor=pointer]:
+                  - generic [ref=f2e115]: Hermes
+                  - generic [ref=f2e116]: BA
+                  - generic [ref=f2e117]: when labeled
+                - generic [ref=f2e118]: →
+              - listitem [ref=f2e119]:
+                - button "Athena UX when labeled" [ref=f2e120] [cursor=pointer]:
+                  - generic [ref=f2e122]: Athena
+                  - generic [ref=f2e123]: UX
+                  - generic [ref=f2e124]: when labeled
+                - generic [ref=f2e125]: →
+              - listitem [ref=f2e126]:
+                - button "Hephaestus Build" [ref=f2e127] [cursor=pointer]:
+                  - generic [ref=f2e129]: Hephaestus
+                  - generic [ref=f2e130]: Build
+                - generic [ref=f2e131]: →
+              - listitem [ref=f2e132]:
+                - button "Themis CR ×2" [ref=f2e133] [cursor=pointer]:
+                  - generic [ref=f2e135]: Themis
+                  - generic [ref=f2e136]: CR ×2
+            - paragraph [ref=f2e137]: continues ↓
+            - list [ref=f2e140]:
+              - listitem [ref=f2e141]:
+                - button "CI Deploy CI → STG" [ref=f2e142] [cursor=pointer]:
+                  - generic [ref=f2e143]: CI
+                  - generic [ref=f2e144]: Deploy
+                  - generic [ref=f2e145]: CI → STG
+                - generic [ref=f2e146]: →
+              - listitem [ref=f2e147]:
+                - button "Argus QA" [ref=f2e148] [cursor=pointer]:
+                  - generic [ref=f2e150]: Argus
+                  - generic [ref=f2e151]: QA
+                - generic [ref=f2e152]: →
+              - listitem [ref=f2e153]:
+                - button "Hephaestus Fix loop" [ref=f2e154] [cursor=pointer]:
+                  - generic [ref=f2e156]: Hephaestus
+                  - generic [ref=f2e157]: Fix loop
+                - generic [ref=f2e158]: →
+              - listitem [ref=f2e159]:
+                - button "Argus Close" [ref=f2e160] [cursor=pointer]:
+                  - generic [ref=f2e162]: Argus
+                  - generic [ref=f2e163]: Close
+        - article [ref=f2e164]:
+          - generic [ref=f2e165]:
+            - generic [ref=f2e166]: "01"
+            - heading "Human" [level=3] [ref=f2e167]
+            - generic [ref=f2e168]: Intent
+            - generic [ref=f2e169]: ask
+          - paragraph [ref=f2e170]: Human
+          - paragraph [ref=f2e171]:
+            - generic [ref=f2e172]: Always ·
+            - text: Someone names the defect. Agents never invent the product goal.
+          - paragraph [ref=f2e173]:
+            - generic [ref=f2e174]: This case ·
+            - text: Operators wanted fit-once static wiring graphs (no zoom chrome) after the council map work.
+          - list [ref=f2e175]:
+            - listitem [ref=f2e176]: human
+        - list [ref=f2e177]:
+          - listitem [ref=f2e178]: Human
+          - listitem [ref=f2e179]: Ticket
+          - listitem [ref=f2e180]: Hermes
+          - listitem [ref=f2e181]: Athena
+          - listitem [ref=f2e182]: Hephaestus
+          - listitem [ref=f2e183]: Themis
+          - listitem [ref=f2e184]: Deploy
+          - listitem [ref=f2e185]: Argus
+          - listitem [ref=f2e186]: Hephaestus
+          - listitem [ref=f2e187]: Argus
+      - generic [ref=f2e188]:
+        - heading "Only the wires change" [level=2] [ref=f2e189]
+        - paragraph [ref=f2e190]: Same seats and loop shape — Pantheon vs LRM connectors.
+        - list [ref=f2e191]:
+          - listitem [ref=f2e192]:
+            - paragraph [ref=f2e193]: Backlog
+            - generic [ref=f2e194]:
+              - paragraph [ref=f2e195]: Pantheon · GitHub Issues + labels
+              - paragraph [ref=f2e196]: LRM · Jira + labels / status
+          - listitem [ref=f2e197]:
+            - paragraph [ref=f2e198]: Source control
+            - generic [ref=f2e199]:
+              - paragraph [ref=f2e200]: Pantheon · GitHub PR → main
+              - paragraph [ref=f2e201]: LRM · Bitbucket MR → main
+          - listitem [ref=f2e202]:
+            - paragraph [ref=f2e203]: Review gate
+            - generic [ref=f2e204]:
+              - paragraph [ref=f2e205]: Pantheon · Themis in GitHub Actions
+              - paragraph [ref=f2e206]: LRM · Themis in Bitbucket pipeline
+          - listitem [ref=f2e207]:
+            - paragraph [ref=f2e208]: Deploy
+            - generic [ref=f2e209]:
+              - paragraph [ref=f2e210]: Pantheon · GHA Deploy STG (CI) · Hephaestus verifies buildId · Prod is human-gated
+              - paragraph [ref=f2e211]: LRM · Pipeline STG deploy · Hephaestus verifies buildId · Prod is human-gated
+          - listitem [ref=f2e212]:
+            - paragraph [ref=f2e213]: QA handoff
+            - generic [ref=f2e214]:
+              - paragraph [ref=f2e215]: Pantheon · validate-testing + issue comment
+              - paragraph [ref=f2e216]: LRM · Validate/Testing + handoff comment
+          - listitem [ref=f2e217]:
+            - paragraph [ref=f2e218]: Close
+            - generic [ref=f2e219]:
+              - paragraph [ref=f2e220]: Pantheon · Argus closes issue (+ done)
+              - paragraph [ref=f2e221]: LRM · Argus → Jira Done
+      - navigation "Related" [ref=f2e222]:
+        - link "Orbit call-order map" [ref=f2e223] [cursor=pointer]:
+          - /url: /#system-map
+        - link "LRM case study" [ref=f2e224] [cursor=pointer]:
+          - /url: /projects/lrm
+        - link "Meet the agents" [ref=f2e225] [cursor=pointer]:
+          - /url: /#agents
+        - link "Integrations graph" [ref=f2e226] [cursor=pointer]:
+          - /url: /integrations/graph
+  - contentinfo [ref=f2e227]:
+    - generic [ref=f2e228]:
+      - generic [ref=f2e229]:
+        - link "Pantheon home" [ref=f2e230] [cursor=pointer]:
+          - /url: /
+          - img "Pantheon AI" [ref=f2e231]
+          - generic [ref=f2e232]: Pantheon
+        - paragraph [ref=f2e233]: Public face of the multi-agent factory. Narrative only — products ship on their own STG.
+      - navigation "Footer" [ref=f2e234]:
+        - link "Agents" [ref=f2e235] [cursor=pointer]:
+          - /url: /#agents
+        - link "Projects" [ref=f2e236] [cursor=pointer]:
+          - /url: /projects
+        - link "Concepts" [ref=f2e237] [cursor=pointer]:
+          - /url: /#approaches
+        - link "Integrations" [ref=f2e238] [cursor=pointer]:
+          - /url: /#integrations
+        - link "Factory" [ref=f2e239] [cursor=pointer]:
+          - /url: /factory
+        - link "Factory Scorecard" [ref=f2e240] [cursor=pointer]:
+          - /url: /metis
+        - link "Tokenomics" [ref=f2e241] [cursor=pointer]:
+          - /url: /tokenomics
+        - link "Presentation" [ref=f2e242] [cursor=pointer]:
+          - /url: /presentation
+        - link "GitHub" [ref=f2e243] [cursor=pointer]:
+          - /url: https://github.com/mbugaiov/pantheon

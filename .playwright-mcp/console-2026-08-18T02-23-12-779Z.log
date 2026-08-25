@@ -1,0 +1,44 @@
+[    1489ms] [ERROR] Failed to load resource: the server responded with a status of 500 (Internal Server Error) @ http://localhost:3000/:0
+[    1707ms] [INFO] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold @ webpack-internal:///(pages-dir-browser)/./node_modules/react-dom/cjs/react-dom-client.development.js:28004
+[    1784ms] Error: ENOENT: no such file or directory, open '/Users/max/Downloads/project/personal/pantheon/.next/server/app/page.js'
+    at Object.readFileSync (node:fs:436:20)
+    at defaultLoadImpl (node:internal/modules/cjs/loader:1167:17)
+    at loadSource (node:internal/modules/cjs/loader:1855:20)
+    at Module._extensions..js (node:internal/modules/cjs/loader:1962:44)
+    at Module.load (node:internal/modules/cjs/loader:1552:32)
+    at Module._load (node:internal/modules/cjs/loader:1354:12)
+    at wrapModuleLoad (node:internal/modules/cjs/loader:255:19)
+    at Module.require (node:internal/modules/cjs/loader:1575:12)
+    at mod.require (file:///Users/max/Downloads/project/personal/pantheon/node_modules/next/dist/server/require-hook.js:68:28)
+    at require (node:internal/modules/helpers:191:16)
+    at requirePage (file:///Users/max/Downloads/project/personal/pantheon/node_modules/next/dist/server/require.js:99:80)
+    at loadComponentsImpl (file:///Users/max/Downloads/project/personal/pantheon/node_modules/next/dist/server/load-components.js:132:57)
+    at async DevServer.findPageComponentsImpl (file:///Users/max/Downloads/project/personal/pantheon/node_modules/next/dist/server/next-server.js:900:36)
+    at async DevServer.findPageComponents (file:///Users/max/Downloads/project/personal/pantheon/node_modules/next/dist/server/dev/next-dev-server.js:706:16)
+    at async DevServer.renderPageComponent (file:///Users/max/Downloads/project/personal/pantheon/node_modules/next/dist/server/base-server.js:1468:24)
+    at async DevServer.renderToResponseImpl (file:///Users/max/Downloads/project/personal/pantheon/node_modules/next/dist/server/base-server.js:1522:32)
+    at async DevServer.pipeImpl (file:///Users/max/Downloads/project/personal/pantheon/node_modules/next/dist/server/base-server.js:1026:25)
+    at async NextNodeServer.handleCatchallRenderRequest (file:///Users/max/Downloads/project/personal/pantheon/node_modules/next/dist/server/next-server.js:394:17)
+    at async DevServer.handleRequestImpl (file:///Users/max/Downloads/project/personal/pantheon/node_modules/next/dist/server/base-server.js:917:17)
+    at async (file:///Users/max/Downloads/project/personal/pantheon/node_modules/next/dist/server/dev/next-dev-server.js:400:20)
+    at async Span.traceAsyncFn (file:///Users/max/Downloads/project/personal/pantheon/node_modules/next/dist/trace/trace.js:157:20)
+    at async DevServer.handleRequest (file:///Users/max/Downloads/project/personal/pantheon/node_modules/next/dist/server/dev/next-dev-server.js:396:24)
+    at async invokeRender (file:///Users/max/Downloads/project/personal/pantheon/node_modules/next/dist/server/lib/router-server.js:240:21)
+    at async handleRequest (file:///Users/max/Downloads/project/personal/pantheon/node_modules/next/dist/server/lib/router-server.js:437:24)
+    at async requestHandlerImpl (file:///Users/max/Downloads/project/personal/pantheon/node_modules/next/dist/server/lib/router-server.js:485:13)
+    at async Server.requestListener (file:///Users/max/Downloads/project/personal/pantheon/node_modules/next/dist/server/lib/start-server.js:226:13)
+[    1783ms] [LOG] [HMR] connected @ webpack-internal:///(pages-dir-browser)/./node_modules/next/dist/client/dev/hot-reloader/pages/websocket.js:45
+[   24624ms] [LOG] [Fast Refresh] rebuilding @ webpack-internal:///(pages-dir-browser)/./node_modules/next/dist/client/dev/hot-reloader/pages/hot-reloader-pages.js:206
+[   25046ms] [WARNING] [Fast Refresh] performing full reload because your application had an unrecoverable error @ webpack-internal:///(pages-dir-browser)/./node_modules/next/dist/client/dev/hot-reloader/pages/hot-reloader-pages.js:347
+[   25905ms] [ERROR] Failed to load resource: the server responded with a status of 500 (Internal Server Error) @ http://localhost:3000/:0
+[   25936ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://localhost:3000/_next/static/chunks/main-app.js:0
+[   25938ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://localhost:3000/_next/static/chunks/app-pages-internals.js:0
+[   29160ms] [WARNING] The resource http://localhost:3000/agents/nav/agent_hephaestus.png was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally. @ http://localhost:3000/:0
+[   29160ms] [WARNING] The resource http://localhost:3000/agents/nav/agent_athena.png was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally. @ http://localhost:3000/:0
+[   29160ms] [WARNING] The resource http://localhost:3000/integrations/githubactions.svg was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally. @ http://localhost:3000/:0
+[   29160ms] [WARNING] The resource http://localhost:3000/integrations/bitbucket.svg was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally. @ http://localhost:3000/:0
+[   29160ms] [WARNING] The resource http://localhost:3000/integrations/github.svg was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally. @ http://localhost:3000/:0
+[   29160ms] [WARNING] The resource http://localhost:3000/brand/brand_logo_lockup.png was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally. @ http://localhost:3000/:0
+[   29160ms] [WARNING] The resource http://localhost:3000/agents/nav/agent_hermes.png was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally. @ http://localhost:3000/:0
+[   29160ms] [WARNING] The resource http://localhost:3000/integrations/jira.svg was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally. @ http://localhost:3000/:0
+[   29160ms] [WARNING] The resource http://localhost:3000/agents/nav/agent_iris.png was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally. @ http://localhost:3000/:0

@@ -3,7 +3,7 @@
 # Reads projects/<slug>/factory/progress-ticket.key (or DEV_PROGRESS_TICKET).
 # Never fails the caller — tracker outages must not block pipelines.
 set -uo pipefail
-ROOT="$(cd "$(dirname "$0")/.." && pwd)"
+ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
 SLUG="${1:-}"
 MILESTONE="${2:-}"
 DETAIL="${3:-}"

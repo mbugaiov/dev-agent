@@ -67,6 +67,28 @@ grep -q 'writeProgressTicketKey' scripts/pickup_jira_ticket.ts \
   && grep -q 'clearProgressTicketKey' scripts/post_github_handoff.ts \
   && ok "pickup/handoff progress-ticket latch" \
   || no "pickup must write and handoff must clear progress-ticket.key"
+# Guard: best-effort helper ROOT must be engine root (scripts/lib → ../..)
+PROG_HELP_ROOT="$(bash -c 'source(){ :; }; ROOT=""; eval "$(sed -n "1,12p" scripts/lib/post_progress_best_effort.sh | grep -E "ROOT=|dirname")"; echo "$ROOT"' 2>/dev/null || true)"
+# Simpler: assert dirname chain and that latch path resolves under repo projects/
+PROG_BE="$(mktemp -d "${TMPDIR:-/tmp}/prog-be.XXXXXX")"
+mkdir -p "$PROG_BE/projects/demo/factory"
+echo TST-99 >"$PROG_BE/projects/demo/factory/progress-ticket.key"
+# Copy helper into fake tree layout scripts/lib/ relative to PROG_BE as fake root
+mkdir -p "$PROG_BE/scripts/lib" "$PROG_BE/scripts"
+cp scripts/lib/post_progress_best_effort.sh "$PROG_BE/scripts/lib/"
+# Stub post_agent_progress to prove ROOT resolution
+printf '%s\n' '#!/bin/bash' 'echo "ROOT_OK=$1 $2 $3 $4 $5" >"$(dirname "$0")/../progress_probe.out"' \
+  >"$PROG_BE/scripts/post_agent_progress.sh"
+chmod +x "$PROG_BE/scripts/post_agent_progress.sh" "$PROG_BE/scripts/lib/post_progress_best_effort.sh"
+# Patch stub invoke: helper calls $ROOT/scripts/post_agent_progress.sh — run from fake root
+( cd "$PROG_BE" && bash scripts/lib/post_progress_best_effort.sh demo pipeline_waiting "detail" )
+if [[ -f "$PROG_BE/scripts/progress_probe.out" ]] \
+  && grep -q 'ROOT_OK=demo TST-99 Hephaestus pipeline_waiting detail' "$PROG_BE/scripts/progress_probe.out"; then
+  ok "post_progress_best_effort resolves engine ROOT + latch"
+else
+  no "post_progress_best_effort ROOT/latch broken (probe=$(cat "$PROG_BE/scripts/progress_probe.out" 2>/dev/null || echo missing))"
+fi
+rm -rf "$PROG_BE"
 grep -q 'upsertGithubAgentStarted' scripts/pickup_github_ticket.ts \
   && grep -q 'upsertJiraAgentStarted' scripts/pickup_jira_ticket.ts \
   && grep -q 'upsertGithubAgentStarted' scripts/post_agent_started.ts \

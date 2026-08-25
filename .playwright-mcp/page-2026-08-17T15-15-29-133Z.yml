@@ -1,0 +1,12 @@
+- generic [ref=f1e3]:
+  - img "Pantheon AI" [ref=f1e5]
+  - heading "Sign in to Pantheon" [level=1] [ref=f1e6]
+  - paragraph [ref=f1e7]: Shared operator access for the coordination hub. Use the credentials issued for your team.
+  - generic [ref=f1e8]:
+    - generic [ref=f1e9]:
+      - generic [ref=f1e10]: Username
+      - textbox "Username" [ref=f1e11]
+    - generic [ref=f1e12]:
+      - generic [ref=f1e13]: Password
+      - textbox "Password" [ref=f1e14]
+    - button "Sign in" [ref=f1e15] [cursor=pointer]
