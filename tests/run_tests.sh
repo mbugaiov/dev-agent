@@ -531,13 +531,35 @@ else
 fi
 kill "$ORPHAN_PREF_PID" 2>/dev/null || true
 
-# K14: print_oneshot_stall detects reconnect stall from factory artifacts
+# K14 wrapper: stop must kill ensure-style bash -c tree (factory path in cmdline)
+HB="projects/$SLUG/factory/hephaestus-oneshot.heartbeat"
+LOG="projects/$SLUG/factory/hephaestus-oneshot.out"
+CLAIM="projects/$SLUG/factory/hephaestus-oneshot.claim.json"
+printf '{"slug":"%s","issuedAt":"2026-08-24T00:00:00Z","mode":"cursor-agent-oneshot"}\n' "$SLUG" >"$CLAIM"
+bash -c "export DEV_FACTORY_SLUG=\"${SLUG}\"; export HEPHAESTUS_LOG=${LOG}; export HEPHAESTUS_HEARTBEAT=${HB}; bash scripts/lib/hephaestus_oneshot_runner.sh sleep 120" &
+WRAP_CHILD=$!
+sleep 0.3
+# Linux often stores runner pid, not outer bash -c (cmdline lacks DEV_FACTORY_SLUG).
+RUNNER_PID="$(pgrep -P "$WRAP_CHILD" 2>/dev/null | head -1 || true)"
+[[ -n "$RUNNER_PID" ]] && echo "$RUNNER_PID" > "projects/$SLUG/factory/hephaestus-oneshot.pid" \
+  || echo "$WRAP_CHILD" > "projects/$SLUG/factory/hephaestus-oneshot.pid"
+TARGET_PID="$(tr -d '[:space:]' <"projects/$SLUG/factory/hephaestus-oneshot.pid" || true)"
+WRAP_STOP=$(bash scripts/stop_dev_loop.sh "$SLUG" 2>&1)
+if kill -0 "$WRAP_CHILD" 2>/dev/null || kill -0 "$TARGET_PID" 2>/dev/null; then
+  no "stop must kill hephaestus_oneshot_runner (wrap=$WRAP_CHILD runner=$TARGET_PID out=$WRAP_STOP)"
+else
+  ok "stop kills hephaestus_oneshot_runner wrapper"
+fi
+kill "$WRAP_CHILD" 2>/dev/null || true
+kill "$TARGET_PID" 2>/dev/null || true
+rm -f "projects/$SLUG/factory/hephaestus-oneshot.pid" "$HB" "$LOG" "$CLAIM"
+
 STALL_DIR="projects/$SLUG/factory"
 sleep 30 &
 STALL_LIVE=$!
 echo "$STALL_LIVE" > "$STALL_DIR/hephaestus-oneshot.pid"
 printf '{"issuedAt":"2020-01-01T00:00:00Z","mode":"cursor-agent-oneshot"}\n' > "$STALL_DIR/hephaestus-oneshot.claim.json"
-printf 'Connection lost, reconnecting to https://agentn.global.api5.cursor.sh\n' > "$STALL_DIR/hephaestus-oneshot.out"
+printf 'Connection lost, reconnecting to https://agent.example.cursor.sh\n' > "$STALL_DIR/hephaestus-oneshot.out"
 date -u -r 1 +%s > "$STALL_DIR/hephaestus-oneshot.heartbeat" 2>/dev/null || echo 1 > "$STALL_DIR/hephaestus-oneshot.heartbeat"
 STALL_PROBE=$(ONESHOT_STALL_SILENT_SEC=60 ONESHOT_STALL_RECONNECT_GRACE_SEC=30 \
   npx tsx scripts/print_oneshot_stall.ts "$SLUG" 2>&1 | tail -1)
@@ -547,6 +569,10 @@ rm -f "$STALL_DIR/hephaestus-oneshot.pid" "$STALL_DIR/hephaestus-oneshot.claim.j
 echo "$STALL_PROBE" | grep -q ONESHOT_STALLED \
   && ok "print_oneshot_stall flags reconnect stall" \
   || no "print_oneshot_stall must detect stall (got $STALL_PROBE)"
+
+have "scripts/smoke_k14_process.sh" \
+  && ok "smoke_k14_process.sh present for manual K14 smoke" \
+  || no "missing scripts/smoke_k14_process.sh"
 
 grep -q 'agentKilled' scripts/stop_dev_loop.sh \
   && grep -q 'hephaestus-oneshot.pid' scripts/stop_dev_loop.sh \

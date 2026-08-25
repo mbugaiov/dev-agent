@@ -22,6 +22,8 @@ killed_agent=0
 
 # shellcheck disable=SC1091
 source "$ROOT/scripts/lib/kill_tree.sh"
+# shellcheck disable=SC1091
+source "$ROOT/scripts/lib/oneshot_cmd.sh"
 
 # Scheduler via pid file — only if cmdline still matches this slug
 if [[ -f "$PID_FILE" ]]; then
@@ -86,12 +88,30 @@ fi
 if [[ -f "$AGENT_PID_FILE" ]]; then
   AOLD="$(tr -d '[:space:]' <"$AGENT_PID_FILE" || true)"
   if [[ -n "$AOLD" ]] && kill -0 "$AOLD" 2>/dev/null; then
-    acmd="$(ps -p "$AOLD" -o args= 2>/dev/null || true)"
-    if [[ "$acmd" =~ DEV_FACTORY_SLUG=${SLUG}([^a-z0-9-]|$) ]]; then
+    should_kill=0
+    if agent_oneshot_tree_matches_slug "$AOLD" "$SLUG" "hephaestus"; then
+      should_kill=1
+    elif [[ -f "$FACTORY_DIR/hephaestus-oneshot.claim.json" ]] \
+      && grep -q "\"slug\"[[:space:]]*:[[:space:]]*\"${SLUG}\"" \
+        "$FACTORY_DIR/hephaestus-oneshot.claim.json" 2>/dev/null; then
+      acmd="$(ps -p "$AOLD" -o args= 2>/dev/null || true)"
+      if ! oneshot_cmd_conflicts_slug "$acmd" "$SLUG" "hephaestus"; then
+        if oneshot_factory_path_in_cmd "$acmd" "$SLUG" \
+          || oneshot_environ_matches_slug "$AOLD" "$SLUG" \
+          || { oneshot_runner_in_cmd "$acmd" \
+            && { oneshot_ancestors_match_slug "$AOLD" "$SLUG" "hephaestus" \
+              || oneshot_environ_matches_slug "$AOLD" "$SLUG"; }; }; then
+          should_kill=1
+        fi
+      fi
+    fi
+    if [[ "$should_kill" -eq 1 ]]; then
       if kill_tree "$AOLD" "agent-oneshot"; then
         killed_agent=1
       fi
+      rm -f "$FACTORY_DIR/hephaestus-oneshot.claim.json"
     else
+      acmd="$(ps -p "$AOLD" -o args= 2>/dev/null || true)"
       printf 'LOOP_STOP_SKIP {"slug":"%s","kind":"agent-oneshot","pid":%s,"reason":"cmdline-mismatch"}\n' \
         "$SLUG" "$AOLD"
     fi
@@ -105,13 +125,12 @@ fi
 # DEV_FACTORY_SLUG=<slug> token in argv (including prompt text) is in scope.
 while read -r pid; do
   [ -z "$pid" ] && continue
-  acmd="$(ps -p "$pid" -o args= 2>/dev/null || true)"
-  if [[ "$acmd" =~ DEV_FACTORY_SLUG=${SLUG}([^a-z0-9-]|$) ]]; then
+  if agent_oneshot_tree_matches_slug "$pid" "$SLUG" "hephaestus"; then
     if kill_tree "$pid" "agent-oneshot"; then
       killed_agent=1
     fi
   fi
-done < <(pgrep -f "DEV_FACTORY_SLUG=${SLUG}" 2>/dev/null || true)
+done < <(pgrep -f 'DEV_FACTORY_SLUG=|Hephaestus oneshot for ' 2>/dev/null || true)
 
 
 printf 'LOOP_STOPPED {"slug":"%s","schedulerKilled":%s,"watcherKilled":%s,"agentKilled":%s}\n' \
