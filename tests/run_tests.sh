@@ -605,6 +605,63 @@ echo "$EMPTY_PROBE" | grep -q '"reason":"no_output"' \
   && ok "print_oneshot_stall flags no_output stall" \
   || no "print_oneshot_stall must detect no_output (got $EMPTY_PROBE)"
 
+# Guard: non-empty log must NOT be no_output even if issuedAt is old.
+sleep 30 &
+STALL_TIP=$!
+echo "$STALL_TIP" > "$STALL_DIR/hephaestus-oneshot.pid"
+ISSUED_AT="$(date -u -v-700S +%Y-%m-%dT%H:%M:%SZ 2>/dev/null || date -u -d '700 seconds ago' +%Y-%m-%dT%H:%M:%SZ)"
+printf '{"issuedAt":"%s","mode":"cursor-agent-oneshot"}\n' "$ISSUED_AT" > "$STALL_DIR/hephaestus-oneshot.claim.json"
+printf 'Tip: You can start the Cursor CLI with agent\n' > "$STALL_DIR/hephaestus-oneshot.out"
+date -u +%s > "$STALL_DIR/hephaestus-oneshot.heartbeat"
+TIP_PROBE=$(ONESHOT_STALL_NO_OUTPUT_SEC=600 ONESHOT_STALL_SILENT_SEC=900 \
+  npx tsx scripts/print_oneshot_stall.ts "$SLUG" 2>&1 | tail -1)
+kill "$STALL_TIP" 2>/dev/null || true
+rm -f "$STALL_DIR/hephaestus-oneshot.pid" "$STALL_DIR/hephaestus-oneshot.claim.json" \
+  "$STALL_DIR/hephaestus-oneshot.out" "$STALL_DIR/hephaestus-oneshot.heartbeat"
+echo "$TIP_PROBE" | grep -q ONESHOT_HEALTHY \
+  && ok "print_oneshot_stall tip-only log is healthy (not no_output)" \
+  || no "tip-only log must be HEALTHY not no_output (got $TIP_PROBE)"
+
+# Stall → kill → re-arm with STALL_RECOVERY (ensure trigger path).
+STALL_REARM_STUB=$(mktemp -d)
+printf '%s\n' '#!/bin/bash' \
+  'ARGS_FILE="$(cd "$(dirname "$0")" && pwd)/args.txt"' \
+  'printf "%s\n" "$*" >"$ARGS_FILE"' \
+  'sleep 60' >"$STALL_REARM_STUB/cursor-agent"
+chmod +x "$STALL_REARM_STUB/cursor-agent"
+mkdir -p "$STALL_DIR"
+# Live slug-bound "hung" oneshot: empty log + old claim + fresh heartbeat.
+bash -c "export DEV_FACTORY_SLUG=\"${SLUG}\"; export HEPHAESTUS_LOG=${STALL_DIR}/hephaestus-oneshot.out; export HEPHAESTUS_HEARTBEAT=${STALL_DIR}/hephaestus-oneshot.heartbeat; bash scripts/lib/hephaestus_oneshot_runner.sh sleep 120" &
+HUNG_WRAP=$!
+sleep 0.4
+HUNG_RUNNER="$(pgrep -P "$HUNG_WRAP" 2>/dev/null | head -1 || true)"
+[[ -n "$HUNG_RUNNER" ]] && echo "$HUNG_RUNNER" > "$STALL_DIR/hephaestus-oneshot.pid" \
+  || echo "$HUNG_WRAP" > "$STALL_DIR/hephaestus-oneshot.pid"
+: > "$STALL_DIR/hephaestus-oneshot.out"
+ISSUED_AT="$(date -u -v-700S +%Y-%m-%dT%H:%M:%SZ 2>/dev/null || date -u -d '700 seconds ago' +%Y-%m-%dT%H:%M:%SZ)"
+printf '{"issuedAt":"%s","mode":"cursor-agent-oneshot"}\n' "$ISSUED_AT" > "$STALL_DIR/hephaestus-oneshot.claim.json"
+date -u +%s > "$STALL_DIR/hephaestus-oneshot.heartbeat"
+REARM_OUT=$(PATH="$STALL_REARM_STUB:$PATH" CURSOR_API_KEY=test-key-not-real \
+  ONESHOT_STALL_NO_OUTPUT_SEC=600 ONESHOT_STALL_MAX_WALL_SEC=14400 \
+  bash scripts/ensure_hephaestus_agent.sh "$SLUG" 2>&1); REARM_EC=$?
+sleep 0.5
+# Hung wrapper must be gone; new arm must mention STALL_RECOVERY in prompt args.
+if echo "$REARM_OUT" | grep -q HEPHAESTUS_ONESHOT_STALLED \
+  && echo "$REARM_OUT" | grep -q HEPHAESTUS_ONESHOT_ARMED \
+  && [[ "$REARM_EC" -eq 0 ]] \
+  && ! kill -0 "$HUNG_WRAP" 2>/dev/null \
+  && [[ -f "$STALL_REARM_STUB/args.txt" ]] \
+  && grep -q STALL_RECOVERY "$STALL_REARM_STUB/args.txt"; then
+  ok "ensure stall trigger reaps hung oneshot and re-arms STALL_RECOVERY"
+else
+  no "ensure must STALLED→ARMED with STALL_RECOVERY (ec=$REARM_EC wrap=$HUNG_WRAP out=$REARM_OUT args=$(cat "$STALL_REARM_STUB/args.txt" 2>/dev/null | head -c 200))"
+fi
+kill "$HUNG_WRAP" 2>/dev/null || true
+_ea_kill 2>/dev/null || true
+bash scripts/stop_dev_loop.sh "$SLUG" >/dev/null 2>&1 || true
+rm -rf "$STALL_REARM_STUB"
+rm -f "$STALL_DIR"/hephaestus-oneshot.{pid,claim.json,out,heartbeat,stall.json}
+
 have "scripts/smoke_k14_process.sh" \
   && ok "smoke_k14_process.sh present for manual K14 smoke" \
   || no "missing scripts/smoke_k14_process.sh"
