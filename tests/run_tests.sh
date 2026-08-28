@@ -26,6 +26,18 @@ rm -rf "projects/$SLUG"
 echo "== 3. Skills and rules =="
 have ".cursor/skills/dev-factory-loop/SKILL.md"
 have ".cursor/skills/dev-mr-pipeline/SKILL.md"
+have ".cursor/skills/dev-pm-bootstrap-subagent/SKILL.md"
+have "scripts/should_kick_bootstrap.ts"
+have "scripts/demux_project_bootstrap.ts"
+have "lib/bootstrapKick.ts"
+have "lib/chronosKickBridge.ts"
+have "lib/stripPickupLabel.ts"
+grep -q 'project-bootstrap' .cursor/skills/dev-factory-loop/SKILL.md \
+  && ok "factory-loop documents project-bootstrap demux" \
+  || no "factory-loop must document project-bootstrap demux"
+grep -q 'demux_project_bootstrap' scripts/ensure_hephaestus_agent.sh \
+  && ok "hephaestus oneshot prompt mentions bootstrap demux" \
+  || no "ensure_hephaestus prompt must mention demux_project_bootstrap"
 have ".cursor/skills/dev-jira/SKILL.md"
 have ".cursor/skills/dev-code-review/SKILL.md"
 have ".cursor/rules/code-review.mdc"
@@ -59,8 +71,26 @@ grep -q 'post_progress_best_effort' scripts/wait_pr_pipeline.sh \
   && grep -q 'pipeline_waiting' scripts/wait_pr_pipeline.sh \
   && grep -q 'pipeline_failed' scripts/wait_pr_pipeline.sh \
   && grep -q 'pipeline_green' scripts/wait_pr_pipeline.sh \
+  && grep -q 'write_pr_pipeline_result' scripts/wait_pr_pipeline.sh \
   && ok "wait_pr_pipeline posts mid-flight progress" \
-  || no "wait_pr_pipeline must call post_progress_best_effort"
+  || no "wait_pr_pipeline must call post_progress_best_effort + result latch"
+have "scripts/follow_pr_pipeline_chunk.sh"
+have "scripts/follow_pr_pipeline_chunk.ts"
+have "lib/prPipelineStatus.ts"
+have "lib/prPipelineLatch.ts"
+have "scripts/lib/write_pr_pipeline_result.sh"
+grep -q 'follow_pr_pipeline_chunk' .cursor/skills/dev-mr-pipeline/SKILL.md \
+  && grep -q 'PR_PIPELINE_PENDING\|exit 3\|ec -eq 3' .cursor/skills/dev-mr-pipeline/SKILL.md \
+  && grep -q 'Await/notify regex' .cursor/skills/dev-mr-pipeline/SKILL.md \
+  && ok "dev-mr-pipeline mandates chunk wait (no regex Await)" \
+  || no "dev-mr-pipeline must require follow_pr_pipeline_chunk loop"
+grep -q 'follow_pr_pipeline_chunk' scripts/ensure_hephaestus_agent.sh \
+  && grep -q 'pr_pipeline_failed_unattended\|PIPELINE regex' scripts/ensure_hephaestus_agent.sh \
+  && ok "ensure_hephaestus prompt uses chunk wait" \
+  || no "ensure prompt must ban Await regex and use chunk"
+grep -q 'decideMissedPrPipelineStall\|pr-pipeline.result.json' scripts/print_oneshot_stall.ts \
+  && ok "print_oneshot_stall checks missed PR fail latch" \
+  || no "stall probe must read pr-pipeline.result.json"
 grep -q 'post_progress_best_effort' scripts/wait_github_pr_pipeline.sh \
   && grep -q 'pipeline_waiting' scripts/wait_github_pr_pipeline.sh \
   && grep -q 'pipeline_failed' scripts/wait_github_pr_pipeline.sh \

@@ -20,10 +20,26 @@ bash "$ROOT/scripts/run_app_script.sh" "$SLUG" wait_pr_pipeline "$PR_ID" "$@"
 ec=$?
 set -e
 
+REPO_GUESS="$(
+  python3 - <<PY
+import re, pathlib
+t = pathlib.Path("$ROOT/projects/$SLUG/project.yaml").read_text()
+ws = re.search(r"(?ms)^git:\s*\n(?:[ \t]+.+\n)*?[ \t]+workspace:\s*(\S+)", t)
+repo = re.search(r"(?ms)^git:\s*\n(?:[ \t]+.+\n)*?[ \t]+repo:\s*(\S+)", t)
+if ws and repo:
+  print(f"{ws.group(1).strip()}/{repo.group(1).strip()}")
+else:
+  print("")
+PY
+)"
+REPO_GUESS="${REPO_GUESS:-unknown}"
+
 if [[ "$ec" -eq 0 ]]; then
+  bash "$ROOT/scripts/lib/write_pr_pipeline_result.sh" "$SLUG" "$PR_ID" "$REPO_GUESS" green || true
   bash "$ROOT/scripts/lib/post_progress_best_effort.sh" "$SLUG" pipeline_green \
     "PR #${PR_ID} — pipeline green" || true
 else
+  bash "$ROOT/scripts/lib/write_pr_pipeline_result.sh" "$SLUG" "$PR_ID" "$REPO_GUESS" failed "exit:$ec" || true
   bash "$ROOT/scripts/lib/post_progress_best_effort.sh" "$SLUG" pipeline_failed \
     "PR #${PR_ID} — pipeline failed (exit ${ec}); fix and re-run wait" || true
 fi
