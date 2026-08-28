@@ -21,6 +21,8 @@ export type GitConfig = {
   default_branch: string;
   branch_prefixes: readonly string[];
   ticket_key_pattern: string;
+  /** GitHub-only required check names for follow_pr_pipeline_chunk. */
+  pr_required_checks?: readonly string[];
 };
 
 export type AppConfig = {

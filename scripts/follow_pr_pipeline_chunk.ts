@@ -15,6 +15,10 @@ import {
   type PrPipelineResultLatch,
 } from "../lib/prPipelineLatch.ts";
 import {
+  resolveGithubPrRequiredChecks,
+  shouldDelegatePrPipelineToApp,
+} from "../lib/prPipelineRequired.ts";
+import {
   CHUNK_EXIT,
   classifyRequiredChecks,
   type PipelineOutcome,
@@ -45,16 +49,21 @@ for (let i = 4; i < process.argv.length; i++) {
 if (!Number.isFinite(maxSec) || maxSec < 5) maxSec = 75;
 if (!Number.isFinite(pollSec) || pollSec < 5) pollSec = 15;
 
-function loadGithubRepo(slugName: string): string {
-  const cfg = loadProjectConfig(ROOT, slugName);
-  const ws = cfg.git?.workspace;
-  const repo = cfg.git?.repo;
-  if (ws && repo) return `${ws}/${repo}`;
-  throw new Error("git.workspace/repo missing in project.yaml");
+function formatRepo(ws: string, repo: string): string {
+  return `${ws}/${repo}`;
 }
 
-function defaultRequired(): string[] {
-  return ["test", "review (Themis)", "isolation (Themis)"];
+function detectEngineRepo(): string | null {
+  if (process.env.GITHUB_REPOSITORY) return process.env.GITHUB_REPOSITORY;
+  try {
+    return execFileSync(
+      "gh",
+      ["repo", "view", "--json", "nameWithOwner", "-q", ".nameWithOwner"],
+      { encoding: "utf8", timeout: 15_000, cwd: ROOT },
+    ).trim();
+  } catch {
+    return null;
+  }
 }
 
 function fetchChecks(
@@ -159,12 +168,83 @@ function followupsDisposed(repo: string, prNum: number): boolean {
   }
 }
 
-const repo = loadGithubRepo(slug);
-const required = defaultRequired();
+function exitCode(err: unknown): number | null {
+  if (
+    err &&
+    typeof err === "object" &&
+    "status" in err &&
+    typeof (err as { status: unknown }).status === "number"
+  ) {
+    return (err as { status: number }).status;
+  }
+  return null;
+}
+
+function runAppDelegatedChunk(repo: string): never {
+  console.log(
+    `FOLLOW_PR_CHUNK_DELEGATE {"slug":"${slug}","pr":${pr},"repo":"${repo}","provider":"app","maxSec":${maxSec},"pollSec":${pollSec}}`,
+  );
+  postProgress(
+    "pipeline_waiting",
+    `PR #${pr} — follow_pr_pipeline_chunk app delegate (max ${maxSec}s)`,
+  );
+  try {
+    execFileSync(
+      "bash",
+      [
+        join(ROOT, "scripts/run_app_script.sh"),
+        slug,
+        "wait_pr_pipeline",
+        String(pr),
+        String(pollSec),
+      ],
+      { timeout: maxSec * 1000, stdio: "inherit" },
+    );
+    writeLatch("green", repo);
+    console.log(`PR_PIPELINE_GREEN ${JSON.stringify({ pr, repo })}`);
+    postProgress("pipeline_green", `PR #${pr} — pipeline green`);
+    process.exit(CHUNK_EXIT.green);
+  } catch (err) {
+    const code = exitCode(err);
+    const timedOut =
+      err &&
+      typeof err === "object" &&
+      "killed" in err &&
+      (err as { killed?: boolean }).killed === true;
+    if (timedOut || code === 124) {
+      console.log(
+        `PR_PIPELINE_PENDING ${JSON.stringify({ pr, repo, outcome: "pending", reason: "delegate_timeout" })}`,
+      );
+      console.log(
+        "FOLLOW_PR_CHUNK_PENDING — re-invoke follow_pr_pipeline_chunk.sh (do not Await regex)",
+      );
+      process.exit(CHUNK_EXIT.pending);
+    }
+    if (code === 1) {
+      writeLatch("failed", repo, "app-wait-failed");
+      console.log(`PR_PIPELINE_FAILED ${JSON.stringify({ pr, repo })}`);
+      postProgress("pipeline_failed", `PR #${pr} — app wait_pr_pipeline failed`);
+      process.exit(CHUNK_EXIT.failed);
+    }
+    console.log(
+      `PR_PIPELINE_PENDING ${JSON.stringify({ pr, repo, outcome: "pending", reason: "delegate_error", code })}`,
+    );
+    process.exit(CHUNK_EXIT.pending);
+  }
+}
+
+const cfg = loadProjectConfig(ROOT, slug);
+const repo = formatRepo(cfg.git.workspace, cfg.git.repo);
+
+if (shouldDelegatePrPipelineToApp(cfg)) {
+  runAppDelegatedChunk(repo);
+}
+
+const required = resolveGithubPrRequiredChecks(cfg, detectEngineRepo());
 const deadline = Date.now() + maxSec * 1000;
 
 console.log(
-  `FOLLOW_PR_CHUNK {"slug":"${slug}","pr":${pr},"repo":"${repo}","maxSec":${maxSec},"pollSec":${pollSec}}`,
+  `FOLLOW_PR_CHUNK {"slug":"${slug}","pr":${pr},"repo":"${repo}","maxSec":${maxSec},"pollSec":${pollSec},"required":${JSON.stringify(required)}}`,
 );
 postProgress(
   "pipeline_waiting",
