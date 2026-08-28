@@ -48,7 +48,7 @@ describe("prPipelineStatus", () => {
 describe("missed PR pipeline stall", () => {
   const failedLatch = {
     pr: 454,
-    repo: "mbugaiov/pantheon",
+    repo: "acme-corp/example-app",
     outcome: "failed" as const,
     at: "2026-08-27T20:01:00Z",
   };

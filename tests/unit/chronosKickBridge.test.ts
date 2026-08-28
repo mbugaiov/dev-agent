@@ -22,11 +22,11 @@ describe("chronosKickBridge", () => {
   it("maps ensure_chronos sentinel lines", () => {
     expect(
       classifyEnsureChronosLine(
-        'CHRONOS_ONESHOT_ARMED {"slug":"pantheon","pid":1}',
+        'CHRONOS_ONESHOT_ARMED {"slug":"tst-factory","pid":1}',
       ),
     ).toBe("armed");
     expect(
-      classifyEnsureChronosLine('ALREADY_RUNNING {"slug":"pantheon","pid":2}'),
+      classifyEnsureChronosLine('ALREADY_RUNNING {"slug":"tst-factory","pid":2}'),
     ).toBe("already");
     expect(
       classifyEnsureChronosLine(
