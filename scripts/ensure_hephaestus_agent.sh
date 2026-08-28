@@ -145,9 +145,9 @@ reap_blind_bash_if_needed 0
 
 
 # No apostrophes in PROMPT — nested bash -c quoting hazard (see qa-agent arm_qa_loop).
-PROMPT="EXECUTE Hephaestus oneshot for ${SLUG}. Isolated oneshot — not an ambient IDE chat. Set CURSOR_FACTORY_SESSION=1 and DEV_FACTORY_SLUG=${SLUG}. Drain impl-dev backlog (oldest first): pickup → OpenSpec/gates → implement → app gate → MR → wait_pr_pipeline → handoff; stay while open PR/MR remains; exit only when backlog idle AND no open MRs (DEV_FACTORY_IDLE). Skills: dev-factory-loop, dev-mr-pipeline. Forbidden: notify-only / status-only; do not leave a bash-only dev-loop without executing tickets. Prefer direct ticket pickup over silent watch_dev_loop."
+PROMPT="EXECUTE Hephaestus oneshot for ${SLUG}. Isolated oneshot — not an ambient IDE chat. Set CURSOR_FACTORY_SESSION=1 and DEV_FACTORY_SLUG=${SLUG}. Drain impl-dev backlog (oldest first): pickup → if project-bootstrap and no WBS_READY run demux_project_bootstrap (strip pickup, wake Chronos pm-bootstrap, do not implement parent) → else OpenSpec/gates → implement → app gate → MR → follow_pr_pipeline_chunk.sh loop (exit 0 green / 1 failed / 3 re-invoke; never Await on PIPELINE regex) → handoff; stay while open PR/MR remains; exit only when backlog idle AND no open MRs (DEV_FACTORY_IDLE). Skills: dev-factory-loop, dev-mr-pipeline, dev-pm-bootstrap-subagent. Forbidden: notify-only / status-only; Await-only PR wait on PIPELINE_*; do not leave a bash-only dev-loop without executing tickets; do not implement project-bootstrap parents as one MR. Prefer direct ticket pickup over silent watch_dev_loop."
 if [[ -f "$STALL_FILE" ]]; then
-  PROMPT="STALL_RECOVERY: Previous Hephaestus oneshot stalled (Cursor API reconnect or silent timeout). Continue from existing git branch and open MR if any — run wait_pr_pipeline before new implementation. ${PROMPT}"
+  PROMPT="STALL_RECOVERY: Previous Hephaestus oneshot stalled (reconnect, silent timeout, or pr_pipeline_failed_unattended). Continue from existing git branch and open MR if any — run follow_pr_pipeline_chunk.sh loop before new implementation. ${PROMPT}"
   rm -f "$STALL_FILE"
 fi
 

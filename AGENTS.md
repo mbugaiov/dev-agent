@@ -34,6 +34,7 @@ factory; one tick = one backlog drain attempt.
 |---|---|
 | Backlog drain, loop arm, tick policy | `dev-factory-loop` |
 | Per-ticket flow (branch → OpenSpec → gate → MR → merge → handoff) | `dev-mr-pipeline` |
+| Wake Chronos on `project-bootstrap` demux (strip pickup → WBS) | `dev-pm-bootstrap-subagent` |
 | Wake Athena UX subagent on the feature branch | `dev-ux-subagent` |
 | Wake Hermes BA subagent before implement (`ba-spec-first`) | `dev-ba-subagent` |
 | Wake Argus QA after Validate/Testing handoff | `dev-qa-subagent` |

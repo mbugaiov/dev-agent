@@ -26,6 +26,18 @@ rm -rf "projects/$SLUG"
 echo "== 3. Skills and rules =="
 have ".cursor/skills/dev-factory-loop/SKILL.md"
 have ".cursor/skills/dev-mr-pipeline/SKILL.md"
+have ".cursor/skills/dev-pm-bootstrap-subagent/SKILL.md"
+have "scripts/should_kick_bootstrap.ts"
+have "scripts/demux_project_bootstrap.ts"
+have "lib/bootstrapKick.ts"
+have "lib/chronosKickBridge.ts"
+have "lib/stripPickupLabel.ts"
+grep -q 'project-bootstrap' .cursor/skills/dev-factory-loop/SKILL.md \
+  && ok "factory-loop documents project-bootstrap demux" \
+  || no "factory-loop must document project-bootstrap demux"
+grep -q 'demux_project_bootstrap' scripts/ensure_hephaestus_agent.sh \
+  && ok "hephaestus oneshot prompt mentions bootstrap demux" \
+  || no "ensure_hephaestus prompt must mention demux_project_bootstrap"
 have ".cursor/skills/dev-jira/SKILL.md"
 have ".cursor/skills/dev-code-review/SKILL.md"
 have ".cursor/rules/code-review.mdc"
@@ -59,8 +71,26 @@ grep -q 'post_progress_best_effort' scripts/wait_pr_pipeline.sh \
   && grep -q 'pipeline_waiting' scripts/wait_pr_pipeline.sh \
   && grep -q 'pipeline_failed' scripts/wait_pr_pipeline.sh \
   && grep -q 'pipeline_green' scripts/wait_pr_pipeline.sh \
+  && grep -q 'write_pr_pipeline_result' scripts/wait_pr_pipeline.sh \
   && ok "wait_pr_pipeline posts mid-flight progress" \
-  || no "wait_pr_pipeline must call post_progress_best_effort"
+  || no "wait_pr_pipeline must call post_progress_best_effort + result latch"
+have "scripts/follow_pr_pipeline_chunk.sh"
+have "scripts/follow_pr_pipeline_chunk.ts"
+have "lib/prPipelineStatus.ts"
+have "lib/prPipelineLatch.ts"
+have "scripts/lib/write_pr_pipeline_result.sh"
+grep -q 'follow_pr_pipeline_chunk' .cursor/skills/dev-mr-pipeline/SKILL.md \
+  && grep -q 'PR_PIPELINE_PENDING\|exit 3\|ec -eq 3' .cursor/skills/dev-mr-pipeline/SKILL.md \
+  && grep -q 'Await/notify regex' .cursor/skills/dev-mr-pipeline/SKILL.md \
+  && ok "dev-mr-pipeline mandates chunk wait (no regex Await)" \
+  || no "dev-mr-pipeline must require follow_pr_pipeline_chunk loop"
+grep -q 'follow_pr_pipeline_chunk' scripts/ensure_hephaestus_agent.sh \
+  && grep -q 'pr_pipeline_failed_unattended\|PIPELINE regex' scripts/ensure_hephaestus_agent.sh \
+  && ok "ensure_hephaestus prompt uses chunk wait" \
+  || no "ensure prompt must ban Await regex and use chunk"
+grep -q 'decideMissedPrPipelineStall\|pr-pipeline.result.json' scripts/print_oneshot_stall.ts \
+  && ok "print_oneshot_stall checks missed PR fail latch" \
+  || no "stall probe must read pr-pipeline.result.json"
 grep -q 'post_progress_best_effort' scripts/wait_github_pr_pipeline.sh \
   && grep -q 'pipeline_waiting' scripts/wait_github_pr_pipeline.sh \
   && grep -q 'pipeline_failed' scripts/wait_github_pr_pipeline.sh \
@@ -297,6 +327,20 @@ OUT=$(env -u CURSOR_API_KEY PATH="/usr/bin:/bin" bash scripts/ensure_hephaestus_
 EA_STUB=$(mktemp -d)
 printf '%s\n' '#!/bin/bash' 'sleep 60' >"$EA_STUB/cursor-agent"
 chmod +x "$EA_STUB/cursor-agent"
+_spawn_blind_dev_loop() {
+  if [[ "$(uname -s)" == "Darwin" ]]; then
+    perl -e "\$0 = \"bash scripts/dev-loop.sh ${SLUG}\"; sleep 45" &
+  else
+    bash -c "exec -a 'bash scripts/dev-loop.sh ${SLUG}' sleep 45" &
+  fi
+}
+_selftest_sleep() {
+  if [[ "$(uname -s)" == "Linux" ]]; then
+    sleep "${1:-1}"
+  else
+    sleep "${2:-0.3}"
+  fi
+}
 rm -f "projects/$SLUG/factory/hephaestus-oneshot.pid"
 # Hide local cursor.env so ambient/engine secrets cannot satisfy the key check
 # (CI has no .secrets; developer worktrees often do after pantheon key copy).
@@ -324,10 +368,10 @@ _restore_cursor_secrets
   && ok "ensure_hephaestus_agent skips when CURSOR_API_KEY missing" \
   || no "ensure_hephaestus_agent should exit 4 without API key (ec=$EC: $OUT)"
 # REAP_BLIND before SKIP when API key missing (exit 4) — blind bash must not block portfolio
-perl -e "\$0 = \"bash scripts/dev-loop.sh ${SLUG}\"; sleep 45" &
+_spawn_blind_dev_loop
 BLIND_SKIP_PID=$!
 echo "$BLIND_SKIP_PID" > "projects/$SLUG/factory/loop.pid"
-sleep 0.3
+sleep 2
 _hide_cursor_secrets
 OUT=$(env -u CURSOR_API_KEY PATH="$EA_STUB:/usr/bin:/bin" bash scripts/ensure_hephaestus_agent.sh "$SLUG" 2>&1); EC=$?
 _restore_cursor_secrets
@@ -415,10 +459,10 @@ PAR_ALREADY=$(printf '%s\n' "$PAR_OUT" | grep -c ALREADY_RUNNING || true)
 [[ "$PAR_ARMED" -eq 1 ]] && [[ "$PAR_ALREADY" -ge 1 ]] \
   && ok "parallel ensure_hephaestus: one ARMED, rest ALREADY_RUNNING" \
   || no "parallel ensure must arm once (armed=$PAR_ARMED already=$PAR_ALREADY out=$PAR_OUT)"
-perl -e "\$0 = \"bash scripts/dev-loop.sh ${SLUG}\"; sleep 45" &
+_spawn_blind_dev_loop
 BLIND_AR_PID=$!
 echo "$BLIND_AR_PID" > "projects/$SLUG/factory/loop.pid"
-sleep 0.3
+sleep 2
 OUT3=$(PATH="$EA_STUB:/usr/bin:/bin" CURSOR_API_KEY=test-key-not-real \
   bash scripts/ensure_hephaestus_agent.sh "$SLUG" 2>&1); EC3=$?
 AGENT_STILL=0
@@ -488,10 +532,10 @@ _ea_kill
 # Behavioral: blind bash reap then arm (not grep-only).
 # macOS: `bash -c '… # comment'` drops the comment from `ps`; set $0 via perl.
 mkdir -p "projects/$SLUG/factory"
-perl -e "\$0 = \"bash scripts/dev-loop.sh ${SLUG}\"; sleep 45" &
+_spawn_blind_dev_loop
 BLIND_PID=$!
 echo "$BLIND_PID" > "projects/$SLUG/factory/loop.pid"
-sleep 0.3
+sleep 2
 OUT=$(PATH="$EA_STUB:/usr/bin:/bin" CURSOR_API_KEY=test-key-not-real \
   bash scripts/ensure_hephaestus_agent.sh "$SLUG" 2>&1); EC=$?
 echo "$OUT" | grep -q HEPHAESTUS_REAP_BLIND \
@@ -585,7 +629,7 @@ CLAIM="projects/$SLUG/factory/hephaestus-oneshot.claim.json"
 printf '{"slug":"%s","issuedAt":"2026-08-24T00:00:00Z","mode":"cursor-agent-oneshot"}\n' "$SLUG" >"$CLAIM"
 bash -c "export DEV_FACTORY_SLUG=\"${SLUG}\"; export HEPHAESTUS_LOG=${LOG}; export HEPHAESTUS_HEARTBEAT=${HB}; bash scripts/lib/hephaestus_oneshot_runner.sh sleep 120" &
 WRAP_CHILD=$!
-sleep 0.3
+_selftest_sleep 1 0.3
 # Linux often stores runner pid, not outer bash -c (cmdline lacks DEV_FACTORY_SLUG).
 RUNNER_PID="$(pgrep -P "$WRAP_CHILD" 2>/dev/null | head -1 || true)"
 [[ -n "$RUNNER_PID" ]] && echo "$RUNNER_PID" > "projects/$SLUG/factory/hephaestus-oneshot.pid" \
@@ -678,7 +722,7 @@ mkdir -p "$STALL_DIR"
 # Live slug-bound "hung" oneshot: empty log + old claim + fresh heartbeat.
 bash -c "export DEV_FACTORY_SLUG=\"${SLUG}\"; export HEPHAESTUS_LOG=${STALL_DIR}/hephaestus-oneshot.out; export HEPHAESTUS_HEARTBEAT=${STALL_DIR}/hephaestus-oneshot.heartbeat; bash scripts/lib/hephaestus_oneshot_runner.sh sleep 120" &
 HUNG_WRAP=$!
-sleep 0.4
+_selftest_sleep 1 0.4
 HUNG_RUNNER="$(pgrep -P "$HUNG_WRAP" 2>/dev/null | head -1 || true)"
 [[ -n "$HUNG_RUNNER" ]] && echo "$HUNG_RUNNER" > "$STALL_DIR/hephaestus-oneshot.pid" \
   || echo "$HUNG_WRAP" > "$STALL_DIR/hephaestus-oneshot.pid"
@@ -689,7 +733,7 @@ date -u +%s > "$STALL_DIR/hephaestus-oneshot.heartbeat"
 REARM_OUT=$(PATH="$STALL_REARM_STUB:$PATH" CURSOR_API_KEY=test-key-not-real \
   ONESHOT_STALL_NO_OUTPUT_SEC=600 ONESHOT_STALL_MAX_WALL_SEC=14400 \
   bash scripts/ensure_hephaestus_agent.sh "$SLUG" 2>&1); REARM_EC=$?
-sleep 0.5
+_selftest_sleep 1 0.5
 # Hung wrapper must be gone; new arm must mention STALL_RECOVERY in prompt args.
 if echo "$REARM_OUT" | grep -q HEPHAESTUS_ONESHOT_STALLED \
   && echo "$REARM_OUT" | grep -q HEPHAESTUS_ONESHOT_ARMED \

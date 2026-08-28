@@ -26,6 +26,12 @@ Generic flow; **app repo** holds product code and CI. Read `projects/<slug>/proj
 0b. **Pickup** (from `tracker.provider`):
    - **jira:** `bash scripts/pickup_jira_ticket.sh <slug> <KEY> --scope "<plan>" --points <n>` — transition, assign, estimate, scope comment (`jira.pickup`).
    - **github_issues:** `bash scripts/pickup_github_ticket.sh <slug> <KEY> --scope "<plan>"` — ensure pickup label, scope comment (no story points).
+0d. **Bootstrap demux (when `project-bootstrap`):** skill **`dev-pm-bootstrap-subagent`**.
+   `npx tsx scripts/should_kick_bootstrap.ts <slug> --labels <labels> --ticket <KEY>`.
+   If `BOOTSTRAP_DEMUX_YES` or `BOOTSTRAP_STRIP_YES`:
+   `npx tsx scripts/demux_project_bootstrap.ts <slug> <KEY> --labels <labels>` —
+   strip `impl-dev`, wake Chronos (`pm-agent` `ensure_chronos.sh` / `pm-bootstrap`),
+   **stop this ticket** (no OpenSpec/implement on the parent). Continue backlog drain.
 1. **Branch:** `git checkout -B <prefix>/<KEY>-<slug> origin/<default_branch>` in app repo
 2. **OpenSpec:** when `app.openspec_enabled` (default) — propose/apply/archive per app repo skills. App must pass `verify_app_openspec.sh` at setup (`SETUP.md` §6). Shell/propose may precede charter **after** BA gate when `ba-spec-first`.
 2b. **BA spec (when `ba-spec-first`):** skill **`dev-ba-subagent`**. Run
@@ -54,7 +60,29 @@ Generic flow; **app repo** holds product code and CI. Read `projects/<slug>/proj
    (default after-implement). If `UX_KICK_YES`, wake Athena Mode A on the **same feature branch**
    before the local gate. Do not open a UX pilot branch.
 6. **Preflight + gate:** run `app.gate_command` from app repo root
-7. **Push MR:** `app.mr_push_command`; arm `wait_pr_pipeline.sh` with notify_on_output
+7. **Push MR:** `app.mr_push_command`
+7b. **Wait pipeline (oneshot-critical — hard contract):**
+    Do **not** `Await` / `notify_on_output` on `PIPELINE_*` / `PR_PIPELINE_*` regex
+    (cursor-agent has missed `PR_PIPELINE_FAILED` while the waiter already exited).
+    Use engine chunk loop only:
+
+    ```bash
+    # from dev-agent root; block_until_ms >= max-sec + 30 (e.g. 120000)
+    while true; do
+      bash scripts/follow_pr_pipeline_chunk.sh "$SLUG" "$PR" --max-sec 75 --poll 15
+      ec=$?
+      [[ $ec -eq 0 ]] && break   # PR_PIPELINE_GREEN → merge
+      [[ $ec -eq 1 ]] && break   # PR_PIPELINE_FAILED → fix Themis / push / loop again
+      [[ $ec -eq 3 ]] && continue  # PR_PIPELINE_PENDING → re-invoke
+      break
+    done
+    ```
+
+    Writes `projects/<slug>/factory/pr-pipeline.result.json`. Kairos K14 reaps
+    oneshots that stay silent after a **failed** latch (`pr_pipeline_failed_unattended`).
+    Prefer this over raw app `wait_pr_pipeline.sh` + Await. Engine
+    `bash scripts/wait_pr_pipeline.sh <slug> <PR>` still OK if you poll its
+    **process exit** the same way (chunk preferred).
 8. **Fix loop** until pipeline green + **app repo** code review clear (CR runs in app CI — not dev-agent)
 9. **Merge** (squash per team policy)
 10. **STG:** `wait_main_deploy.sh` + `check_stg_build.sh <slug>`
@@ -93,4 +121,7 @@ App-specific MR workflow (OpenSpec gates, CI commands) lives in
 - Implementing UI on a `ux-charter-first` ticket before `UX_CHARTER_READY`
 - Skipping polish `dev-ux-subagent` when `needs-ux-pass` / `impl-ux` is on the ticket
 - Waiting for human BA sign-off (Hermes lint + skeptical review is the gate)
+- Implementing a `project-bootstrap` parent instead of running `demux_project_bootstrap.ts`
 - Ending handoff without waking Argus (`dev-qa-subagent`) when `QA_KICK_YES` is printed
+- Waiting on PR via Await/notify regex alone (`PIPELINE_*` / `PR_PIPELINE_*`) — use
+  `follow_pr_pipeline_chunk.sh` exit codes (0/1/3) instead

@@ -106,8 +106,17 @@ if [[ -f "$AGENT_PID_FILE" ]]; then
       fi
     fi
     if [[ "$should_kill" -eq 1 ]]; then
+      agent_wrap_ppid="$(ps -p "$AOLD" -o ppid= 2>/dev/null | tr -d '[:space:]' || true)"
       if kill_tree "$AOLD" "agent-oneshot"; then
         killed_agent=1
+      fi
+      # Linux pid files often store the runner child; outer bash -c survives until wait.
+      if [[ -n "${agent_wrap_ppid:-}" ]] && kill -0 "$agent_wrap_ppid" 2>/dev/null; then
+        wrap_cmd="$(ps -p "$agent_wrap_ppid" -o args= 2>/dev/null || true)"
+        if oneshot_environ_matches_slug "$agent_wrap_ppid" "$SLUG" \
+          || oneshot_cmd_matches_slug "$wrap_cmd" "$SLUG" "hephaestus"; then
+          kill_tree "$agent_wrap_ppid" "agent-oneshot-wrap" || true
+        fi
       fi
       rm -f "$FACTORY_DIR/hephaestus-oneshot.claim.json"
     else

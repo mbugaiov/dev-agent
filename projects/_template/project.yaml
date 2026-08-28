@@ -97,3 +97,5 @@ report:
 #   ux_agent_path: ../ux-agent        # Athena checkout; or set UX_AGENT_ROOT
 # qa_kick:
 #   qa_agent_path: ../qa-agent        # Argus checkout; or set QA_AGENT_ROOT
+# pm_kick:
+#   pm_agent_path: ../pm-agent        # Chronos checkout; or set PM_AGENT_ROOT

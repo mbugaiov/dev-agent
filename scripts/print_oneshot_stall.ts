@@ -10,7 +10,13 @@ import { fileURLToPath } from "node:url";
 import {
   collectOneshotStallSignals,
   decideOneshotStall,
+  lastActivitySec,
 } from "../lib/oneshotStall.ts";
+import {
+  decideMissedPrPipelineStall,
+  defaultMissedPrPipelineGraceSec,
+  readPrPipelineResultLatch,
+} from "../lib/prPipelineLatch.ts";
 
 const slug = process.argv[2] ?? "";
 if (!/^[a-z0-9][a-z0-9-]*$/.test(slug)) {
@@ -24,6 +30,7 @@ const PID_FILE = join(FACTORY, "hephaestus-oneshot.pid");
 const LOG = join(FACTORY, "hephaestus-oneshot.out");
 const HEARTBEAT = join(FACTORY, "hephaestus-oneshot.heartbeat");
 const CLAIM = join(FACTORY, "hephaestus-oneshot.claim.json");
+const PR_RESULT = join(FACTORY, "pr-pipeline.result.json");
 
 function pidAlive(pid: string): boolean {
   if (!pid) return false;
@@ -49,7 +56,17 @@ const signals = collectOneshotStallSignals({
   pidAlive: alive,
 });
 
-const result = decideOneshotStall(signals);
+let result = decideOneshotStall(signals);
+if (!result.stalled && alive) {
+  const missed = decideMissedPrPipelineStall({
+    oneshotAlive: true,
+    nowSec: signals.nowSec,
+    lastActivitySec: lastActivitySec(signals),
+    latch: readPrPipelineResultLatch(PR_RESULT),
+    graceSec: defaultMissedPrPipelineGraceSec(),
+  });
+  if (missed.stalled) result = missed;
+}
 
 if (!alive) {
   process.stdout.write(`ONESHOT_NONE ${JSON.stringify({ slug })}\n`);
@@ -59,11 +76,7 @@ if (!alive) {
       slug,
       reason: result.reason,
       silentSec: signals.silentSec,
-      lastActivitySec: Math.max(
-        signals.heartbeatSec ?? 0,
-        signals.logMtimeSec ?? 0,
-        signals.issuedAtSec ?? 0,
-      ),
+      lastActivitySec: lastActivitySec(signals),
     })}\n`,
   );
 } else {
