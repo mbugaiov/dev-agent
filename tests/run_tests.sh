@@ -327,6 +327,13 @@ OUT=$(env -u CURSOR_API_KEY PATH="/usr/bin:/bin" bash scripts/ensure_hephaestus_
 EA_STUB=$(mktemp -d)
 printf '%s\n' '#!/bin/bash' 'sleep 60' >"$EA_STUB/cursor-agent"
 chmod +x "$EA_STUB/cursor-agent"
+_spawn_blind_dev_loop() {
+  if [[ "$(uname -s)" == "Darwin" ]]; then
+    perl -e "\$0 = \"bash scripts/dev-loop.sh ${SLUG}\"; sleep 45" &
+  else
+    bash -c "exec -a 'bash scripts/dev-loop.sh ${SLUG}' sleep 45" &
+  fi
+}
 rm -f "projects/$SLUG/factory/hephaestus-oneshot.pid"
 # Hide local cursor.env so ambient/engine secrets cannot satisfy the key check
 # (CI has no .secrets; developer worktrees often do after pantheon key copy).
@@ -354,7 +361,7 @@ _restore_cursor_secrets
   && ok "ensure_hephaestus_agent skips when CURSOR_API_KEY missing" \
   || no "ensure_hephaestus_agent should exit 4 without API key (ec=$EC: $OUT)"
 # REAP_BLIND before SKIP when API key missing (exit 4) — blind bash must not block portfolio
-perl -e "\$0 = \"bash scripts/dev-loop.sh ${SLUG}\"; sleep 45" &
+_spawn_blind_dev_loop
 BLIND_SKIP_PID=$!
 echo "$BLIND_SKIP_PID" > "projects/$SLUG/factory/loop.pid"
 sleep 2
@@ -445,10 +452,10 @@ PAR_ALREADY=$(printf '%s\n' "$PAR_OUT" | grep -c ALREADY_RUNNING || true)
 [[ "$PAR_ARMED" -eq 1 ]] && [[ "$PAR_ALREADY" -ge 1 ]] \
   && ok "parallel ensure_hephaestus: one ARMED, rest ALREADY_RUNNING" \
   || no "parallel ensure must arm once (armed=$PAR_ARMED already=$PAR_ALREADY out=$PAR_OUT)"
-perl -e "\$0 = \"bash scripts/dev-loop.sh ${SLUG}\"; sleep 45" &
+_spawn_blind_dev_loop
 BLIND_AR_PID=$!
 echo "$BLIND_AR_PID" > "projects/$SLUG/factory/loop.pid"
-sleep 1
+sleep 2
 OUT3=$(PATH="$EA_STUB:/usr/bin:/bin" CURSOR_API_KEY=test-key-not-real \
   bash scripts/ensure_hephaestus_agent.sh "$SLUG" 2>&1); EC3=$?
 AGENT_STILL=0
@@ -518,10 +525,10 @@ _ea_kill
 # Behavioral: blind bash reap then arm (not grep-only).
 # macOS: `bash -c '… # comment'` drops the comment from `ps`; set $0 via perl.
 mkdir -p "projects/$SLUG/factory"
-perl -e "\$0 = \"bash scripts/dev-loop.sh ${SLUG}\"; sleep 45" &
+_spawn_blind_dev_loop
 BLIND_PID=$!
 echo "$BLIND_PID" > "projects/$SLUG/factory/loop.pid"
-sleep 1
+sleep 2
 OUT=$(PATH="$EA_STUB:/usr/bin:/bin" CURSOR_API_KEY=test-key-not-real \
   bash scripts/ensure_hephaestus_agent.sh "$SLUG" 2>&1); EC=$?
 echo "$OUT" | grep -q HEPHAESTUS_REAP_BLIND \
