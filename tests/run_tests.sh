@@ -357,7 +357,7 @@ _restore_cursor_secrets
 perl -e "\$0 = \"bash scripts/dev-loop.sh ${SLUG}\"; sleep 45" &
 BLIND_SKIP_PID=$!
 echo "$BLIND_SKIP_PID" > "projects/$SLUG/factory/loop.pid"
-sleep 0.3
+sleep 1
 _hide_cursor_secrets
 OUT=$(env -u CURSOR_API_KEY PATH="$EA_STUB:/usr/bin:/bin" bash scripts/ensure_hephaestus_agent.sh "$SLUG" 2>&1); EC=$?
 _restore_cursor_secrets
@@ -448,7 +448,7 @@ PAR_ALREADY=$(printf '%s\n' "$PAR_OUT" | grep -c ALREADY_RUNNING || true)
 perl -e "\$0 = \"bash scripts/dev-loop.sh ${SLUG}\"; sleep 45" &
 BLIND_AR_PID=$!
 echo "$BLIND_AR_PID" > "projects/$SLUG/factory/loop.pid"
-sleep 0.3
+sleep 1
 OUT3=$(PATH="$EA_STUB:/usr/bin:/bin" CURSOR_API_KEY=test-key-not-real \
   bash scripts/ensure_hephaestus_agent.sh "$SLUG" 2>&1); EC3=$?
 AGENT_STILL=0
