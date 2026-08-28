@@ -23,7 +23,7 @@ project-bootstrap (+ impl-dev)
 # Decide only
 npx tsx scripts/should_kick_bootstrap.ts <slug> \
   --labels <comma-labels> --ticket <KEY>
-# BOOTSTRAP_DEMUX_YES (exit 0) → demux; exit 1 → skip
+# BOOTSTRAP_DEMUX_YES | BOOTSTRAP_STRIP_YES (exit 0) → demux_project_bootstrap; exit 1 → skip
 
 # Full demux (strip + wake Chronos + ticket comment)
 npx tsx scripts/demux_project_bootstrap.ts <slug> <KEY> \

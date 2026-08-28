@@ -4,6 +4,7 @@ import {
   commentsHaveWbsReady,
   hasProjectBootstrapLabel,
   resolveBootstrapDemux,
+  resolveBootstrapKickSentinel,
 } from "../../lib/bootstrapKick";
 
 describe("project-bootstrap demux", () => {
@@ -82,5 +83,36 @@ describe("project-bootstrap demux", () => {
     });
     expect(r.demux).toBe(true);
     expect(r.reasons).toContain("wbs:draft-ready");
+  });
+
+  it("exit contract: demux and strip-only both exit 0", () => {
+    const demux = resolveBootstrapDemux({
+      labels: ["impl-dev", "project-bootstrap"],
+      wbsReady: false,
+    });
+    expect(resolveBootstrapKickSentinel(demux)).toMatchObject({
+      sentinel: "BOOTSTRAP_DEMUX_YES",
+      exitCode: 0,
+    });
+
+    const stripOnly = resolveBootstrapDemux({
+      labels: ["impl-dev", "project-bootstrap"],
+      wbsReady: true,
+    });
+    expect(resolveBootstrapKickSentinel(stripOnly)).toMatchObject({
+      sentinel: "BOOTSTRAP_STRIP_YES",
+      exitCode: 0,
+    });
+  });
+
+  it("exit contract: skip paths exit 1", () => {
+    const doneClean = resolveBootstrapDemux({
+      labels: ["project-bootstrap"],
+      wbsReady: true,
+    });
+    expect(resolveBootstrapKickSentinel(doneClean).exitCode).toBe(1);
+
+    const none = resolveBootstrapDemux({ labels: ["impl-dev"] });
+    expect(resolveBootstrapKickSentinel(none).exitCode).toBe(1);
   });
 });

@@ -92,3 +92,44 @@ export function resolveBootstrapDemux(
     reasons,
   };
 }
+
+export type BootstrapKickSentinel =
+  | "BOOTSTRAP_DEMUX_YES"
+  | "BOOTSTRAP_STRIP_YES"
+  | "BOOTSTRAP_DEMUX_NO";
+
+/** Exit/sentinel contract for should_kick_bootstrap → demux_project_bootstrap. */
+export function resolveBootstrapKickSentinel(result: BootstrapDemuxResult): {
+  sentinel: BootstrapKickSentinel;
+  exitCode: 0 | 1;
+  detail: string;
+} {
+  if (result.demux) {
+    return {
+      sentinel: "BOOTSTRAP_DEMUX_YES",
+      exitCode: 0,
+      detail:
+        "strip pickup if present; wake Chronos (pm-bootstrap). Do NOT implement this parent.",
+    };
+  }
+  if (result.phase === "done" && result.stripPickup) {
+    return {
+      sentinel: "BOOTSTRAP_STRIP_YES",
+      exitCode: 0,
+      detail:
+        "WBS_READY present; strip leftover pickup only; do not implement parent epic.",
+    };
+  }
+  if (result.phase === "done") {
+    return {
+      sentinel: "BOOTSTRAP_DEMUX_NO",
+      exitCode: 1,
+      detail: "WBS_READY present; no pickup to strip; do not implement parent epic",
+    };
+  }
+  return {
+    sentinel: "BOOTSTRAP_DEMUX_NO",
+    exitCode: 1,
+    detail: "skip bootstrap demux",
+  };
+}

@@ -87,7 +87,7 @@ Follow skill **`dev-mr-pipeline`** (project overrides in `projects/<slug>/` if p
    (all factory projects, not only Pantheon).
 0b. **If label `project-bootstrap`:** skill **`dev-pm-bootstrap-subagent`**. Run
    `npx tsx scripts/should_kick_bootstrap.ts <slug> --labels <labels> --ticket KEY`.
-   On `BOOTSTRAP_DEMUX_YES`: run
+   On `BOOTSTRAP_DEMUX_YES` or `BOOTSTRAP_STRIP_YES` (both exit 0): run
    `npx tsx scripts/demux_project_bootstrap.ts <slug> KEY --labels <labels>` —
    strip pickup (`impl-dev`), wake Chronos (`ensure_chronos` / `pm-bootstrap`),
    **do not implement** this parent; continue to the next `impl-dev` ticket.

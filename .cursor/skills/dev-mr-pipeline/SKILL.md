@@ -28,7 +28,7 @@ Generic flow; **app repo** holds product code and CI. Read `projects/<slug>/proj
    - **github_issues:** `bash scripts/pickup_github_ticket.sh <slug> <KEY> --scope "<plan>"` — ensure pickup label, scope comment (no story points).
 0d. **Bootstrap demux (when `project-bootstrap`):** skill **`dev-pm-bootstrap-subagent`**.
    `npx tsx scripts/should_kick_bootstrap.ts <slug> --labels <labels> --ticket <KEY>`.
-   If `BOOTSTRAP_DEMUX_YES`:
+   If `BOOTSTRAP_DEMUX_YES` or `BOOTSTRAP_STRIP_YES`:
    `npx tsx scripts/demux_project_bootstrap.ts <slug> <KEY> --labels <labels>` —
    strip `impl-dev`, wake Chronos (`pm-agent` `ensure_chronos.sh` / `pm-bootstrap`),
    **stop this ticket** (no OpenSpec/implement on the parent). Continue backlog drain.

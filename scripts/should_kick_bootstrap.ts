@@ -20,6 +20,7 @@ import {
   commentsHaveWbsDraftReady,
   commentsHaveWbsReady,
   resolveBootstrapDemux,
+  resolveBootstrapKickSentinel,
 } from "../lib/bootstrapKick.ts";
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..");
@@ -161,17 +162,6 @@ console.log(
   }),
 );
 
-if (result.demux) {
-  console.log(
-    "BOOTSTRAP_DEMUX_YES — strip pickup if present; wake Chronos (pm-bootstrap). " +
-      "Do NOT implement this parent. Forbidden: treat as normal impl-dev.",
-  );
-} else if (result.phase === "done") {
-  console.log(
-    "BOOTSTRAP_DEMUX_NO — WBS_READY present; strip leftover pickup if any; do not implement parent epic",
-  );
-} else {
-  console.log("BOOTSTRAP_DEMUX_NO — skip bootstrap demux");
-}
-
-process.exit(result.demux ? 0 : 1);
+const kick = resolveBootstrapKickSentinel(result);
+console.log(`${kick.sentinel} — ${kick.detail}`);
+process.exit(kick.exitCode);
