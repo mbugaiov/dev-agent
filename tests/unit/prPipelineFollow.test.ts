@@ -18,9 +18,9 @@ describe("prPipelineStatus", () => {
 
   it("fails closed on any required fail", () => {
     const out = classifyRequiredChecks(
-      ["gate", "review (Themis)", "isolation (Themis)"],
+      ["test", "review (Themis)", "isolation (Themis)"],
       {
-        gate: "pass",
+        test: "pass",
         "review (Themis)": "fail",
         "isolation (Themis)": "pass",
       },

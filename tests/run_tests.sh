@@ -334,6 +334,13 @@ _spawn_blind_dev_loop() {
     bash -c "exec -a 'bash scripts/dev-loop.sh ${SLUG}' sleep 45" &
   fi
 }
+_selftest_sleep() {
+  if [[ "$(uname -s)" == "Linux" ]]; then
+    sleep "${1:-1}"
+  else
+    sleep "${2:-0.3}"
+  fi
+}
 rm -f "projects/$SLUG/factory/hephaestus-oneshot.pid"
 # Hide local cursor.env so ambient/engine secrets cannot satisfy the key check
 # (CI has no .secrets; developer worktrees often do after pantheon key copy).
@@ -622,7 +629,7 @@ CLAIM="projects/$SLUG/factory/hephaestus-oneshot.claim.json"
 printf '{"slug":"%s","issuedAt":"2026-08-24T00:00:00Z","mode":"cursor-agent-oneshot"}\n' "$SLUG" >"$CLAIM"
 bash -c "export DEV_FACTORY_SLUG=\"${SLUG}\"; export HEPHAESTUS_LOG=${LOG}; export HEPHAESTUS_HEARTBEAT=${HB}; bash scripts/lib/hephaestus_oneshot_runner.sh sleep 120" &
 WRAP_CHILD=$!
-sleep 0.3
+_selftest_sleep 1 0.3
 # Linux often stores runner pid, not outer bash -c (cmdline lacks DEV_FACTORY_SLUG).
 RUNNER_PID="$(pgrep -P "$WRAP_CHILD" 2>/dev/null | head -1 || true)"
 [[ -n "$RUNNER_PID" ]] && echo "$RUNNER_PID" > "projects/$SLUG/factory/hephaestus-oneshot.pid" \
@@ -715,7 +722,7 @@ mkdir -p "$STALL_DIR"
 # Live slug-bound "hung" oneshot: empty log + old claim + fresh heartbeat.
 bash -c "export DEV_FACTORY_SLUG=\"${SLUG}\"; export HEPHAESTUS_LOG=${STALL_DIR}/hephaestus-oneshot.out; export HEPHAESTUS_HEARTBEAT=${STALL_DIR}/hephaestus-oneshot.heartbeat; bash scripts/lib/hephaestus_oneshot_runner.sh sleep 120" &
 HUNG_WRAP=$!
-sleep 0.4
+_selftest_sleep 1 0.4
 HUNG_RUNNER="$(pgrep -P "$HUNG_WRAP" 2>/dev/null | head -1 || true)"
 [[ -n "$HUNG_RUNNER" ]] && echo "$HUNG_RUNNER" > "$STALL_DIR/hephaestus-oneshot.pid" \
   || echo "$HUNG_WRAP" > "$STALL_DIR/hephaestus-oneshot.pid"
@@ -726,7 +733,7 @@ date -u +%s > "$STALL_DIR/hephaestus-oneshot.heartbeat"
 REARM_OUT=$(PATH="$STALL_REARM_STUB:$PATH" CURSOR_API_KEY=test-key-not-real \
   ONESHOT_STALL_NO_OUTPUT_SEC=600 ONESHOT_STALL_MAX_WALL_SEC=14400 \
   bash scripts/ensure_hephaestus_agent.sh "$SLUG" 2>&1); REARM_EC=$?
-sleep 0.5
+_selftest_sleep 1 0.5
 # Hung wrapper must be gone; new arm must mention STALL_RECOVERY in prompt args.
 if echo "$REARM_OUT" | grep -q HEPHAESTUS_ONESHOT_STALLED \
   && echo "$REARM_OUT" | grep -q HEPHAESTUS_ONESHOT_ARMED \

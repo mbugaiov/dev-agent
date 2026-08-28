@@ -54,7 +54,7 @@ function loadGithubRepo(slugName: string): string {
 }
 
 function defaultRequired(): string[] {
-  return ["gate", "review (Themis)", "isolation (Themis)"];
+  return ["test", "review (Themis)", "isolation (Themis)"];
 }
 
 function fetchChecks(
