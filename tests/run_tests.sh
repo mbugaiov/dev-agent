@@ -237,8 +237,13 @@ YAML
 # Prefer engine-root invocation with PROJECTS override if supported; else cd to engine and use relative path.
 _ss_slug_dir="projects/_stack_host_smoke_$$"
 mkdir -p "$_ss_slug_dir/factory"
-cp "$_ss/projects/stack-host/project.yaml" "$_ss_slug_dir/project.yaml"
-if ! bash scripts/verify_stack_skills.sh "$(basename "$_ss_slug_dir")" 2>&1 | grep -q '"packs":0'; then
+_ss_slug="$(basename "$_ss_slug_dir")"
+cat >"$_ss_slug_dir/project.yaml" <<YAML
+slug: ${_ss_slug}
+stack:
+  hosting: azurewebsites.net cdn.example.net
+YAML
+if ! bash scripts/verify_stack_skills.sh "$_ss_slug" 2>&1 | grep -q '"packs":0'; then
   no "host-only *.net stack must match zero marketplace packs"
 else
   ok "host-only *.net does not pull .NET packs"
