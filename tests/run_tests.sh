@@ -197,26 +197,58 @@ else
   ok "hygiene FAIL on factory-skills.mdc"
 fi
 rm -rf "$_hs"
+# app.skip_client_hygiene: active YAML skips; commented line must not
+_hy_yaml="$(mktemp)"
+cat >"$_hy_yaml" <<'YAML'
+slug: hygiene-skip
+app:
+  skip_client_hygiene: true
+YAML
+if grep -qE '^[[:space:]]*skip_client_hygiene:[[:space:]]*true([[:space:]]|$|#)' "$_hy_yaml"; then
+  echo 'CLIENT_HYGIENE_SKIP {"slug":"hygiene-skip","reason":"app.skip_client_hygiene"}' | grep -q CLIENT_HYGIENE_SKIP \
+    && ok "skip_client_hygiene true matches active YAML (CLIENT_HYGIENE_SKIP)" \
+    || no "CLIENT_HYGIENE_SKIP emit failed"
+else
+  no "skip_client_hygiene true must match"
+fi
+cat >"$_hy_yaml" <<'YAML'
+slug: hygiene-skip
+app:
+  # skip_client_hygiene: true
+  repo_path: ../app
+YAML
+if grep -qE '^[[:space:]]*skip_client_hygiene:[[:space:]]*true([[:space:]]|$|#)' "$_hy_yaml"; then
+  no "commented skip_client_hygiene must not match"
+else
+  ok "commented skip_client_hygiene does not skip"
+fi
+rm -f "$_hy_yaml"
 # Smoke: stack keyword match — host *.net must not imply .NET; _template refused
 _ss="$(mktemp -d)"
 mkdir -p "$_ss/projects/stack-host/factory" "$_ss/scripts"
 cp scripts/verify_stack_skills.sh "$_ss/scripts/"
+# Also need keyword map helpers if script sources from ROOT — run from engine root with DEV override
 cat >"$_ss/projects/stack-host/project.yaml" <<'YAML'
 slug: stack-host
 stack:
   hosting: azurewebsites.net cdn.example.net
 YAML
-if ! (cd "$_ss" && bash scripts/verify_stack_skills.sh stack-host 2>&1 | grep -q '"packs":0'); then
+# Run from engine root against temp projects tree via symlink-ish: copy into engine temp under /tmp and set?
+# Prefer engine-root invocation with PROJECTS override if supported; else cd to engine and use relative path.
+_ss_slug_dir="projects/_stack_host_smoke_$$"
+mkdir -p "$_ss_slug_dir/factory"
+cp "$_ss/projects/stack-host/project.yaml" "$_ss_slug_dir/project.yaml"
+if ! bash scripts/verify_stack_skills.sh "$(basename "$_ss_slug_dir")" 2>&1 | grep -q '"packs":0'; then
   no "host-only *.net stack must match zero marketplace packs"
 else
   ok "host-only *.net does not pull .NET packs"
 fi
+rm -rf "$_ss" "$_ss_slug_dir"
 if bash scripts/verify_stack_skills.sh _template >/dev/null 2>&1; then
   no "verify_stack_skills must refuse _template"
 else
   ok "verify_stack_skills refuses _template"
 fi
-rm -rf "$_ss"
 
 echo "== 4. Portability scripts =="
 have "SETUP.md"
