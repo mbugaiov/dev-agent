@@ -61,6 +61,13 @@ export type JiraPickupConfig = {
   default_story_points?: number;
   estimate_scale?: Record<number, string>;
   transition_from_statuses?: string[];
+  /**
+   * Scrum board id — when set with assign_active_sprint, pickup moves the
+   * ticket into the board's active sprint if it is not already there.
+   */
+  board_id?: number;
+  /** Default true when board_id is set. */
+  assign_active_sprint?: boolean;
 };
 
 export type TrackerConfig = {

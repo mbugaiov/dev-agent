@@ -70,7 +70,44 @@ export function needsAssignee(
 ): boolean {
   if (!assigneeAccountId) return false;
   const current = fields.assignee?.accountId;
-  return !current;
+  return current !== assigneeAccountId;
+}
+
+/** Parse sprint ids from Jira `customfield_10020` (objects or serialized strings). */
+export function sprintIdsFromFields(fields: JiraIssuePickupFields): number[] {
+  const raw = fields.customfield_10020;
+  if (!Array.isArray(raw)) return [];
+  const ids: number[] = [];
+  for (const item of raw) {
+    if (item && typeof item === "object" && "id" in item) {
+      const id = Number((item as { id: unknown }).id);
+      if (Number.isFinite(id)) ids.push(id);
+      continue;
+    }
+    if (typeof item === "string") {
+      const m = /(?:^|[,[])id=(\d+)/.exec(item);
+      if (m) ids.push(Number(m[1]));
+    }
+  }
+  return ids;
+}
+
+export function shouldAssignActiveSprint(pickup?: JiraPickupConfig): boolean {
+  if (!pickup?.board_id || pickup.board_id <= 0) return false;
+  if (pickup.assign_active_sprint === false) return false;
+  return true;
+}
+
+export function needsActiveSprint(
+  fields: JiraIssuePickupFields,
+  activeSprintId: number | undefined,
+  pickup?: JiraPickupConfig,
+): boolean {
+  if (!shouldAssignActiveSprint(pickup)) return false;
+  if (activeSprintId === undefined || !Number.isFinite(activeSprintId)) {
+    return false;
+  }
+  return !sprintIdsFromFields(fields).includes(activeSprintId);
 }
 
 export function storyPointFieldIds(

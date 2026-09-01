@@ -2,16 +2,21 @@ import { describe, expect, it } from "vitest";
 import {
   buildPickupFieldUpdates,
   DEFAULT_ESTIMATE_SCALE,
+  needsActiveSprint,
   needsAssignee,
   originalEstimateForPoints,
   resolvePickupStoryPoints,
+  shouldAssignActiveSprint,
   shouldTransitionToInProgress,
+  sprintIdsFromFields,
 } from "../../lib/jiraPickup.ts";
 
 const PICKUP = {
   assignee_account_id: "acc-1",
   story_point_fields: ["customfield_10016", "customfield_10033"],
   default_story_points: 2,
+  board_id: 151,
+  assign_active_sprint: true,
 };
 
 describe("jiraPickup", () => {
@@ -20,13 +25,19 @@ describe("jiraPickup", () => {
     expect(shouldTransitionToInProgress("In Progress", PICKUP)).toBe(false);
   });
 
-  it("needs assign when unassigned and config has account id", () => {
+  it("needs assign when missing or wrong maintainer", () => {
     expect(needsAssignee({ assignee: null }, PICKUP.assignee_account_id)).toBe(
       true,
     );
     expect(
       needsAssignee(
         { assignee: { accountId: "other" } },
+        PICKUP.assignee_account_id,
+      ),
+    ).toBe(true);
+    expect(
+      needsAssignee(
+        { assignee: { accountId: "acc-1" } },
         PICKUP.assignee_account_id,
       ),
     ).toBe(false);
@@ -65,10 +76,37 @@ describe("jiraPickup", () => {
     expect(resolvePickupStoryPoints(empty, undefined, PICKUP)).toBe(2);
     expect(
       resolvePickupStoryPoints(
-        { customfield_10016: 1, customfield_10033: 1, timetracking: { originalEstimate: "1h" } },
+        {
+          customfield_10016: 1,
+          customfield_10033: 1,
+          timetracking: { originalEstimate: "1h" },
+        },
         undefined,
         PICKUP,
       ),
     ).toBe(null);
+  });
+
+  it("parses sprint ids and gates active-sprint assign", () => {
+    expect(
+      sprintIdsFromFields({
+        customfield_10020: [{ id: 6944, name: "RQ Sprint 18_2026" }],
+      }),
+    ).toEqual([6944]);
+    expect(
+      sprintIdsFromFields({
+        customfield_10020: [
+          "com.atlassian.greenhopper.service.sprint.Sprint@x[id=6944,name=S]",
+        ],
+      }),
+    ).toEqual([6944]);
+    expect(shouldAssignActiveSprint(PICKUP)).toBe(true);
+    expect(
+      shouldAssignActiveSprint({ board_id: 151, assign_active_sprint: false }),
+    ).toBe(false);
+    expect(needsActiveSprint({}, 6944, PICKUP)).toBe(true);
+    expect(
+      needsActiveSprint({ customfield_10020: [{ id: 6944 }] }, 6944, PICKUP),
+    ).toBe(false);
   });
 });
