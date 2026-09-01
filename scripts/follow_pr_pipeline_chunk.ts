@@ -10,6 +10,7 @@ import { existsSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { loadProjectConfig, resolveAppRoot } from "../lib/loadProject.ts";
+import { writeProgressPrKey } from "../lib/progressTicketLatch.ts";
 import {
   writePrPipelineResultLatch,
   type PrPipelineResultLatch,
@@ -37,6 +38,12 @@ const slug = process.argv[2] ?? "";
 const prRaw = process.argv[3] ?? "";
 if (!/^[a-z0-9][a-z0-9-]*$/.test(slug) || !/^\d+$/.test(prRaw)) usage();
 const pr = Number(prRaw);
+// Latch PR for Jira↔Bitbucket dual-write on progress posts
+try {
+  writeProgressPrKey(ROOT, slug, pr);
+} catch {
+  /* best effort */
+}
 
 let maxSec = 75;
 let pollSec = 15;

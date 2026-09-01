@@ -144,7 +144,8 @@ Edit `projects/<SLUG>/project.yaml`. Replace **all** angle-bracket placeholders.
 
 | Key | Agent sets to |
 |-----|----------------|
-| `dev_factory.epic_key` | `<EPIC_KEY>` |
+| `dev_factory.epic_key` | `<EPIC_KEY>` — or omit when `dev_factory.jql` is set (board-wide) |
+| `dev_factory.jql` | Optional full backlog JQL override (skips epic-derived query) |
 | `dev_factory.excluded_issue_keys` | On-hold Jira keys (or `[]`) |
 | `git.workspace` / `git.repo` | Bitbucket/GitHub workspace + repo name |
 | `git.ticket_key_pattern` | Regex matching keys (e.g. `PROJ-\\d+`) |

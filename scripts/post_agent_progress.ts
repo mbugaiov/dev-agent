@@ -1,6 +1,6 @@
 #!/usr/bin/env tsx
 /**
- * Post ### <Seat> progress on the tracker (GitHub Issues/PR or Jira).
+ * Post ### <Seat> progress on the tracker (GitHub Issues/PR, Jira, and/or Bitbucket PR).
  * Living comment per seat+ticket — mid-flight MR/pipeline/STG/handoff visibility.
  *
  * Usage:
@@ -10,9 +10,19 @@
  *
  * Milestones: mr_opened | pipeline_waiting | pipeline_failed | pipeline_retry |
  *             pipeline_green | stg_verify | handoff
+ *
+ * Jira + git.provider bitbucket dual-write:
+ *   KEY → Jira; also Bitbucket when progress-pr.key / DEV_PROGRESS_PR set
+ *   pr:N → Bitbucket only (and latches progress-pr.key)
  */
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
+import {
+  bitbucketPrTargetKey,
+  isJiraIssueKey,
+  parsePrId,
+  shouldDualWriteBitbucketPr,
+} from "../lib/agentCommentRouting.ts";
 import {
   buildProgressChatBanner,
   humanizeMilestone,
@@ -20,12 +30,17 @@ import {
   type AgentProgressEvent,
 } from "../lib/agentProgressStack.ts";
 import {
+  upsertBitbucketAgentProgress,
   upsertGithubAgentProgress,
   upsertJiraAgentProgress,
 } from "../lib/agentProgressTracker.ts";
 import { githubTargetKey } from "../lib/agentStartedStack.ts";
 import { loadProjectConfig } from "../lib/loadProject.ts";
-import { resolveTrackerProvider } from "../lib/projectConfig.ts";
+import {
+  readProgressPrKey,
+  writeProgressPrKey,
+} from "../lib/progressTicketLatch.ts";
+import { resolveTrackerProvider, type ProjectConfig } from "../lib/projectConfig.ts";
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..");
 
@@ -65,6 +80,42 @@ async function postGithub(opts: {
       ...opts.extraOk,
     })}`,
   );
+}
+
+async function postBitbucketPr(
+  config: ProjectConfig,
+  prId: string,
+  event: AgentProgressEvent,
+  slug: string,
+): Promise<void> {
+  writeProgressPrKey(ROOT, slug, prId);
+  const result = await upsertBitbucketAgentProgress({
+    workspace: config.git.workspace,
+    repo: config.git.repo,
+    prId,
+    event: {
+      ...event,
+      ticketLine: `**PR:** ${config.git.workspace}/${config.git.repo}#${prId}`,
+    },
+    targetKey: bitbucketPrTargetKey(prId),
+  });
+  console.log(
+    `AGENT_PROGRESS_OK ${JSON.stringify({
+      tracker: "bitbucket",
+      pr: prId,
+      seat: event.seat,
+      status: event.status,
+      action: result.action,
+    })}`,
+  );
+}
+
+function resolveDualWritePrId(slug: string, target: string): string | undefined {
+  const fromTarget = target.startsWith("pr:") ? parsePrId(target) : undefined;
+  if (fromTarget) return fromTarget;
+  const envPr = (process.env.DEV_PROGRESS_PR ?? "").trim();
+  if (/^\d+$/.test(envPr)) return envPr;
+  return readProgressPrKey(ROOT, slug);
 }
 
 async function main() {
@@ -165,15 +216,11 @@ async function main() {
     return;
   }
 
-  if (target.startsWith("pr:")) {
-    console.error(
-      "AGENT_PROGRESS_FAIL Jira tracker: use issue KEY (not pr:N). Put MR URL in Detail.",
-    );
-    process.exit(1);
-  }
   const event: AgentProgressEvent = {
     seat,
-    ticketLine: `**Ticket:** ${target}`,
+    ticketLine: isPr
+      ? `**PR:** ${config.git.workspace}/${config.git.repo}#${target.slice(3)}`
+      : `**Ticket:** ${target}`,
     status,
     detail,
     at,
@@ -184,6 +231,28 @@ async function main() {
     console.log("AGENT_PROGRESS_DRY_RUN ok");
     return;
   }
+
+  const prId = resolveDualWritePrId(slug, target);
+  const wantBb = shouldDualWriteBitbucketPr(config) && Boolean(prId);
+
+  if (isPr) {
+    if (!wantBb || !prId) {
+      console.error(
+        "AGENT_PROGRESS_FAIL pr:N requires git.provider=bitbucket and Bitbucket credentials",
+      );
+      process.exit(1);
+    }
+    await postBitbucketPr(config, prId, event, slug);
+    return;
+  }
+
+  if (!isJiraIssueKey(target)) {
+    console.error(
+      "AGENT_PROGRESS_FAIL Jira tracker: use issue KEY (e.g. RQ-526) or pr:N for Bitbucket MR",
+    );
+    process.exit(1);
+  }
+
   const result = await upsertJiraAgentProgress({
     issueKey: target,
     event,
@@ -198,6 +267,10 @@ async function main() {
       action: result.action,
     })}`,
   );
+
+  if (wantBb && prId) {
+    await postBitbucketPr(config, prId, event, slug);
+  }
 }
 
 main().catch((e) => {

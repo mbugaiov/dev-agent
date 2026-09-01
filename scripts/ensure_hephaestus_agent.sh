@@ -144,8 +144,21 @@ done
 reap_blind_bash_if_needed 0
 
 
+# Opt-in app Cursor bind: project.yaml → app.mandatory_reads → factory/app-cursor.manifest
+# (second-repo rules/skills are not auto-loaded; oneshot must Read them).
+APP_CURSOR_CLAUSE=""
+if [[ -f "$ROOT/projects/$SLUG/project.yaml" ]]; then
+  if npx tsx "$ROOT/scripts/sync_app_cursor_manifest.ts" "$SLUG" >/dev/null 2>&1; then
+    MANIFEST="$FACTORY/app-cursor.manifest"
+    if [[ -s "$MANIFEST" ]]; then
+      COUNT="$(grep -c . "$MANIFEST" 2>/dev/null || echo 0)"
+      APP_CURSOR_CLAUSE="APP_CURSOR_BIND: Before pickup or any product code, Read EVERY absolute path listed in projects/${SLUG}/factory/app-cursor.manifest (${COUNT} files — app rules/skills + forge bind). Missing path = stop and report. Do not invent TestRail IDs, branch names, or POM patterns without those Reads. "
+    fi
+  fi
+fi
+
 # No apostrophes in PROMPT — nested bash -c quoting hazard (see qa-agent arm_qa_loop).
-PROMPT="EXECUTE Hephaestus oneshot for ${SLUG}. Isolated oneshot — not an ambient IDE chat. Set CURSOR_FACTORY_SESSION=1 and DEV_FACTORY_SLUG=${SLUG}. Drain impl-dev backlog (oldest first): pickup → if project-bootstrap and no WBS_READY run demux_project_bootstrap (strip pickup, wake Chronos pm-bootstrap, do not implement parent) → else OpenSpec/gates → implement → app gate → MR → follow_pr_pipeline_chunk.sh loop (exit 0 green / 1 failed / 3 re-invoke; never Await on PIPELINE regex) → handoff; stay while open PR/MR remains; exit only when backlog idle AND no open MRs (DEV_FACTORY_IDLE). Skills: dev-factory-loop, dev-mr-pipeline, dev-pm-bootstrap-subagent. Forbidden: notify-only / status-only; Await-only PR wait on PIPELINE_*; do not leave a bash-only dev-loop without executing tickets; do not implement project-bootstrap parents as one MR. Prefer direct ticket pickup over silent watch_dev_loop."
+PROMPT="${APP_CURSOR_CLAUSE}EXECUTE Hephaestus oneshot for ${SLUG}. Isolated oneshot — not an ambient IDE chat. Set CURSOR_FACTORY_SESSION=1 and DEV_FACTORY_SLUG=${SLUG}. Drain impl-dev backlog (oldest first): pickup → if project-bootstrap and no WBS_READY run demux_project_bootstrap (strip pickup, wake Chronos pm-bootstrap, do not implement parent) → else OpenSpec/gates → implement → app gate → MR → follow_pr_pipeline_chunk.sh loop (exit 0 green / 1 failed / 3 re-invoke; never Await on PIPELINE regex) → handoff; stay while open PR/MR remains; exit only when backlog idle AND no open MRs (DEV_FACTORY_IDLE). Skills: dev-factory-loop, dev-mr-pipeline, dev-pm-bootstrap-subagent. Forbidden: notify-only / status-only; Await-only PR wait on PIPELINE_*; do not leave a bash-only dev-loop without executing tickets; do not implement project-bootstrap parents as one MR. Prefer direct ticket pickup over silent watch_dev_loop."
 if [[ -f "$STALL_FILE" ]]; then
   PROMPT="STALL_RECOVERY: Previous Hephaestus oneshot stalled (reconnect, silent timeout, or pr_pipeline_failed_unattended). Continue from existing git branch and open MR if any — run follow_pr_pipeline_chunk.sh loop before new implementation. ${PROMPT}"
   rm -f "$STALL_FILE"

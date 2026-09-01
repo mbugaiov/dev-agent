@@ -15,8 +15,11 @@ import {
   type AgentProgressEvent,
 } from "../../lib/agentProgressStack.ts";
 import {
+  clearProgressLatches,
   clearProgressTicketKey,
+  readProgressPrKey,
   readProgressTicketKey,
+  writeProgressPrKey,
   writeProgressTicketKey,
 } from "../../lib/progressTicketLatch.ts";
 import { githubTargetKey } from "../../lib/agentStartedStack.ts";
@@ -194,6 +197,20 @@ describe("progressTicketLatch", () => {
       ).toBe("TST-2143");
       clearProgressTicketKey(root, "demo");
       expect(readProgressTicketKey(root, "demo")).toBeUndefined();
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it("writes progress-pr latch and clearProgressLatches clears both", () => {
+    const root = mkdtempSync(join(tmpdir(), "prog-pr-latch-"));
+    try {
+      writeProgressTicketKey(root, "demo", "RQ-526");
+      writeProgressPrKey(root, "demo", 437);
+      expect(readProgressPrKey(root, "demo")).toBe("437");
+      clearProgressLatches(root, "demo");
+      expect(readProgressTicketKey(root, "demo")).toBeUndefined();
+      expect(readProgressPrKey(root, "demo")).toBeUndefined();
     } finally {
       rmSync(root, { recursive: true, force: true });
     }

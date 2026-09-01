@@ -88,6 +88,17 @@ grep -q 'follow_pr_pipeline_chunk' scripts/ensure_hephaestus_agent.sh \
   && grep -q 'pr_pipeline_failed_unattended\|PIPELINE regex' scripts/ensure_hephaestus_agent.sh \
   && ok "ensure_hephaestus prompt uses chunk wait" \
   || no "ensure prompt must ban Await regex and use chunk"
+grep -q 'APP_CURSOR_BIND' scripts/ensure_hephaestus_agent.sh \
+  && grep -q 'sync_app_cursor_manifest' scripts/ensure_hephaestus_agent.sh \
+  && grep -q 'app-cursor.manifest' scripts/ensure_hephaestus_agent.sh \
+  && ok "ensure_hephaestus wires APP_CURSOR_BIND manifest" \
+  || no "ensure_hephaestus must sync app-cursor.manifest and inject APP_CURSOR_BIND"
+have "lib/appCursorBind.ts"
+have "scripts/sync_app_cursor_manifest.ts"
+have "tests/unit/appCursorBind.test.ts"
+grep -q 'mandatory_reads' lib/projectConfig.ts \
+  && ok "projectConfig documents app.mandatory_reads" \
+  || no "AppConfig must include mandatory_reads"
 grep -q 'decideMissedPrPipelineStall\|pr-pipeline.result.json' scripts/print_oneshot_stall.ts \
   && ok "print_oneshot_stall checks missed PR fail latch" \
   || no "stall probe must read pr-pipeline.result.json"
@@ -99,10 +110,22 @@ grep -q 'post_progress_best_effort' scripts/wait_github_pr_pipeline.sh \
   || no "wait_github_pr_pipeline must call post_progress_best_effort"
 grep -q 'writeProgressTicketKey' scripts/pickup_jira_ticket.ts \
   && grep -q 'writeProgressTicketKey' scripts/pickup_github_ticket.ts \
-  && grep -q 'clearProgressTicketKey' scripts/post_jira_handoff.ts \
-  && grep -q 'clearProgressTicketKey' scripts/post_github_handoff.ts \
-  && ok "pickup/handoff progress-ticket latch" \
-  || no "pickup must write and handoff must clear progress-ticket.key"
+  && grep -q 'clearProgressLatches' scripts/post_jira_handoff.ts \
+  && grep -q 'clearProgressLatches' scripts/post_github_handoff.ts \
+  && ok "progress-ticket latch write/clear wired" \
+  || no "pickup must write progress-ticket.key; handoff must clearProgressLatches"
+grep -q 'upsertBitbucketAgentStarted' lib/agentStartedTracker.ts \
+  && grep -q 'upsertBitbucketAgentProgress' lib/agentProgressTracker.ts \
+  && grep -q 'writeProgressPrKey' scripts/follow_pr_pipeline_chunk.ts \
+  && grep -q 'progress-pr.key' scripts/lib/post_progress_best_effort.sh \
+  && grep -q 'shouldDualWriteBitbucketPr' scripts/post_agent_progress.ts \
+  && grep -q 'shouldDualWriteBitbucketPr' scripts/post_agent_started.ts \
+  && ok "Bitbucket PR comment stacking wired" \
+  || no "must wire upsertBitbucket + progress-pr dual-write"
+have "lib/bitbucketClient.ts"
+have "lib/bitbucketPrComments.ts"
+have "lib/agentCommentRouting.ts"
+have "tests/unit/agentCommentRouting.test.ts"
 # Guard: best-effort helper ROOT must be engine root (scripts/lib → ../..)
 PROG_BE="$(mktemp -d "${TMPDIR:-/tmp}/prog-be.XXXXXX")"
 mkdir -p "$PROG_BE/projects/demo/factory" "$PROG_BE/scripts/lib"
