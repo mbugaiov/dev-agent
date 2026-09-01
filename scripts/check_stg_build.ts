@@ -1,8 +1,9 @@
 #!/usr/bin/env tsx
 /**
- * Verify STG /api/health buildId matches expected merge commit.
+ * Verify STG health buildId matches expected merge commit.
  * Usage: check_stg_build.ts <slug> <expected_commit>
  *    or: check_stg_build.ts --url <STG_URL> <expected_commit>
+ * Project `stg.health_path` defaults to `/api/health` when unset.
  */
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -16,6 +17,7 @@ async function main() {
   const argv = process.argv.slice(2);
   let stgUrl = process.env.STG_URL ?? "";
   let expected = process.env.EXPECTED_COMMIT ?? "";
+  let healthPath = "/api/health";
 
   if (argv[0] === "--url") {
     stgUrl = argv[1] ?? "";
@@ -29,6 +31,7 @@ async function main() {
     }
     const config = loadProjectConfig(ROOT, slug);
     stgUrl = config.stg.base_url;
+    healthPath = config.stg.health_path ?? "/api/health";
   }
 
   if (!stgUrl || !expected) {
@@ -36,7 +39,7 @@ async function main() {
     process.exit(2);
   }
 
-  const healthUrl = stgHealthUrl(stgUrl, "/api/health");
+  const healthUrl = stgHealthUrl(stgUrl, healthPath);
   const res = await fetch(healthUrl, { signal: AbortSignal.timeout(25_000) });
 
   if (!res.ok) {

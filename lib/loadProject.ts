@@ -28,12 +28,14 @@ export function loadProjectConfig(
   const githubIssues =
     tracker === "github_issues" ||
     (parsed.jira?.enabled === false && parsed.git?.provider === "github");
-  if (!githubIssues && !parsed.dev_factory.epic_key) {
+  const hasEpic = Boolean(parsed.dev_factory.epic_key?.trim());
+  const hasJql = Boolean(parsed.dev_factory.jql?.trim());
+  if (!githubIssues && !hasEpic && !hasJql) {
     throw new Error(
-      `Invalid project.yaml for slug "${slug}" — need dev_factory.epic_key (or tracker.provider: github_issues)`,
+      `Invalid project.yaml for slug "${slug}" — need dev_factory.epic_key or dev_factory.jql (or tracker.provider: github_issues)`,
     );
   }
-  if (githubIssues && !parsed.dev_factory.epic_key) {
+  if (githubIssues && !hasEpic) {
     parsed.dev_factory.epic_key = `github:${parsed.git.workspace}/${parsed.git.repo}`;
   }
   return parsed;

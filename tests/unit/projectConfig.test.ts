@@ -29,6 +29,27 @@ describe("projectConfig", () => {
     expect(jql).toContain('status in ("To Do", "In Progress")');
   });
 
+  it("uses jql override when set (board-wide, no epic)", () => {
+    const jql = buildDevFactoryJql({
+      ...FIXTURE_DEV_FACTORY,
+      epic_key: undefined,
+      jql: 'project = TST AND labels = impl-dev AND (parent is EMPTY OR parent != TST-99) AND status in ("To Do") ORDER BY created ASC',
+    });
+    expect(jql).toContain("project = TST");
+    expect(jql).toContain("parent != TST-99");
+    expect(jql).not.toContain("parent = TST-1");
+  });
+
+  it("throws when neither epic_key nor jql is set", () => {
+    expect(() =>
+      buildDevFactoryJql({
+        ...FIXTURE_DEV_FACTORY,
+        epic_key: undefined,
+        jql: undefined,
+      }),
+    ).toThrow(/jql or.*epic_key/);
+  });
+
   it("validates handoff comment against git config PR pattern", () => {
     const git = {
       provider: "bitbucket" as const,

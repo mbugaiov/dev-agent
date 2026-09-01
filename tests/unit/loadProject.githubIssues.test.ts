@@ -5,6 +5,55 @@ import { tmpdir } from "node:os";
 import { loadProjectConfig } from "../../lib/loadProject.ts";
 
 describe("loadProjectConfig github_issues", () => {
+  it("accepts jira factory with jql and no epic_key", () => {
+    const root = mkdtempSync(join(tmpdir(), "dev-agent-proj-"));
+    const dir = join(root, "projects", "webapp");
+    mkdirSync(dir, { recursive: true });
+    writeFileSync(
+      join(dir, "project.yaml"),
+      `
+name: Example QA Automation
+slug: webapp
+dev_factory:
+  jql: 'project = TST AND labels = impl-dev AND status in ("To Do") ORDER BY created ASC'
+  pickup_label: impl-dev
+  excluded_labels: [impl-qa]
+  excluded_issue_keys: []
+  statuses: ["To Do", "In Progress"]
+  handoff_status: Validate/Testing
+  forbidden_target_statuses: ["Done"]
+  order_by: created ASC
+git:
+  provider: bitbucket
+  workspace: example-corp
+  repo: example-qa-tests
+  default_branch: main
+  branch_prefixes: [feat]
+  ticket_key_pattern: "RQ-\\\\d+"
+stg:
+  base_url: https://stg.example.com
+app:
+  repo_path: ../example-qa-tests
+  gate_command: make check
+  mr_push_command: echo skip
+  openspec_enabled: false
+  openspec_specs_dir: openspec/specs
+loop:
+  purpose: webappdev
+  interval_sec_default: 300
+jira:
+  enabled: true
+`,
+    );
+    try {
+      const cfg = loadProjectConfig(root, "webapp");
+      expect(cfg.dev_factory.epic_key).toBeUndefined();
+      expect(cfg.dev_factory.jql).toContain("project = TST");
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
   it("defaults epic_key for github_issues when omitted", () => {
     const root = mkdtempSync(join(tmpdir(), "dev-agent-proj-"));
     const dir = join(root, "projects", "myapp");

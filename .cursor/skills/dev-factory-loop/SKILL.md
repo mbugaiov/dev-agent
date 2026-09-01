@@ -102,6 +102,10 @@ Follow skill **`dev-mr-pipeline`** (project overrides in `projects/<slug>/` if p
 4. **Stack skills gate:** `bash scripts/verify_stack_skills.sh <slug>` (or `--install`);  
    Read all paths in `projects/<slug>/factory/stack-skills.manifest` before coding stack areas  
    (packs live only in the engine — never copy into the app)
+4a. **App Cursor bind (opt-in):** if `app.mandatory_reads` is set, ensure writes
+   `projects/<slug>/factory/app-cursor.manifest` and prefixes oneshot with `APP_CURSOR_BIND` —
+   **Read every path** before pickup/code (`npx tsx scripts/sync_app_cursor_manifest.ts <slug>`).
+   For automation-as-app checkouts that vendor `.cursor/` outside the engine workspace.
 4b. **Client hygiene gate:** `bash scripts/check_app_client_hygiene.sh <slug>` — app must not
    track skill packs / skill URLs / engine skill paths. Obey app `.cursor/rules/factory-*.mdc`
    + `code-review.mdc` (`dev-client-repo-hygiene.mdc`)

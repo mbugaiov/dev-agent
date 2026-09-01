@@ -6,6 +6,11 @@
  * cannot recreate the duplicate-banner flood this helper exists to stop.
  */
 import { execFileSync } from "node:child_process";
+import {
+  createBitbucketPrComment,
+  listBitbucketPrComments,
+  updateBitbucketPrComment,
+} from "./bitbucketPrComments.ts";
 import { adfToPlainText, jiraFetch, markdownToAdf } from "./jiraClient.ts";
 import {
   jiraCommentCountPath,
@@ -293,4 +298,84 @@ export async function upsertJiraAgentStarted(opts: {
     body: decision.body,
     commentId: created.id,
   };
+}
+
+/** Upsert ### <Seat> started on a Bitbucket PR (git.provider: bitbucket). */
+export async function upsertBitbucketAgentStarted(opts: {
+  workspace: string;
+  repo: string;
+  prId: string | number;
+  event: AgentStartEvent;
+  targetKey: string;
+}): Promise<AgentStartUpsertResult> {
+  const ttl = sessionTtlMs();
+  let existing: { body: string; updatedAt: Date; id: string } | null = null;
+  try {
+    const comments = await listBitbucketPrComments(
+      opts.workspace,
+      opts.repo,
+      opts.prId,
+    );
+    const hit = findStackableComment(
+      comments,
+      opts.event.seat,
+      opts.targetKey,
+      opts.event.at,
+      ttl,
+    );
+    if (hit) existing = hit;
+  } catch (e) {
+    console.error(
+      "AGENT_START_WARN list Bitbucket PR comments failed — skip tracker write:",
+      e instanceof Error ? e.message : e,
+    );
+    return { action: "skip", body: "", reason: "list failed" };
+  }
+
+  const decision = decideAgentStartStack({
+    existing,
+    event: opts.event,
+    targetKey: opts.targetKey,
+    now: opts.event.at,
+    sessionTtlMs: ttl,
+    markerStyle: "html",
+  });
+
+  if (decision.action === "skip") {
+    return {
+      action: "skip",
+      body: decision.body,
+      commentId: existing?.id,
+    };
+  }
+
+  try {
+    if (decision.action === "patch" && existing) {
+      const updated = await updateBitbucketPrComment(
+        opts.workspace,
+        opts.repo,
+        opts.prId,
+        existing.id,
+        decision.body,
+      );
+      return { action: "patch", body: decision.body, commentId: updated.id };
+    }
+    const created = await createBitbucketPrComment(
+      opts.workspace,
+      opts.repo,
+      opts.prId,
+      decision.body,
+    );
+    return {
+      action: "create",
+      body: decision.body,
+      commentId: created.id || undefined,
+    };
+  } catch (e) {
+    console.error(
+      "AGENT_START_WARN Bitbucket PR comment write failed:",
+      e instanceof Error ? e.message : e,
+    );
+    return { action: "skip", body: decision.body, reason: "write failed" };
+  }
 }

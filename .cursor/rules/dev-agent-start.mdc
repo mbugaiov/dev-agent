@@ -30,13 +30,15 @@ Use this exact heading shape:
 | Argus | `### Argus started` |
 | Other Task | `### <Name> started` |
 
-**Helper (GitHub Issues / PRs):**
+**Helper:**
 
 ```bash
 # GitHub Issues factories — issue number or pr:N
 bash scripts/post_agent_started.sh <slug> <N|pr:N> <Seat> "<Mode>" "<Doing>"
 # Jira factories — issue KEY (e.g. TST-123); requires projects/<slug>/.secrets/jira.env
 bash scripts/post_agent_started.sh <slug> <JIRA_KEY> <Seat> "<Mode>" "<Doing>"
+# Bitbucket MR (git.provider: bitbucket) — PR thread stacking
+bash scripts/post_agent_started.sh <slug> pr:<N> <Seat> "<Mode>" "<Doing>"
 # Engine / explicit GitHub repo:
 bash scripts/post_agent_started.sh --repo owner/repo pr:<N> <Seat> "<Mode>" "<Doing>"
 ```
@@ -44,10 +46,18 @@ bash scripts/post_agent_started.sh --repo owner/repo pr:<N> <Seat> "<Mode>" "<Do
 `pickup_github_ticket` / `pickup_jira_ticket` already post `### Hephaestus started`
 via the same helper (upsert — one living comment per seat+ticket).
 
-**Tracker stacking (not a second comment):** GitHub/Jira cannot Slack-thread.
-The helper keeps **one** `### <Seat> started` comment per seat+ticket for 6h:
+**Tracker stacking (not a second comment):** GitHub/Jira/Bitbucket cannot Slack-thread.
+The helper keeps **one** `### <Seat> started` comment per seat+target for 6h:
 identical Mode+Doing is skipped (Kairos K11); a new plan PATCHes and lists
 prior starts under `Also started`. Override TTL with `AGENT_START_SESSION_TTL_MS`.
+
+**Jira + Bitbucket dual-write:** when `tracker` is Jira and `git.provider` is
+bitbucket, posting with a Jira KEY also upserts the open MR if
+`projects/<slug>/factory/progress-pr.key` (or `DEV_PROGRESS_PR`) is set.
+`follow_pr_pipeline_chunk` writes that latch. Prefer helpers — **forbidden** to
+POST raw Jira/Bitbucket status comments (`nudge`, `stall recovery`, freeform
+`### Hephaestus progress — …`) that bypass `post_agent_started` /
+`post_agent_progress` (floods the ticket).
 
 ## Mid-flight progress (mandatory while a ticket is mid-pipeline)
 
@@ -55,19 +65,22 @@ While Hephaestus is mid-ticket (MR open, CI waiting/failed/retry, STG, handoff),
 keep the tracker from looking idle with a living **progress** comment:
 
 ```bash
-bash scripts/post_agent_progress.sh <slug> <KEY|N> Hephaestus <milestone> "<Detail>"
+bash scripts/post_agent_progress.sh <slug> <KEY|N|pr:N> Hephaestus <milestone> "<Detail>"
 # milestones: mr_opened | pipeline_waiting | pipeline_failed | pipeline_retry |
 #             pipeline_green | stg_verify | handoff
 ```
 
-Pickup writes `projects/<slug>/factory/progress-ticket.key`. Product waiter
-`wait_pr_pipeline.sh <slug> <PR>` auto-posts waiting/failed/green from that latch.
-Engine `wait_github_pr_pipeline.sh` posts when `DEV_PROGRESS_TICKET` (and usually
-`DEV_PROGRESS_SLUG`) are set — do not assume repo basename equals factory slug.
+Pickup writes `projects/<slug>/factory/progress-ticket.key`. Pipeline follow
+writes `progress-pr.key`. Product waiter `wait_pr_pipeline.sh <slug> <PR>`
+auto-posts waiting/failed/green from those latches (Jira + Bitbucket PR when
+configured). Engine `wait_github_pr_pipeline.sh` posts when `DEV_PROGRESS_TICKET`
+(and usually `DEV_PROGRESS_SLUG`) are set — do not assume repo basename equals
+factory slug.
 
 **Forbidden:** silent seat switches; implementing / reviewing / closing with no start banner;
 status-only “working on it” without the `### … started` heading; long CI waits with
-no `### … progress` update after MR open / pipeline state change.
+no `### … progress` update after MR open / pipeline state change; freeform tracker
+comments instead of the stack helpers.
 
 Applies to **every** factory slug (not only Pantheon). Product app rules may repeat this;
 the engine rule is authoritative.

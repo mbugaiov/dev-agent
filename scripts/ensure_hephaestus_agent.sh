@@ -144,8 +144,34 @@ done
 reap_blind_bash_if_needed 0
 
 
+# Opt-in app Cursor bind: project.yaml → app.mandatory_reads → factory/app-cursor.manifest
+# (second-repo rules/skills are not auto-loaded; oneshot must Read them).
+# Fail closed when mandatory_reads is configured but sync/manifest fails.
+APP_CURSOR_CLAUSE=""
+YAML_PATH="$ROOT/projects/$SLUG/project.yaml"
+if [[ -f "$YAML_PATH" ]] && grep -qE '^[[:space:]]*mandatory_reads:' "$YAML_PATH"; then
+  if ! npx tsx "$ROOT/scripts/sync_app_cursor_manifest.ts" "$SLUG" >/dev/null 2>&1; then
+    printf 'HEPHAESTUS_ONESHOT_SKIP {"slug":"%s","reason":"app-cursor-bind-failed"}\n' "$SLUG"
+    exit 6
+  fi
+  MANIFEST="$FACTORY/app-cursor.manifest"
+  if [[ ! -s "$MANIFEST" ]]; then
+    printf 'HEPHAESTUS_ONESHOT_SKIP {"slug":"%s","reason":"app-cursor-manifest-empty"}\n' "$SLUG"
+    exit 6
+  fi
+  COUNT="$(grep -c . "$MANIFEST" 2>/dev/null || echo 0)"
+  if [[ "${COUNT:-0}" -lt 1 ]]; then
+    printf 'HEPHAESTUS_ONESHOT_SKIP {"slug":"%s","reason":"app-cursor-manifest-empty"}\n' "$SLUG"
+    exit 6
+  fi
+  APP_CURSOR_CLAUSE="APP_CURSOR_BIND: Before pickup or any product code, Read EVERY absolute path listed in projects/${SLUG}/factory/app-cursor.manifest (${COUNT} files — app rules/skills + forge bind). Missing path = stop and report. Do not invent TestRail IDs, branch names, or POM patterns without those Reads. "
+elif [[ -f "$YAML_PATH" ]]; then
+  # Unbound projects: soft sync (empty manifest) — never block oneshot.
+  npx tsx "$ROOT/scripts/sync_app_cursor_manifest.ts" "$SLUG" >/dev/null 2>&1 || true
+fi
+
 # No apostrophes in PROMPT — nested bash -c quoting hazard (see qa-agent arm_qa_loop).
-PROMPT="EXECUTE Hephaestus oneshot for ${SLUG}. Isolated oneshot — not an ambient IDE chat. Set CURSOR_FACTORY_SESSION=1 and DEV_FACTORY_SLUG=${SLUG}. Drain impl-dev backlog (oldest first): pickup → if project-bootstrap and no WBS_READY run demux_project_bootstrap (strip pickup, wake Chronos pm-bootstrap, do not implement parent) → else OpenSpec/gates → implement → app gate → MR → follow_pr_pipeline_chunk.sh loop (exit 0 green / 1 failed / 3 re-invoke; never Await on PIPELINE regex) → handoff; stay while open PR/MR remains; exit only when backlog idle AND no open MRs (DEV_FACTORY_IDLE). Skills: dev-factory-loop, dev-mr-pipeline, dev-pm-bootstrap-subagent. Forbidden: notify-only / status-only; Await-only PR wait on PIPELINE_*; do not leave a bash-only dev-loop without executing tickets; do not implement project-bootstrap parents as one MR. Prefer direct ticket pickup over silent watch_dev_loop."
+PROMPT="${APP_CURSOR_CLAUSE}EXECUTE Hephaestus oneshot for ${SLUG}. Isolated oneshot — not an ambient IDE chat. Set CURSOR_FACTORY_SESSION=1 and DEV_FACTORY_SLUG=${SLUG}. Drain impl-dev backlog (oldest first): pickup → if project-bootstrap and no WBS_READY run demux_project_bootstrap (strip pickup, wake Chronos pm-bootstrap, do not implement parent) → else OpenSpec/gates → implement → app gate → MR → follow_pr_pipeline_chunk.sh loop (exit 0 green / 1 failed / 3 re-invoke; never Await on PIPELINE regex) → handoff; stay while open PR/MR remains; exit only when backlog idle AND no open MRs (DEV_FACTORY_IDLE). Skills: dev-factory-loop, dev-mr-pipeline, dev-pm-bootstrap-subagent. Forbidden: notify-only / status-only; Await-only PR wait on PIPELINE_*; do not leave a bash-only dev-loop without executing tickets; do not implement project-bootstrap parents as one MR. Prefer direct ticket pickup over silent watch_dev_loop."
 if [[ -f "$STALL_FILE" ]]; then
   PROMPT="STALL_RECOVERY: Previous Hephaestus oneshot stalled (reconnect, silent timeout, or pr_pipeline_failed_unattended). Continue from existing git branch and open MR if any — run follow_pr_pipeline_chunk.sh loop before new implementation. ${PROMPT}"
   rm -f "$STALL_FILE"

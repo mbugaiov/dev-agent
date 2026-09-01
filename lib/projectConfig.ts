@@ -4,7 +4,16 @@
 export type DevFactoryConfig = {
   /** When false, tick always idles (config pause — distinct from factory-pause label). */
   enabled?: boolean;
-  epic_key: string;
+  /**
+   * Parent epic for classic factories. Optional when `jql` is set (board-wide /
+   * multi-epic scope). Required for Jira factories that rely on epic-derived JQL.
+   */
+  epic_key?: string;
+  /**
+   * Full backlog JQL override. When set, used as-is (must include pickup label,
+   * exclusions, statuses). Prefer this for board-wide RQ scope without a factory epic.
+   */
+  jql?: string;
   pickup_label: string;
   excluded_labels: readonly string[];
   excluded_issue_keys: readonly string[];
@@ -34,6 +43,18 @@ export type AppConfig = {
   wait_pr_pipeline_script?: string;
   wait_main_deploy_script?: string;
   resolve_pr_script?: string;
+  /**
+   * When true, skip client-hygiene skill-pack checks. Use for automation-as-app
+   * forges whose checkout intentionally vendors Cursor skills (not a customer UI app).
+   */
+  skip_client_hygiene?: boolean;
+  /**
+   * Paths relative to repo_path that Hephaestus oneshot MUST Read before code.
+   * Supports plain files and globs (e.g. rules mdc files, nested SKILL.md).
+   * When set (non-empty), ensure writes factory/app-cursor.manifest and injects
+   * APP_CURSOR_BIND into the oneshot prompt. Opt-in — leave unset for normal apps.
+   */
+  mandatory_reads?: readonly string[];
 };
 
 export type HandoffInput = {
@@ -109,6 +130,15 @@ export function resolveTrackerProvider(
 
 /** Build JQL from project dev_factory block (no hardcoded epic). */
 export function buildDevFactoryJql(df: DevFactoryConfig): string {
+  const override = df.jql?.trim();
+  if (override) return override;
+
+  if (!df.epic_key?.trim()) {
+    throw new Error(
+      "dev_factory.jql or dev_factory.epic_key required to build backlog JQL",
+    );
+  }
+
   const excluded =
     df.excluded_labels.length > 0
       ? ` AND labels not in (${df.excluded_labels.join(", ")})`

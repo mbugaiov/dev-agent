@@ -55,11 +55,13 @@ _sps_load_file() {
   fi
 }
 
-for f in jira.env bitbucket.env; do
+# testrail.env is optional (automation-as-app forges that uses TestRail from the forge).
+for f in jira.env bitbucket.env testrail.env github.env; do
   if [[ -f "$ROOT/projects/$SLUG/.secrets/$f" ]]; then
     _sps_load_file "$ROOT/projects/$SLUG/.secrets/$f"
   fi
 done
+
 
 unset -f _sps_load_file
 unset _sps_unsafe_pattern

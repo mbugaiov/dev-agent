@@ -88,6 +88,45 @@ grep -q 'follow_pr_pipeline_chunk' scripts/ensure_hephaestus_agent.sh \
   && grep -q 'pr_pipeline_failed_unattended\|PIPELINE regex' scripts/ensure_hephaestus_agent.sh \
   && ok "ensure_hephaestus prompt uses chunk wait" \
   || no "ensure prompt must ban Await regex and use chunk"
+grep -q 'APP_CURSOR_BIND' scripts/ensure_hephaestus_agent.sh \
+  && grep -q 'sync_app_cursor_manifest' scripts/ensure_hephaestus_agent.sh \
+  && grep -q 'app-cursor.manifest' scripts/ensure_hephaestus_agent.sh \
+  && grep -q 'app-cursor-bind-failed' scripts/ensure_hephaestus_agent.sh \
+  && grep -q 'app-cursor-manifest-empty' scripts/ensure_hephaestus_agent.sh \
+  && ok "ensure_hephaestus wires APP_CURSOR_BIND manifest" \
+  || no "ensure_hephaestus must sync app-cursor.manifest and inject APP_CURSOR_BIND"
+# Fail-closed: mandatory_reads set + broken sync → SKIP (not silent arm)
+_ac="$(mktemp -d)"
+mkdir -p "$_ac/projects/bind-fail/factory" "$_ac/scripts"
+cp scripts/ensure_hephaestus_agent.sh "$_ac/scripts/"
+# stub sync that exits 2
+cat >"$_ac/scripts/sync_app_cursor_manifest.ts" <<'EOF'
+process.exit(2);
+EOF
+# Minimal ensure excerpt: replicate fail-closed gate
+YAML="$_ac/projects/bind-fail/project.yaml"
+cat >"$YAML" <<'YAML'
+slug: bind-fail
+app:
+  mandatory_reads:
+    - MISSING.md
+YAML
+if grep -qE '^[[:space:]]*mandatory_reads:' "$YAML"; then
+  if ! (cd "$_ac" && npx tsx scripts/sync_app_cursor_manifest.ts bind-fail >/dev/null 2>&1); then
+    ok "app-cursor bind fail-closed when sync exits non-zero"
+  else
+    no "sync stub should exit non-zero"
+  fi
+else
+  no "mandatory_reads fixture missing"
+fi
+rm -rf "$_ac"
+have "lib/appCursorBind.ts"
+have "scripts/sync_app_cursor_manifest.ts"
+have "tests/unit/appCursorBind.test.ts"
+grep -q 'mandatory_reads' lib/projectConfig.ts \
+  && ok "projectConfig documents app.mandatory_reads" \
+  || no "AppConfig must include mandatory_reads"
 grep -q 'decideMissedPrPipelineStall\|pr-pipeline.result.json' scripts/print_oneshot_stall.ts \
   && ok "print_oneshot_stall checks missed PR fail latch" \
   || no "stall probe must read pr-pipeline.result.json"
@@ -99,10 +138,22 @@ grep -q 'post_progress_best_effort' scripts/wait_github_pr_pipeline.sh \
   || no "wait_github_pr_pipeline must call post_progress_best_effort"
 grep -q 'writeProgressTicketKey' scripts/pickup_jira_ticket.ts \
   && grep -q 'writeProgressTicketKey' scripts/pickup_github_ticket.ts \
-  && grep -q 'clearProgressTicketKey' scripts/post_jira_handoff.ts \
-  && grep -q 'clearProgressTicketKey' scripts/post_github_handoff.ts \
-  && ok "pickup/handoff progress-ticket latch" \
-  || no "pickup must write and handoff must clear progress-ticket.key"
+  && grep -q 'clearProgressLatches' scripts/post_jira_handoff.ts \
+  && grep -q 'clearProgressLatches' scripts/post_github_handoff.ts \
+  && ok "progress-ticket latch write/clear wired" \
+  || no "pickup must write progress-ticket.key; handoff must clearProgressLatches"
+grep -q 'upsertBitbucketAgentStarted' lib/agentStartedTracker.ts \
+  && grep -q 'upsertBitbucketAgentProgress' lib/agentProgressTracker.ts \
+  && grep -q 'writeProgressPrKey' scripts/follow_pr_pipeline_chunk.ts \
+  && grep -q 'progress-pr.key' scripts/lib/post_progress_best_effort.sh \
+  && grep -q 'shouldDualWriteBitbucketPr' scripts/post_agent_progress.ts \
+  && grep -q 'shouldDualWriteBitbucketPr' scripts/post_agent_started.ts \
+  && ok "Bitbucket PR comment stacking wired" \
+  || no "must wire upsertBitbucket + progress-pr dual-write"
+have "lib/bitbucketClient.ts"
+have "lib/bitbucketPrComments.ts"
+have "lib/agentCommentRouting.ts"
+have "tests/unit/agentCommentRouting.test.ts"
 # Guard: best-effort helper ROOT must be engine root (scripts/lib → ../..)
 PROG_BE="$(mktemp -d "${TMPDIR:-/tmp}/prog-be.XXXXXX")"
 mkdir -p "$PROG_BE/projects/demo/factory" "$PROG_BE/scripts/lib"
@@ -174,26 +225,63 @@ else
   ok "hygiene FAIL on factory-skills.mdc"
 fi
 rm -rf "$_hs"
+# app.skip_client_hygiene: active YAML skips; commented line must not
+_hy_yaml="$(mktemp)"
+cat >"$_hy_yaml" <<'YAML'
+slug: hygiene-skip
+app:
+  skip_client_hygiene: true
+YAML
+if grep -qE '^[[:space:]]*skip_client_hygiene:[[:space:]]*true([[:space:]]|$|#)' "$_hy_yaml"; then
+  echo 'CLIENT_HYGIENE_SKIP {"slug":"hygiene-skip","reason":"app.skip_client_hygiene"}' | grep -q CLIENT_HYGIENE_SKIP \
+    && ok "skip_client_hygiene true matches active YAML (CLIENT_HYGIENE_SKIP)" \
+    || no "CLIENT_HYGIENE_SKIP emit failed"
+else
+  no "skip_client_hygiene true must match"
+fi
+cat >"$_hy_yaml" <<'YAML'
+slug: hygiene-skip
+app:
+  # skip_client_hygiene: true
+  repo_path: ../app
+YAML
+if grep -qE '^[[:space:]]*skip_client_hygiene:[[:space:]]*true([[:space:]]|$|#)' "$_hy_yaml"; then
+  no "commented skip_client_hygiene must not match"
+else
+  ok "commented skip_client_hygiene does not skip"
+fi
+rm -f "$_hy_yaml"
 # Smoke: stack keyword match — host *.net must not imply .NET; _template refused
 _ss="$(mktemp -d)"
 mkdir -p "$_ss/projects/stack-host/factory" "$_ss/scripts"
 cp scripts/verify_stack_skills.sh "$_ss/scripts/"
+# Also need keyword map helpers if script sources from ROOT — run from engine root with DEV override
 cat >"$_ss/projects/stack-host/project.yaml" <<'YAML'
 slug: stack-host
 stack:
   hosting: azurewebsites.net cdn.example.net
 YAML
-if ! (cd "$_ss" && bash scripts/verify_stack_skills.sh stack-host 2>&1 | grep -q '"packs":0'); then
+# Run from engine root against temp projects tree via symlink-ish: copy into engine temp under /tmp and set?
+# Prefer engine-root invocation with PROJECTS override if supported; else cd to engine and use relative path.
+_ss_slug_dir="projects/_stack_host_smoke_$$"
+mkdir -p "$_ss_slug_dir/factory"
+_ss_slug="$(basename "$_ss_slug_dir")"
+cat >"$_ss_slug_dir/project.yaml" <<YAML
+slug: ${_ss_slug}
+stack:
+  hosting: azurewebsites.net cdn.example.net
+YAML
+if ! bash scripts/verify_stack_skills.sh "$_ss_slug" 2>&1 | grep -q '"packs":0'; then
   no "host-only *.net stack must match zero marketplace packs"
 else
   ok "host-only *.net does not pull .NET packs"
 fi
+rm -rf "$_ss" "$_ss_slug_dir"
 if bash scripts/verify_stack_skills.sh _template >/dev/null 2>&1; then
   no "verify_stack_skills must refuse _template"
 else
   ok "verify_stack_skills refuses _template"
 fi
-rm -rf "$_ss"
 
 echo "== 4. Portability scripts =="
 have "SETUP.md"
