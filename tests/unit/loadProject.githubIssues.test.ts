@@ -7,13 +7,13 @@ import { loadProjectConfig } from "../../lib/loadProject.ts";
 describe("loadProjectConfig github_issues", () => {
   it("accepts jira factory with jql and no epic_key", () => {
     const root = mkdtempSync(join(tmpdir(), "dev-agent-proj-"));
-    const dir = join(root, "projects", "mysolark");
+    const dir = join(root, "projects", "webapp");
     mkdirSync(dir, { recursive: true });
     writeFileSync(
       join(dir, "project.yaml"),
       `
 name: My Solark QA
-slug: mysolark
+slug: webapp
 dev_factory:
   jql: 'project = RQ AND labels = impl-dev AND status in ("To Do") ORDER BY created ASC'
   pickup_label: impl-dev
@@ -25,28 +25,28 @@ dev_factory:
   order_by: created ASC
 git:
   provider: bitbucket
-  workspace: sol-ark
-  repo: qa_mysolark_regressiontest
+  workspace: example-corp
+  repo: qa_webapp_regressiontest
   default_branch: main
   branch_prefixes: [feat]
   ticket_key_pattern: "RQ-\\\\d+"
 stg:
   base_url: https://stg.example.com
 app:
-  repo_path: ../qa_mysolark_regressiontest
+  repo_path: ../qa_webapp_regressiontest
   gate_command: make check
   mr_push_command: echo skip
   openspec_enabled: false
   openspec_specs_dir: openspec/specs
 loop:
-  purpose: mysolarkdev
+  purpose: webappdev
   interval_sec_default: 300
 jira:
   enabled: true
 `,
     );
     try {
-      const cfg = loadProjectConfig(root, "mysolark");
+      const cfg = loadProjectConfig(root, "webapp");
       expect(cfg.dev_factory.epic_key).toBeUndefined();
       expect(cfg.dev_factory.jql).toContain("project = RQ");
     } finally {

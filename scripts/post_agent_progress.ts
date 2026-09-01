@@ -248,7 +248,7 @@ async function main() {
 
   if (!isJiraIssueKey(target)) {
     console.error(
-      "AGENT_PROGRESS_FAIL Jira tracker: use issue KEY (e.g. RQ-526) or pr:N for Bitbucket MR",
+      "AGENT_PROGRESS_FAIL Jira tracker: use issue KEY (e.g. TST-123) or pr:N for Bitbucket MR",
     );
     process.exit(1);
   }

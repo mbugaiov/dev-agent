@@ -13,12 +13,12 @@ describe("agentCommentRouting", () => {
   it("parses pr:N and numeric ids", () => {
     expect(parsePrId("pr:437")).toBe("437");
     expect(parsePrId("437")).toBe("437");
-    expect(parsePrId("RQ-526")).toBeUndefined();
+    expect(parsePrId("TST-123")).toBeUndefined();
     expect(parsePrId("pr:abc")).toBeUndefined();
   });
 
   it("detects Jira keys", () => {
-    expect(isJiraIssueKey("RQ-526")).toBe(true);
+    expect(isJiraIssueKey("TST-123")).toBe(true);
     expect(isJiraIssueKey("TST-1")).toBe(true);
     expect(isJiraIssueKey("pr:1")).toBe(false);
     expect(isJiraIssueKey("99")).toBe(false);

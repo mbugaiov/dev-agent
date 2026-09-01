@@ -84,10 +84,10 @@ describe("appCursorBind", () => {
   });
 
   it("formats prompt clause only when paths exist (no apostrophes)", () => {
-    expect(formatAppCursorPromptClause("qa-mysolark-regressiontest", 0)).toBe(
+    expect(formatAppCursorPromptClause("demo-forge", 0)).toBe(
       "",
     );
-    const clause = formatAppCursorPromptClause("qa-mysolark-regressiontest", 12);
+    const clause = formatAppCursorPromptClause("demo-forge", 12);
     expect(clause).toContain("APP_CURSOR_BIND:");
     expect(clause).toContain("app-cursor.manifest");
     expect(clause).toContain("(12 files");

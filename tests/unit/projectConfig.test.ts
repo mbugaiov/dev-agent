@@ -33,10 +33,10 @@ describe("projectConfig", () => {
     const jql = buildDevFactoryJql({
       ...FIXTURE_DEV_FACTORY,
       epic_key: undefined,
-      jql: 'project = RQ AND labels = impl-dev AND (parent is EMPTY OR parent != RQ-1579) AND status in ("To Do") ORDER BY created ASC',
+      jql: 'project = TST AND labels = impl-dev AND (parent is EMPTY OR parent != TST-99) AND status in ("To Do") ORDER BY created ASC',
     });
-    expect(jql).toContain("project = RQ");
-    expect(jql).toContain("parent != RQ-1579");
+    expect(jql).toContain("project = TST");
+    expect(jql).toContain("parent != TST-99");
     expect(jql).not.toContain("parent = TST-1");
   });
 

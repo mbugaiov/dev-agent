@@ -205,7 +205,7 @@ describe("progressTicketLatch", () => {
   it("writes progress-pr latch and clearProgressLatches clears both", () => {
     const root = mkdtempSync(join(tmpdir(), "prog-pr-latch-"));
     try {
-      writeProgressTicketKey(root, "demo", "RQ-526");
+      writeProgressTicketKey(root, "demo", "TST-123");
       writeProgressPrKey(root, "demo", 437);
       expect(readProgressPrKey(root, "demo")).toBe("437");
       clearProgressLatches(root, "demo");
