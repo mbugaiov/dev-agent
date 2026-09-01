@@ -22,7 +22,7 @@ dev_factory:
   enabled: true
   epic_key: "<EPIC-KEY>"            # optional when jql is set (board-wide scope)
   # jql: >-                          # full override — skips epic-derived JQL
-  #   project = RQ AND labels = impl-dev AND NOT parent = RQ-1579 ...
+  #   project = TST AND labels = impl-dev AND NOT parent = TST-99 ...
   pickup_label: impl-dev
   excluded_labels:
     - impl-qa
@@ -64,7 +64,7 @@ app:
   wait_pr_pipeline_script: scripts/wait_pr_pipeline.sh
   wait_main_deploy_script: scripts/wait_main_deploy.sh
   # Opt-in: force Hephaestus oneshot to Read app .cursor (second repo is not auto-loaded).
-  # skip_client_hygiene: true   # only for automation-as-app that vendors skills
+  # skip_client_hygiene: false  # set true only for automation-as-app that vendors skills
   # mandatory_reads:
   #   - AGENTS.md
   #   - .cursor/rules/*.mdc

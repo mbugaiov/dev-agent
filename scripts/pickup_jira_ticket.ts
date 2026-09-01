@@ -10,10 +10,8 @@ import { fileURLToPath } from "node:url";
 import {
   buildPickupFieldUpdates,
   inProgressTransitionId,
-  needsActiveSprint,
   needsAssignee,
   resolvePickupStoryPoints,
-  shouldAssignActiveSprint,
   shouldTransitionToInProgress,
   storyPointFieldIds,
   type JiraIssuePickupFields,
@@ -79,13 +77,9 @@ async function fetchIssueFields(
   config: ProjectConfig,
 ): Promise<JiraIssuePickupFields> {
   const fieldIds = storyPointFieldIds(config.jira?.pickup);
-  const fieldList = [
-    "status",
-    "assignee",
-    "timetracking",
-    "customfield_10020",
-    ...fieldIds,
-  ].join(",");
+  const fieldList = ["status", "assignee", "timetracking", ...fieldIds].join(
+    ",",
+  );
   const res = await jiraFetch(
     `/rest/api/3/issue/${key}?fields=${encodeURIComponent(fieldList)}`,
   );
@@ -145,59 +139,6 @@ async function main() {
           await assignRes.text(),
         );
         process.exit(1);
-      }
-    }
-  }
-
-  if (shouldAssignActiveSprint(pickup)) {
-    const boardId = pickup!.board_id!;
-    let activeSprintId: number | undefined;
-    let activeSprintName = "";
-    if (!args.dryRun) {
-      const sprintRes = await jiraFetch(
-        `/rest/agile/1.0/board/${boardId}/sprint?state=active`,
-      );
-      if (!sprintRes.ok) {
-        console.error(
-          "Jira active sprint lookup failed:",
-          sprintRes.status,
-          await sprintRes.text(),
-        );
-        process.exit(1);
-      }
-      const sprintBody = (await sprintRes.json()) as {
-        values?: Array<{ id?: number; name?: string }>;
-      };
-      const active = sprintBody.values?.[0];
-      activeSprintId =
-        active?.id !== undefined ? Number(active.id) : undefined;
-      activeSprintName = active?.name ?? "";
-    } else {
-      activeSprintId = 0; // dry-run: still report intent when not already sprinted
-    }
-
-    if (needsActiveSprint(fields, activeSprintId, pickup)) {
-      actions.push(
-        activeSprintName
-          ? `sprint → ${activeSprintName}`
-          : "sprint → active",
-      );
-      if (!args.dryRun && activeSprintId) {
-        const moveRes = await jiraFetch(
-          `/rest/agile/1.0/sprint/${activeSprintId}/issue`,
-          {
-            method: "POST",
-            body: JSON.stringify({ issues: [args.key] }),
-          },
-        );
-        if (!moveRes.ok) {
-          console.error(
-            "Jira sprint move failed:",
-            moveRes.status,
-            await moveRes.text(),
-          );
-          process.exit(1);
-        }
       }
     }
   }

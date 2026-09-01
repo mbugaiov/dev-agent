@@ -12,10 +12,10 @@ describe("loadProjectConfig github_issues", () => {
     writeFileSync(
       join(dir, "project.yaml"),
       `
-name: My Solark QA
+name: Example QA Automation
 slug: webapp
 dev_factory:
-  jql: 'project = RQ AND labels = impl-dev AND status in ("To Do") ORDER BY created ASC'
+  jql: 'project = TST AND labels = impl-dev AND status in ("To Do") ORDER BY created ASC'
   pickup_label: impl-dev
   excluded_labels: [impl-qa]
   excluded_issue_keys: []
@@ -26,14 +26,14 @@ dev_factory:
 git:
   provider: bitbucket
   workspace: example-corp
-  repo: qa_webapp_regressiontest
+  repo: example-qa-tests
   default_branch: main
   branch_prefixes: [feat]
   ticket_key_pattern: "RQ-\\\\d+"
 stg:
   base_url: https://stg.example.com
 app:
-  repo_path: ../qa_webapp_regressiontest
+  repo_path: ../example-qa-tests
   gate_command: make check
   mr_push_command: echo skip
   openspec_enabled: false
@@ -48,7 +48,7 @@ jira:
     try {
       const cfg = loadProjectConfig(root, "webapp");
       expect(cfg.dev_factory.epic_key).toBeUndefined();
-      expect(cfg.dev_factory.jql).toContain("project = RQ");
+      expect(cfg.dev_factory.jql).toContain("project = TST");
     } finally {
       rmSync(root, { recursive: true, force: true });
     }

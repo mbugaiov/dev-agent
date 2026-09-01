@@ -117,7 +117,7 @@ fi
 
 # Customer app must not contain skill/factory leakage.
 # Automation-as-app forges may set app.skip_client_hygiene: true in project.yaml.
-if [[ -f "$YAML" ]] && grep -qE 'skip_client_hygiene:[[:space:]]*true' "$YAML" 2>/dev/null; then
+if [[ -f "$YAML" ]] && grep -qE '^[[:space:]]*skip_client_hygiene:[[:space:]]*true([[:space:]]|$|#)' "$YAML" 2>/dev/null; then
   check_ok "client_hygiene"
   echo "CLIENT_HYGIENE_SKIP {\"slug\":\"$SLUG\",\"reason\":\"app.skip_client_hygiene\"}"
 elif hygiene_out="$(bash scripts/check_app_client_hygiene.sh "$SLUG" 2>&1)"; then

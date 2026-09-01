@@ -1,6 +1,6 @@
 /**
  * Bitbucket Cloud REST helpers for Hephaestus factories (git.provider: bitbucket).
- * Write token prefers BB_LRM_CURSOR_DEVELOPMENT, then BITBUCKET_TOKEN (read often suffices for list).
+ * Auth: BITBUCKET_USERNAME + BITBUCKET_TOKEN (write scope needed for PR comment upsert).
  */
 export type BitbucketAuth = {
   username: string;
@@ -9,15 +9,9 @@ export type BitbucketAuth = {
 
 export function bitbucketAuthFromEnv(): BitbucketAuth {
   const username = (process.env.BITBUCKET_USERNAME ?? "").trim();
-  const token = (
-    process.env.BB_LRM_CURSOR_DEVELOPMENT ??
-    process.env.BITBUCKET_TOKEN ??
-    ""
-  ).trim();
+  const token = (process.env.BITBUCKET_TOKEN ?? "").trim();
   if (!username || !token) {
-    throw new Error(
-      "BITBUCKET_USERNAME and BITBUCKET_TOKEN (or BB_LRM_CURSOR_DEVELOPMENT) required",
-    );
+    throw new Error("BITBUCKET_USERNAME and BITBUCKET_TOKEN required");
   }
   return { username, token };
 }
