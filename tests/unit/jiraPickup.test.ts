@@ -15,7 +15,7 @@ const PICKUP = {
   assignee_account_id: "acc-1",
   story_point_fields: ["customfield_10016", "customfield_10033"],
   default_story_points: 2,
-  board_id: 151,
+  board_id: 42,
   assign_active_sprint: true,
 };
 
@@ -90,23 +90,23 @@ describe("jiraPickup", () => {
   it("parses sprint ids and gates active-sprint assign", () => {
     expect(
       sprintIdsFromFields({
-        customfield_10020: [{ id: 6944, name: "RQ Sprint 18_2026" }],
+        customfield_10020: [{ id: 9001, name: "Sprint 1" }],
       }),
-    ).toEqual([6944]);
+    ).toEqual([9001]);
     expect(
       sprintIdsFromFields({
         customfield_10020: [
-          "com.atlassian.greenhopper.service.sprint.Sprint@x[id=6944,name=S]",
+          "com.atlassian.greenhopper.service.sprint.Sprint@x[id=9001,name=S]",
         ],
       }),
-    ).toEqual([6944]);
+    ).toEqual([9001]);
     expect(shouldAssignActiveSprint(PICKUP)).toBe(true);
     expect(
-      shouldAssignActiveSprint({ board_id: 151, assign_active_sprint: false }),
+      shouldAssignActiveSprint({ board_id: 42, assign_active_sprint: false }),
     ).toBe(false);
-    expect(needsActiveSprint({}, 6944, PICKUP)).toBe(true);
+    expect(needsActiveSprint({}, 9001, PICKUP)).toBe(true);
     expect(
-      needsActiveSprint({ customfield_10020: [{ id: 6944 }] }, 6944, PICKUP),
+      needsActiveSprint({ customfield_10020: [{ id: 9001 }] }, 9001, PICKUP),
     ).toBe(false);
   });
 });

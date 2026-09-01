@@ -76,6 +76,8 @@ jira:
     validate_testing: "51"         # project-specific; discover via Jira API if needed
   pickup:
     assignee_account_id: "<account-id>"
+    # board_id: 123                 # Scrum board — pickup moves ticket to active sprint
+    # assign_active_sprint: true    # default when board_id set; false to opt out
     story_point_fields:            # both board columns — discover via jira_discover.py
       - customfield_10016
       - customfield_10033
