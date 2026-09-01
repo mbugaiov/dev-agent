@@ -146,15 +146,28 @@ reap_blind_bash_if_needed 0
 
 # Opt-in app Cursor bind: project.yaml → app.mandatory_reads → factory/app-cursor.manifest
 # (second-repo rules/skills are not auto-loaded; oneshot must Read them).
+# Fail closed when mandatory_reads is configured but sync/manifest fails.
 APP_CURSOR_CLAUSE=""
-if [[ -f "$ROOT/projects/$SLUG/project.yaml" ]]; then
-  if npx tsx "$ROOT/scripts/sync_app_cursor_manifest.ts" "$SLUG" >/dev/null 2>&1; then
-    MANIFEST="$FACTORY/app-cursor.manifest"
-    if [[ -s "$MANIFEST" ]]; then
-      COUNT="$(grep -c . "$MANIFEST" 2>/dev/null || echo 0)"
-      APP_CURSOR_CLAUSE="APP_CURSOR_BIND: Before pickup or any product code, Read EVERY absolute path listed in projects/${SLUG}/factory/app-cursor.manifest (${COUNT} files — app rules/skills + forge bind). Missing path = stop and report. Do not invent TestRail IDs, branch names, or POM patterns without those Reads. "
-    fi
+YAML_PATH="$ROOT/projects/$SLUG/project.yaml"
+if [[ -f "$YAML_PATH" ]] && grep -qE '^[[:space:]]*mandatory_reads:' "$YAML_PATH"; then
+  if ! npx tsx "$ROOT/scripts/sync_app_cursor_manifest.ts" "$SLUG" >/dev/null 2>&1; then
+    printf 'HEPHAESTUS_ONESHOT_SKIP {"slug":"%s","reason":"app-cursor-bind-failed"}\n' "$SLUG"
+    exit 6
   fi
+  MANIFEST="$FACTORY/app-cursor.manifest"
+  if [[ ! -s "$MANIFEST" ]]; then
+    printf 'HEPHAESTUS_ONESHOT_SKIP {"slug":"%s","reason":"app-cursor-manifest-empty"}\n' "$SLUG"
+    exit 6
+  fi
+  COUNT="$(grep -c . "$MANIFEST" 2>/dev/null || echo 0)"
+  if [[ "${COUNT:-0}" -lt 1 ]]; then
+    printf 'HEPHAESTUS_ONESHOT_SKIP {"slug":"%s","reason":"app-cursor-manifest-empty"}\n' "$SLUG"
+    exit 6
+  fi
+  APP_CURSOR_CLAUSE="APP_CURSOR_BIND: Before pickup or any product code, Read EVERY absolute path listed in projects/${SLUG}/factory/app-cursor.manifest (${COUNT} files — app rules/skills + forge bind). Missing path = stop and report. Do not invent TestRail IDs, branch names, or POM patterns without those Reads. "
+elif [[ -f "$YAML_PATH" ]]; then
+  # Unbound projects: soft sync (empty manifest) — never block oneshot.
+  npx tsx "$ROOT/scripts/sync_app_cursor_manifest.ts" "$SLUG" >/dev/null 2>&1 || true
 fi
 
 # No apostrophes in PROMPT — nested bash -c quoting hazard (see qa-agent arm_qa_loop).

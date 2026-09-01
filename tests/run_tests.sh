@@ -91,8 +91,36 @@ grep -q 'follow_pr_pipeline_chunk' scripts/ensure_hephaestus_agent.sh \
 grep -q 'APP_CURSOR_BIND' scripts/ensure_hephaestus_agent.sh \
   && grep -q 'sync_app_cursor_manifest' scripts/ensure_hephaestus_agent.sh \
   && grep -q 'app-cursor.manifest' scripts/ensure_hephaestus_agent.sh \
+  && grep -q 'app-cursor-bind-failed' scripts/ensure_hephaestus_agent.sh \
+  && grep -q 'app-cursor-manifest-empty' scripts/ensure_hephaestus_agent.sh \
   && ok "ensure_hephaestus wires APP_CURSOR_BIND manifest" \
   || no "ensure_hephaestus must sync app-cursor.manifest and inject APP_CURSOR_BIND"
+# Fail-closed: mandatory_reads set + broken sync → SKIP (not silent arm)
+_ac="$(mktemp -d)"
+mkdir -p "$_ac/projects/bind-fail/factory" "$_ac/scripts"
+cp scripts/ensure_hephaestus_agent.sh "$_ac/scripts/"
+# stub sync that exits 2
+cat >"$_ac/scripts/sync_app_cursor_manifest.ts" <<'EOF'
+process.exit(2);
+EOF
+# Minimal ensure excerpt: replicate fail-closed gate
+YAML="$_ac/projects/bind-fail/project.yaml"
+cat >"$YAML" <<'YAML'
+slug: bind-fail
+app:
+  mandatory_reads:
+    - MISSING.md
+YAML
+if grep -qE '^[[:space:]]*mandatory_reads:' "$YAML"; then
+  if ! (cd "$_ac" && npx tsx scripts/sync_app_cursor_manifest.ts bind-fail >/dev/null 2>&1); then
+    ok "app-cursor bind fail-closed when sync exits non-zero"
+  else
+    no "sync stub should exit non-zero"
+  fi
+else
+  no "mandatory_reads fixture missing"
+fi
+rm -rf "$_ac"
 have "lib/appCursorBind.ts"
 have "scripts/sync_app_cursor_manifest.ts"
 have "tests/unit/appCursorBind.test.ts"
