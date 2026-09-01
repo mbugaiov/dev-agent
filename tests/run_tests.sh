@@ -598,6 +598,11 @@ echo "$BLIND_PID" > "projects/$SLUG/factory/loop.pid"
 sleep 2
 OUT=$(PATH="$EA_STUB:/usr/bin:/bin" CURSOR_API_KEY=test-key-not-real \
   bash scripts/ensure_hephaestus_agent.sh "$SLUG" 2>&1); EC=$?
+# CI can briefly keep the reaped bash visible to kill -0; give the scheduler a beat.
+for _ in 1 2 3 4 5; do
+  kill -0 "$BLIND_PID" 2>/dev/null || break
+  sleep 0.4
+done
 echo "$OUT" | grep -q HEPHAESTUS_REAP_BLIND \
   && echo "$OUT" | grep -q HEPHAESTUS_ONESHOT_ARMED && [[ "$EC" -eq 0 ]] \
   && ! kill -0 "$BLIND_PID" 2>/dev/null \
