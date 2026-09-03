@@ -118,6 +118,8 @@ describe("agentProgressStack", () => {
     expect(next.body).toContain("**Status:** pipeline failed");
     expect(next.body).toContain("Earlier (1):");
     expect(next.body).toMatch(/pipeline waiting/);
+    // Blank line after "Earlier (N):" so Bitbucket renders a real list.
+    expect(next.body).toMatch(/Earlier \(1\):\n\n- `/);
   });
 
   it("creates fresh comment after session TTL", () => {
