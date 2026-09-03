@@ -100,6 +100,7 @@ describe("agentStartedStack", () => {
     expect(second.body).toContain("**Mode:** oneshot drain");
     expect(second.body).toContain("**Doing:** Pickup #420 and implement");
     expect(second.body).toContain("Also started (1):");
+    expect(second.body).toMatch(/Also started \(1\):\n\n- `/);
     expect(second.body).toContain(
       `- \`${formatStackClock(T0)}\` pickup / implement — Draw PROD icon`,
     );

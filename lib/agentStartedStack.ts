@@ -161,7 +161,9 @@ function buildTrackerBody(
     `\`post_agent_started · ${event.at.toISOString()}\``,
   ];
   if (kept.length) {
-    lines.push("", `Also started (${kept.length}):`);
+    // Bitbucket Python-Markdown needs a blank line before a list (unlike
+    // GitHub/CommonMark). Without it, "- …" collapses into one paragraph.
+    lines.push("", `Also started (${kept.length}):`, "");
     for (const row of kept) {
       lines.push(`- \`${row.at}\` ${row.mode} — ${row.doing}`);
     }
